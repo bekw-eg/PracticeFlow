@@ -1,0 +1,125 @@
+groups:
+  - name: practiceflow-production
+    rules:
+      - alert: PracticeFlowHighHttp5xxRate
+        expr: >-
+          sum(rate(practiceflow_http_requests_total{status_class="5xx"}[10m]))
+          / clamp_min(sum(rate(practiceflow_http_requests_total[10m])), 0.001) > 0.02
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: PracticeFlow HTTP 5xx rate is above 2% for 10 minutes
+          runbook: deployment/observability/RUNBOOK.md#high-http-5xx-rate
+      - alert: PracticeFlowHighHttpP95Latency
+        expr: >-
+          histogram_quantile(0.95, sum by (le) (rate(practiceflow_http_request_duration_seconds_bucket[10m]))) > 1.5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow HTTP p95 latency is above 1.5 seconds
+          runbook: deployment/observability/RUNBOOK.md#high-http-p95-latency
+      - alert: PracticeFlowPostgresUnavailable
+        expr: min_over_time(practiceflow_dependency_up{component="postgres"}[2m]) == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: PracticeFlow PostgreSQL dependency is unavailable
+          runbook: deployment/observability/RUNBOOK.md#dependency-unavailable
+      - alert: PracticeFlowRedisUnavailable
+        expr: min_over_time(practiceflow_dependency_up{component=~"redis_.*"}[2m]) == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: PracticeFlow Redis dependency is unavailable
+          runbook: deployment/observability/RUNBOOK.md#dependency-unavailable
+      - alert: PracticeFlowObjectStorageUnavailable
+        expr: min_over_time(practiceflow_dependency_up{component="s3"}[2m]) == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: PracticeFlow private S3-compatible storage is unavailable
+          runbook: deployment/observability/RUNBOOK.md#dependency-unavailable
+      - alert: PracticeFlowExportQueueBacklog
+        expr: min_over_time(practiceflow_export_queue_depth[10m]) > 10
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow export queue has more than 10 jobs for 10 minutes
+          runbook: deployment/observability/RUNBOOK.md#export-queue-backlog
+      - alert: PracticeFlowDatabasePoolNearExhaustion
+        expr: >-
+          practiceflow_database_pool_connections{state="checked_out"}
+          / clamp_min(practiceflow_database_pool_connections{state="capacity"}, 1) > 0.8
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow API database pool has used more than 80% of its capacity for 5 minutes
+          runbook: deployment/observability/RUNBOOK.md#database-pool-near-exhaustion
+      - alert: PracticeFlowRedisMemoryNearLimit
+        expr: >-
+          practiceflow_redis_memory_bytes{state="used"}
+          / clamp_min(practiceflow_redis_memory_bytes{state="max"}, 1) > 0.8
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow Redis has used more than 80% of configured noeviction memory
+          runbook: deployment/observability/RUNBOOK.md#redis-memory-near-limit
+      - alert: PracticeFlowStorageErrorRate
+        expr: sum(increase(practiceflow_storage_operations_total{backend="s3",result="failure"}[10m])) > 3
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: PracticeFlow private storage recorded more than three failures in 10 minutes
+          runbook: deployment/observability/RUNBOOK.md#storage-error-rate
+      - alert: PracticeFlowExportWorkerHeartbeatStale
+        expr: practiceflow_export_worker_heartbeat_age_seconds < 0 or practiceflow_export_worker_heartbeat_age_seconds > 90
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: No fresh PracticeFlow export worker heartbeat
+          runbook: deployment/observability/RUNBOOK.md#worker-heartbeat-stale
+      - alert: PracticeFlowExportFailuresOrTimeouts
+        expr: sum(increase(practiceflow_export_job_transitions_total{status=~"failed|timed_out"}[15m])) > 5
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow export failures/timeouts exceed five in 15 minutes
+          runbook: deployment/observability/RUNBOOK.md#export-failures-or-timeouts
+      - alert: PracticeFlowResourceLimitSpike
+        expr: sum(increase(practiceflow_limit_blocks_total[10m])) > 20
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow quota/rate-limit blocks are spiking
+          runbook: deployment/observability/RUNBOOK.md#resource-limit-spike
+      # These two rules require a cAdvisor-compatible Docker collector. They
+      # intentionally select only Compose service labels and add no collector
+      # or port to this repository; adapt the label key if the operator's
+      # collector uses a different Docker-label mapping.
+      - alert: PracticeFlowContainerMemoryPressure
+        expr: >-
+          max by (container_label_com_docker_compose_service) (
+            container_memory_working_set_bytes{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+            / on (id) group_left
+            container_spec_memory_limit_bytes{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+          ) > 0.85
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow Compose service memory use is above 85% of its limit
+          runbook: deployment/observability/RUNBOOK.md#container-cpu-or-memory-pressure
+      - alert: PracticeFlowContainerCpuPressure
+        expr: >-
+          sum by (container_label_com_docker_compose_service) (
+            rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}[5m])
+          )
+          / on (container_label_com_docker_compose_service) group_left
+          max by (container_label_com_docker_compose_service) (
+            container_spec_cpu_quota{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+            / container_spec_cpu_period{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+          ) > 0.85
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: PracticeFlow Compose service CPU use is above 85% of its limit
+          runbook: deployment/observability/RUNBOOK.md#container-cpu-or-memory-pressure

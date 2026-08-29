@@ -1,0 +1,114 @@
+services:
+  postgres:
+    # postgres:16.15-alpine3.24
+    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-practiceflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-practiceflow}
+      POSTGRES_DB: ${POSTGRES_DB:-practiceflow}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-practiceflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    # redis:7-alpine
+    image: redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://practiceflow:practiceflow@postgres:5432/practiceflow}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-change-me-before-any-real-deployment}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@practiceflow.local}
+      REDIS_URL: redis://redis:6379/0
+      RESOURCE_GUARD_BACKEND: redis
+      EXPORT_QUEUE_BACKEND: redis
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+      - backend_storage:/app/storage_data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  export-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.export_worker"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://practiceflow:practiceflow@postgres:5432/practiceflow}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-change-me-before-any-real-deployment}
+      REDIS_URL: redis://redis:6379/0
+      RESOURCE_GUARD_BACKEND: redis
+      EXPORT_QUEUE_BACKEND: redis
+      STORAGE_LOCAL_PATH: /app/storage_data
+      RUN_MIGRATIONS: "false"
+      RUN_SEED: "false"
+    volumes:
+      - ./backend:/app
+      - backend_storage:/app/storage_data
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.workers.export_worker", "--check"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+volumes:
+  postgres_data:
+  backend_storage:
+  frontend_node_modules:

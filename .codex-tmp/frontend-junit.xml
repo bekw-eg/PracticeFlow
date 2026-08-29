@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="59" failures="0" errors="0" time="3.2085905">
+    <testsuite name="src/seoAssets.test.ts" timestamp="2026-08-28T21:21:52.862Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.0077177">
+        <testcase classname="src/seoAssets.test.ts" name="public SEO assets &gt; declares the required metadata on the authenticated SPA shell" time="0.0047887">
+        </testcase>
+        <testcase classname="src/seoAssets.test.ts" name="public SEO assets &gt; ships real crawl-control files without private application routes" time="0.0014171">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/apiError.test.ts" timestamp="2026-08-28T21:21:52.865Z" hostname="berdibeek" tests="9" failures="0" errors="0" skipped="0" time="0.0135016">
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 413 to a user-facing error" time="0.0052031">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 403 to a user-facing error" time="0.0007693">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 404 to a user-facing error" time="0.0005178">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 409 to a user-facing error" time="0.0005524">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 429 to a user-facing error" time="0.000456">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps HTTP 500 to a user-facing error" time="0.0004664">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; maps a transport failure to the network-error state" time="0.0004136">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; does not automatically retry deterministic authorization, missing-resource or conflict responses" time="0.0009184">
+        </testcase>
+        <testcase classname="src/lib/apiError.test.ts" name="API error presentation &gt; retries a transient error once and then stops" time="0.0009866">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/resourceErrorMessages.test.ts" timestamp="2026-08-28T21:21:52.867Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.0065096">
+        <testcase classname="src/lib/resourceErrorMessages.test.ts" name="resource protection error messages &gt; explains the file-size and upload-quota responses without backend details" time="0.0034494">
+        </testcase>
+        <testcase classname="src/lib/resourceErrorMessages.test.ts" name="resource protection error messages &gt; explains export throttling without exposing implementation details" time="0.0006979">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/tokenStorage.test.ts" timestamp="2026-08-28T21:21:52.868Z" hostname="berdibeek" tests="1" failures="0" errors="0" skipped="0" time="0.0051329">
+        <testcase classname="src/lib/tokenStorage.test.ts" name="tokenStorage &gt; keeps the access token only in module memory" time="0.0028632">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/components/ExportButtons.test.tsx" timestamp="2026-08-28T21:21:52.868Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.3198778">
+        <testcase classname="src/components/ExportButtons.test.tsx" name="ExportButtons &gt; polls an accepted job, exposes a download and prevents duplicate job creation" time="0.2775815">
+        </testcase>
+        <testcase classname="src/components/ExportButtons.test.tsx" name="ExportButtons &gt; shows a friendly 429 creation error" time="0.0399279">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/audit/AuditLogPage.test.tsx" timestamp="2026-08-28T21:21:52.869Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.3588989">
+        <testcase classname="src/features/audit/AuditLogPage.test.tsx" name="AuditLogPage &gt; filters a server-side page and exposes only safe details" time="0.2932974">
+        </testcase>
+        <testcase classname="src/features/audit/AuditLogPage.test.tsx" name="AuditLogPage &gt; shows empty and integrity states" time="0.0631468">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/auth/api.test.ts" timestamp="2026-08-28T21:21:52.870Z" hostname="berdibeek" tests="3" failures="0" errors="0" skipped="0" time="0.0114778">
+        <testcase classname="src/features/auth/api.test.ts" name="auth API &gt; returns the access-token response supplied by login" time="0.0055406">
+        </testcase>
+        <testcase classname="src/features/auth/api.test.ts" name="auth API &gt; keeps a password-stage MFA challenge distinct from a token" time="0.002471">
+        </testcase>
+        <testcase classname="src/features/auth/api.test.ts" name="auth API &gt; logs out without sending a JavaScript-readable refresh token" time="0.0009085">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/auth/MfaPage.test.tsx" timestamp="2026-08-28T21:21:52.871Z" hostname="berdibeek" tests="1" failures="0" errors="0" skipped="0" time="0.2827387">
+        <testcase classname="src/features/auth/MfaPage.test.tsx" name="MfaPage recovery &gt; moves recovery-code users into fresh enrollment rather than a session" time="0.2807864">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/profile/StudentProfilePage.test.tsx" timestamp="2026-08-28T21:21:52.871Z" hostname="berdibeek" tests="1" failures="0" errors="0" skipped="0" time="0.2313937">
+        <testcase classname="src/features/profile/StudentProfilePage.test.tsx" name="StudentProfilePage API failure &gt; replaces the former infinite loading state with a 404 alert and manual retry" time="0.2291095">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/reports/StudentReportsPage.test.tsx" timestamp="2026-08-28T21:21:52.872Z" hostname="berdibeek" tests="3" failures="0" errors="0" skipped="0" time="0.3620515">
+        <testcase classname="src/features/reports/StudentReportsPage.test.tsx" name="StudentReportsPage pagination &gt; moves to the next server page" time="0.2856543">
+        </testcase>
+        <testcase classname="src/features/reports/StudentReportsPage.test.tsx" name="StudentReportsPage pagination &gt; shows a distinct empty result" time="0.0280648">
+        </testcase>
+        <testcase classname="src/features/reports/StudentReportsPage.test.tsx" name="StudentReportsPage pagination &gt; retries a failed page request" time="0.0463471">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/components/ui/PaginationControls.test.tsx" timestamp="2026-08-28T21:21:52.872Z" hostname="berdibeek" tests="1" failures="0" errors="0" skipped="0" time="0.2209512">
+        <testcase classname="src/components/ui/PaginationControls.test.tsx" name="PaginationControls &gt; announces the current range and switches pages through labelled controls" time="0.2185596">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/components/ui/StateViews.test.tsx" timestamp="2026-08-28T21:21:52.873Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.1978636">
+        <testcase classname="src/components/ui/StateViews.test.tsx" name="shared query state views &gt; exposes loading through an accessible status role" time="0.1549446">
+        </testcase>
+        <testcase classname="src/components/ui/StateViews.test.tsx" name="shared query state views &gt; renders an accessible, retryable API error instead of a permanent loader" time="0.0405566">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/tiptap/converters.test.ts" timestamp="2026-08-28T21:21:52.873Z" hostname="berdibeek" tests="11" failures="0" errors="0" skipped="0" time="0.0177003">
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="paragraph round-trip &gt; preserves plain text" time="0.0063166">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="paragraph round-trip &gt; preserves bold/italic/underline marks independently" time="0.001534">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="paragraph round-trip &gt; preserves the complete paragraph override needed by preview and export" time="0.0005267">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="paragraph round-trip &gt; preserves a variable run and its key (not just its display label)" time="0.0010183">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="paragraph round-trip &gt; preserves an empty paragraph without inventing content" time="0.0005993">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="heading round-trip &gt; preserves level and numbering participation, never a visual-only size" time="0.0006988">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="table round-trip &gt; preserves row/cell structure and nested paragraph content" time="0.0010355">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="image round-trip &gt; preserves file reference, dimensions, alignment, and caption" time="0.0003493">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="page break round-trip &gt; survives as a distinct block, not merged into surrounding paragraphs" time="0.0007039">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="list round-trip &gt; preserves ordered flag and item content" time="0.0006347">
+        </testcase>
+        <testcase classname="src/features/documents/tiptap/converters.test.ts" name="full document round-trip &gt; preserves an entire section&apos;s mixed block content through doc-level conversion" time="0.0010289">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/documentConflict.test.tsx" timestamp="2026-08-28T21:21:52.876Z" hostname="berdibeek" tests="1" failures="0" errors="0" skipped="0" time="0.2179242">
+        <testcase classname="src/features/documents/__tests__/documentConflict.test.tsx" name="document optimistic-lock conflict UI &gt; stops further autosaves and exposes refresh/copy actions after a 409 stale-revision response" time="0.2162521">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/DocumentOutline.test.tsx" timestamp="2026-08-28T21:21:52.876Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.2492109">
+        <testcase classname="src/features/documents/__tests__/DocumentOutline.test.tsx" name="DocumentOutline &gt; renders sections and nested headings with server-provided numbers" time="0.2380868">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/DocumentOutline.test.tsx" name="DocumentOutline &gt; renders without numbers when numbering is empty (e.g. before first load)" time="0.0087008">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/DocumentPreview.test.tsx" timestamp="2026-08-28T21:21:52.877Z" hostname="berdibeek" tests="2" failures="0" errors="0" skipped="0" time="0.1126821">
+        <testcase classname="src/features/documents/__tests__/DocumentPreview.test.tsx" name="DocumentPreview &gt; keeps a long Tiptap paragraph as one semantic paragraph with inline text" time="0.0901865">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/DocumentPreview.test.tsx" name="DocumentPreview &gt; uses page-sized browser columns so overflowing text continues on a new A4 page" time="0.0199283">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/editingBehavior.test.tsx" timestamp="2026-08-28T21:21:52.878Z" hostname="berdibeek" tests="3" failures="0" errors="0" skipped="0" time="0.2279568">
+        <testcase classname="src/features/documents/__tests__/editingBehavior.test.tsx" name="Editing commands actually mutate the document (not just the toolbar UI) &gt; toggling Bold via the toolbar produces bold=true in the emitted Block[]" time="0.1660032">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/editingBehavior.test.tsx" name="Editing commands actually mutate the document (not just the toolbar UI) &gt; inserting a variable via the toolbar produces a VariableRun with the correct key" time="0.0438483">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/editingBehavior.test.tsx" name="Editing commands actually mutate the document (not just the toolbar UI) &gt; read-only mode (editable=false) renders a non-editable surface" time="0.0160002">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/SaveStatus.test.tsx" timestamp="2026-08-28T21:21:52.879Z" hostname="berdibeek" tests="4" failures="0" errors="0" skipped="0" time="0.0655143">
+        <testcase classname="src/features/documents/__tests__/SaveStatus.test.tsx" name="SaveStatus &gt; renders nothing for idle" time="0.0213723">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SaveStatus.test.tsx" name="SaveStatus &gt; shows saving state" time="0.028351">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SaveStatus.test.tsx" name="SaveStatus &gt; shows saved state" time="0.0076044">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SaveStatus.test.tsx" name="SaveStatus &gt; shows error state with an explicit warning that changes are unsaved" time="0.0057478">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/features/documents/__tests__/SectionEditor.test.tsx" timestamp="2026-08-28T21:21:52.880Z" hostname="berdibeek" tests="7" failures="0" errors="0" skipped="0" time="0.2994869">
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; renders a locked section as plain read-only text with NO contenteditable surface at all" time="0.0705422">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; renders an editable section with a real editable ProseMirror surface and toolbar" time="0.1440029">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; does not expose the teacher-only variable picker in a student report editor" time="0.0376518">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; locks an otherwise-editable section when the DOCUMENT is read-only (canEdit=false) — e.g. teacher viewing a submitted report" time="0.0048476">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; shows a visible lock indicator for locked sections so the boundary is understandable to students, not just backend-enforced" time="0.0033829">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; lets a teacher edit a section title even when that section is locked for students" time="0.0152385">
+        </testcase>
+        <testcase classname="src/features/documents/__tests__/SectionEditor.test.tsx" name="SectionEditor: locked vs editable boundary &gt; does not expose a title input to students" time="0.021399">
+        </testcase>
+    </testsuite>
+</testsuites>

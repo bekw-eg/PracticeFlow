@@ -1,0 +1,12 @@
+# Template only: copy to .github/CODEOWNERS after replacing every placeholder
+# with real, authorized GitHub users or teams approved by the repository owner.
+# This .example file intentionally has no active or invented usernames.
+
+* @<replace-with-repository-maintainers>
+
+/backend/ @<replace-with-backend-owners>
+/frontend/ @<replace-with-frontend-owners>
+/deployment/ @<replace-with-platform-security-owners>
+/docs/ @<replace-with-documentation-owners>
+/.github/ @<replace-with-platform-security-owners>
+/SECURITY.md @<replace-with-security-owners>

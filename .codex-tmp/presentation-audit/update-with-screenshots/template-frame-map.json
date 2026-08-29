@@ -1,0 +1,60 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "opening brand chrome",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [{ "shapeId": "sh/ts7md4r2", "action": "keep" }]
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "problem evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [{ "shapeId": "sh/9072xkry", "action": "keep" }]
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "survey evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "shapeId": "sh/cza94vmx", "action": "rewrite" },
+        { "shapeIds": ["sh/3ah8rqlg", "sh/obq90bml", "sh/pcjqtg36", "sh/m5cra54z", "sh/n6ls3alk", "sh/n2l4fq98", "sh/m1c3mlsn", "sh/943mhgre", "sh/83ulovat", "sh/v6l4jq94", "sh/a5c3ql8z", "sh/x8nml0ra", "sh/w7ulsvqp"], "action": "replace" }
+      ]
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "workflow map",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [{ "shapeId": "sh/1cj2d8b6", "action": "keep" }]
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "narrativeRole": "MVP status analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [{ "shapeId": "sh/dgbulwnm", "action": "keep" }]
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "narrativeRole": "product evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        { "shapeId": "sh/yhg7epsj", "action": "rewrite" },
+        { "shapeIds": ["sh/98rqt4r6", "sh/ml07i9sv", "sh/7m98ru9g", "sh/oryp8fah", "sh/pc76hkr2", "sh/h4bupgn6", "sh/w32twb6l", "sh/v2tcn650", "sh/u1kbu1ov", "sh/5svutgni", "sh/47mt0b6x", "sh/j6dcr65c", "sh/i54bylor", "sh/twfux0ne", "sh/svmt4v6t", "sh/cbe5g3ih", "sh/dcnm98zm", "sh/qpwnet0b", "sh/bq547yhw", "sh/0fy5k3id", "sh/lg76d8zy", "sh/ydgnit07"], "action": "replace" }
+      ]
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 7,
+      "narrativeRole": "closing summary",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [{ "shapeId": "sh/cb2tkvap", "action": "keep" }]
+    }
+  ],
+  "omittedSourceSlides": []
+}

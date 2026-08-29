@@ -1,0 +1,841 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/x8f69ofe",
+    "id": "x8f69ofe",
+    "slide": 6,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F5F7FC",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gju58ji9",
+      "id": "28",
+      "bbox": [
+        72,
+        50,
+        500,
+        22
+      ],
+      "geometry": "rect",
+      "text": "ДЕМОНСТРАЦИЯ",
+      "textPreview": "ДЕМОНСТРАЦИЯ",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "ДЕМОНСТРАЦИЯ"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "ДЕМОНСТРАЦИЯ",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#60708D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "ДЕМОНСТРАЦИЯ",
+              "fontSize": 13,
+              "color": "#60708D",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yhg7epsj",
+      "id": "2",
+      "bbox": [
+        72,
+        82,
+        1020,
+        60
+      ],
+      "geometry": "rect",
+      "text": "Реальные экраны MVP",
+      "textPreview": "Реальные экраны MVP",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Реальные экраны MVP"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Реальные экраны MVP",
+          "resolvedTextStyle": {
+            "fontSize": 42,
+            "color": "#18233A",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Реальные экраны MVP",
+              "fontSize": 42,
+              "color": "#18233A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zi98nu94",
+      "id": "3",
+      "bbox": [
+        72,
+        151,
+        76,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ipkzal",
+      "id": "4",
+      "bbox": [
+        1140,
+        54,
+        66,
+        28
+      ],
+      "geometry": "rect",
+      "text": "06",
+      "textPreview": "06",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "06"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "06",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#60708D",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "06",
+              "fontSize": 16,
+              "color": "#60708D",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zep4byhs",
+      "id": "27",
+      "bbox": [
+        72,
+        680,
+        360,
+        22
+      ],
+      "geometry": "rect",
+      "text": "PracticeFlow  •  3-я защита",
+      "textPreview": "PracticeFlow  •  3-я защита",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PracticeFlow  •  3-я защита"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PracticeFlow  •  3-я защита",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#60708D"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PracticeFlow  •  3-я защита",
+              "fontSize": 13,
+              "color": "#60708D"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1k3mhozu",
+      "id": "29",
+      "bbox": [
+        72,
+        184,
+        1040,
+        30
+      ],
+      "geometry": "rect",
+      "text": "Учитель и студент: группы, шаблоны и отчёты — фактические экраны реализации.",
+      "textPreview": "Учитель и студент: группы, шаблоны и отчёты — фактические экраны реализации.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "Calibri",
+        "color": "#60708D",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Учитель и студент: группы, шаблоны и отчёты — фактические экраны реализации."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Учитель и студент: группы, шаблоны и отчёты — фактические экраны реализации.",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#60708D"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Учитель и студент: группы, шаблоны и отчёты — фактические экраны реализации.",
+              "fontSize": 19,
+              "color": "#60708D"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jet8nm1c",
+      "id": "30",
+      "bbox": [
+        72,
+        246,
+        530,
+        170
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DCE3F0",
+      "lineWidth": 1
+    },
+    {
+      "order": 8,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/tob6lc7u",
+      "id": "31",
+      "bbox": [
+        74,
+        248,
+        526,
+        166
+      ],
+      "geometry": "roundRect",
+      "alt": "Экран учителя: список групп",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 7229"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "24e69b09-afb0-4bcf-9b57-b72bfcebbbde",
+        "contentType": "image/png",
+        "byteLength": 51712
+      }
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/50bqpcj2",
+      "id": "32",
+      "bbox": [
+        72,
+        426,
+        530,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Учитель • Мои группы",
+      "textPreview": "Учитель • Мои группы",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Calibri",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "center",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Учитель • Мои группы"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Учитель • Мои группы",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#18233A",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Учитель • Мои группы",
+              "fontSize": 16,
+              "color": "#18233A",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4f2pgr2h",
+      "id": "33",
+      "bbox": [
+        638,
+        246,
+        530,
+        170
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DCE3F0",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/kji587qd",
+      "id": "34",
+      "bbox": [
+        640,
+        248,
+        526,
+        166
+      ],
+      "geometry": "roundRect",
+      "alt": "Экран учителя: список шаблонов отчётов",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 7229"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "b43b4df5-875f-43e7-a77b-3946cab48e2d",
+        "contentType": "image/png",
+        "byteLength": 45765
+      }
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u907axkf",
+      "id": "35",
+      "bbox": [
+        638,
+        426,
+        530,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Учитель • Шаблоны отчётов",
+      "textPreview": "Учитель • Шаблоны отчётов",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Calibri",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "center",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Учитель • Шаблоны отчётов"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Учитель • Шаблоны отчётов",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#18233A",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Учитель • Шаблоны отчётов",
+              "fontSize": 16,
+              "color": "#18233A",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrqlcj6",
+      "id": "36",
+      "bbox": [
+        72,
+        466,
+        530,
+        170
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DCE3F0",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ji9of2ps",
+      "id": "37",
+      "bbox": [
+        74,
+        468,
+        526,
+        166
+      ],
+      "geometry": "roundRect",
+      "alt": "Экран учителя: редактор шаблона отчёта",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 7229"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "c255f2c5-5b4a-4f28-8f43-cb8a60b265ab",
+        "contentType": "image/png",
+        "byteLength": 72685
+      }
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7698f214",
+      "id": "38",
+      "bbox": [
+        72,
+        646,
+        530,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Учитель • Редактор шаблона",
+      "textPreview": "Учитель • Редактор шаблона",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Calibri",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "center",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Учитель • Редактор шаблона"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Учитель • Редактор шаблона",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#18233A",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Учитель • Редактор шаблона",
+              "fontSize": 16,
+              "color": "#18233A",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m5076xkj",
+      "id": "39",
+      "bbox": [
+        638,
+        466,
+        530,
+        170
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#DCE3F0",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/10n2lone",
+      "id": "40",
+      "bbox": [
+        640,
+        468,
+        526,
+        166
+      ],
+      "geometry": "roundRect",
+      "alt": "Экран студента: редактор отчёта",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 7229"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "832303b5-9b95-4dac-9261-2a4ec000ac22",
+        "contentType": "image/png",
+        "byteLength": 22239
+      }
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/netcjqxo",
+      "id": "41",
+      "bbox": [
+        638,
+        646,
+        530,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Студент • Редактор отчёта",
+      "textPreview": "Студент • Редактор отчёта",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "Calibri",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "center",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Студент • Редактор отчёта"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Студент • Редактор отчёта",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#18233A",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Студент • Редактор отчёта",
+              "fontSize": 16,
+              "color": "#18233A",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

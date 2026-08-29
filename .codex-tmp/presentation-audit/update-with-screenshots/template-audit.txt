@@ -1,0 +1,15 @@
+Source deck: PracticeFlow_3rd_defense_audit.pptx
+
+Source structure:
+- Seven slides, 16:9, one imported master and title layout.
+- Shared visual language: white or deep-navy backgrounds, Aptos typography, blue/cyan accents, lower-left footer, upper-right page number.
+- Slides 3 and 6 are suitable for evidence/media updates. They are content slides with no structural PowerPoint placeholders detected by direct artifact-tool inspection.
+
+Planned edit:
+- Slide 3: replace Google Forms placeholders with two provided Google Forms result screenshots and exact observed survey conclusions.
+- Slide 6: replace the planned-screen cards with four provided PracticeFlow screenshots: teacher groups, templates, template editor, and student report editor.
+- Slides 1, 2, 4, 5 and 7 are preserved without changes.
+
+Visual rules retained:
+- Existing title, footer, page number, colours and margins remain in place.
+- Product screenshots use rounded masks and thin borders. They are not represented as new functionality.

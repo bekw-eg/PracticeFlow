@@ -1,0 +1,196 @@
+services:
+  postgres:
+    # postgres:16.15-alpine3.24
+    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    command: ["postgres", "-c", "max_connections=40"]
+    environment:
+      POSTGRES_USER: practiceflow_e2e
+      POSTGRES_PASSWORD: practiceflow_e2e_local_only
+      POSTGRES_DB: practiceflow_e2e
+    tmpfs:
+      - /var/lib/postgresql/data
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 512M }
+        reservations: { cpus: "0.25", memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U practiceflow_e2e -d practiceflow_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    # redis:7-alpine
+    image: redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction"]
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 128M }
+        reservations: { cpus: "0.10", memory: 64M }
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Test-only private object storage. It is not published to the host and is
+  # never used by the ordinary development Compose stack.
+  minio:
+    # minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: practiceflow_e2e_minio
+      MINIO_ROOT_PASSWORD: practiceflow_e2e_minio_local_only
+    volumes:
+      - e2e_minio_data:/data
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 512M }
+        reservations: { cpus: "0.25", memory: 256M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio-init:
+    # minio/mc: build 2025-08-06 (upstream image labels expose no release tag)
+    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        mc alias set e2e http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD";
+        mc mb --ignore-existing e2e/practiceflow-e2e;
+        mc anonymous set none e2e/practiceflow-e2e
+    environment:
+      MINIO_ROOT_USER: practiceflow_e2e_minio
+      MINIO_ROOT_PASSWORD: practiceflow_e2e_minio_local_only
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 128M }
+        reservations: { cpus: "0.10", memory: 64M }
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      ENV: e2e
+      DATABASE_URL: postgresql+psycopg://practiceflow_e2e:practiceflow_e2e_local_only@postgres:5432/practiceflow_e2e
+      JWT_SECRET_KEY: e2e-only-secret-that-is-never-used-in-production
+      CORS_ORIGINS: '["http://127.0.0.1:4173"]'
+      SEED_ON_START: "true"
+      COOKIE_SECURE: "false"
+      LOGIN_RATE_LIMIT_BACKEND: memory
+      REDIS_URL: redis://redis:6379/0
+      RESOURCE_GUARD_BACKEND: redis
+      EXPORT_QUEUE_BACKEND: redis
+      STORAGE_BACKEND: s3
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET: practiceflow-e2e
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: practiceflow_e2e_minio
+      S3_SECRET_ACCESS_KEY: practiceflow_e2e_minio_local_only
+      S3_ADDRESSING_STYLE: path
+      S3_VERIFY_TLS: "false"
+      DATABASE_POOL_SIZE: "4"
+      DATABASE_MAX_OVERFLOW: "2"
+      DATABASE_POOL_TIMEOUT_SECONDS: "15"
+      DATABASE_POOL_RECYCLE_SECONDS: "300"
+      WORKER_DATABASE_POOL_SIZE: "1"
+      WORKER_DATABASE_MAX_OVERFLOW: "0"
+      WORKER_DATABASE_POOL_TIMEOUT_SECONDS: "10"
+      WORKER_DATABASE_POOL_RECYCLE_SECONDS: "300"
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 768M }
+        reservations: { cpus: "0.25", memory: 384M }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  export-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "-m", "app.workers.export_worker"]
+    depends_on:
+      backend:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      ENV: e2e
+      DATABASE_URL: postgresql+psycopg://practiceflow_e2e:practiceflow_e2e_local_only@postgres:5432/practiceflow_e2e
+      JWT_SECRET_KEY: e2e-only-secret-that-is-never-used-in-production
+      REDIS_URL: redis://redis:6379/0
+      RESOURCE_GUARD_BACKEND: redis
+      EXPORT_QUEUE_BACKEND: redis
+      STORAGE_BACKEND: s3
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET: practiceflow-e2e
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: practiceflow_e2e_minio
+      S3_SECRET_ACCESS_KEY: practiceflow_e2e_minio_local_only
+      S3_ADDRESSING_STYLE: path
+      S3_VERIFY_TLS: "false"
+      DATABASE_POOL_SIZE: "4"
+      DATABASE_MAX_OVERFLOW: "2"
+      DATABASE_POOL_TIMEOUT_SECONDS: "15"
+      DATABASE_POOL_RECYCLE_SECONDS: "300"
+      WORKER_DATABASE_POOL_SIZE: "1"
+      WORKER_DATABASE_MAX_OVERFLOW: "0"
+      WORKER_DATABASE_POOL_TIMEOUT_SECONDS: "10"
+      WORKER_DATABASE_POOL_RECYCLE_SECONDS: "300"
+      RUN_MIGRATIONS: "false"
+      RUN_SEED: "false"
+    deploy:
+      resources:
+        limits: { cpus: "0.75", memory: 1G }
+        reservations: { cpus: "0.50", memory: 512M }
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.workers.export_worker", "--check"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${E2E_FRONTEND_PORT:-4173}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 128M }
+        reservations: { cpus: "0.10", memory: 64M }
+
+volumes:
+  e2e_minio_data:

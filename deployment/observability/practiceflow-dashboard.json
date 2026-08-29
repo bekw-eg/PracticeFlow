@@ -1,0 +1,16 @@
+{
+  "title": "PracticeFlow production",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["practiceflow", "safe-labels-only"],
+  "panels": [
+    {"title": "HTTP request rate by status class", "type": "timeseries", "targets": [{"expr": "sum by (status_class) (rate(practiceflow_http_requests_total[5m]))", "legendFormat": "{{status_class}}"}]},
+    {"title": "HTTP p95 latency", "type": "timeseries", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(practiceflow_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"}]},
+    {"title": "Dependencies", "type": "stat", "targets": [{"expr": "practiceflow_dependency_up", "legendFormat": "{{component}}"}]},
+    {"title": "Export queue and worker", "type": "timeseries", "targets": [{"expr": "practiceflow_export_queue_depth", "legendFormat": "queue depth"}, {"expr": "practiceflow_export_worker_heartbeat_age_seconds", "legendFormat": "heartbeat age"}]},
+    {"title": "Export terminal transitions", "type": "timeseries", "targets": [{"expr": "sum by (status) (increase(practiceflow_export_job_transitions_total{status=~\"succeeded|failed|timed_out|cancelled\"}[5m]))", "legendFormat": "{{status}}"}]},
+    {"title": "Resource-protection blocks", "type": "timeseries", "targets": [{"expr": "sum by (reason) (increase(practiceflow_limit_blocks_total[5m]))", "legendFormat": "{{reason}}"}]},
+    {"title": "Aggregate private storage", "type": "stat", "targets": [{"expr": "practiceflow_storage_usage_bytes", "legendFormat": "tracked bytes"}]}
+  ]
+}

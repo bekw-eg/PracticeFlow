@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+# PracticeFlow is an authenticated workspace. Public routes are deliberately
+# excluded from search indexes; sitemap.xml therefore does not list private
+# application routes.

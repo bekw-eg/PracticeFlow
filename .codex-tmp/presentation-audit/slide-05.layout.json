@@ -1,0 +1,1316 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/c5hje5",
+    "id": "c5hje5",
+    "slide": 5,
+    "layoutId": "e88707a3-f918-449e-ac5f-723c0894389e",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "a2a83c2c-8474-45fc-a044-b2b3d18ad72a",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#FFFFFF",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "e88707a3-f918-449e-ac5f-723c0894389e",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "a2a83c2c-8474-45fc-a044-b2b3d18ad72a",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "a2a83c2c-8474-45fc-a044-b2b3d18ad72a",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/at4fapsj",
+      "id": "1",
+      "bbox": [
+        72,
+        50,
+        500,
+        22
+      ],
+      "geometry": "rect",
+      "text": "ФАКТИЧЕСКИЙ СТАТУС",
+      "textPreview": "ФАКТИЧЕСКИЙ СТАТУС",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "+mn-lt",
+        "color": "#60708D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "ФАКТИЧЕСКИЙ СТАТУС"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "ФАКТИЧЕСКИЙ СТАТУС",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#60708D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "ФАКТИЧЕСКИЙ СТАТУС",
+              "fontSize": 13,
+              "color": "#60708D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xwfyl4ra",
+      "id": "2",
+      "bbox": [
+        72,
+        82,
+        1020,
+        60
+      ],
+      "geometry": "rect",
+      "text": "MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут",
+      "textPreview": "MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут",
+      "resolvedFontSize": 42,
+      "resolvedTextStyle": {
+        "fontSize": 42,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "MVP: сильный API-фундамент, но пользовательский"
+          },
+          {
+            "index": 2,
+            "text": "поток ещё не замкнут"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут",
+          "resolvedTextStyle": {
+            "fontSize": 42,
+            "color": "#18233A",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут",
+              "fontSize": 42,
+              "color": "#18233A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cvmxczap",
+      "id": "3",
+      "bbox": [
+        72,
+        151,
+        76,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zyxgnu9g",
+      "id": "4",
+      "bbox": [
+        1140,
+        54,
+        66,
+        28
+      ],
+      "geometry": "rect",
+      "text": "05",
+      "textPreview": "05",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "fontSize": 16,
+        "typeface": "+mn-lt",
+        "color": "#60708D",
+        "bold": true,
+        "alignment": "right",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "05"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "05",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#60708D",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "05",
+              "fontSize": 16,
+              "color": "#60708D",
+              "bold": true,
+              "alignment": "right"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxofepsv",
+      "id": "5",
+      "bbox": [
+        72,
+        192,
+        4,
+        416
+      ],
+      "geometry": "rect",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0fyp4r6",
+      "id": "6",
+      "bbox": [
+        98,
+        192,
+        470,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Реализовано в коде и API",
+      "textPreview": "Реализовано в коде и API",
+      "resolvedFontSize": 26,
+      "resolvedTextStyle": {
+        "fontSize": 26,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Реализовано в коде и API"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Реализовано в коде и API",
+          "resolvedTextStyle": {
+            "fontSize": 26,
+            "color": "#18233A",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Реализовано в коде и API",
+              "fontSize": 26,
+              "color": "#18233A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kz6xgza1",
+      "id": "7",
+      "bbox": [
+        100,
+        250,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/f2twba9w",
+      "id": "8",
+      "bbox": [
+        126,
+        238,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "JWT, refresh/logout, 4 роли и tenant isolation",
+      "textPreview": "JWT, refresh/logout, 4 роли и tenant isolation",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "JWT, refresh/logout, 4 роли и tenant isolation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "JWT, refresh/logout, 4 роли и tenant isolation",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "JWT, refresh/logout, 4 роли и tenant isolation",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1kf25sr",
+      "id": "9",
+      "bbox": [
+        100,
+        304,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4z2h47at",
+      "id": "10",
+      "bbox": [
+        126,
+        292,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Группы, шаблоны, версии и назначение практики",
+      "textPreview": "Группы, шаблоны, версии и назначение практики",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Группы, шаблоны, версии и назначение практики"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Группы, шаблоны, версии и назначение практики",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Группы, шаблоны, версии и назначение практики",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/50bixcbe",
+      "id": "11",
+      "bbox": [
+        100,
+        358,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ixkz2hcn",
+      "id": "12",
+      "bbox": [
+        126,
+        346,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Структурированный редактор: разделы, таблицы, изображения, стили, нумерация",
+      "textPreview": "Структурированный редактор: разделы, таблицы, изображения, стили, нумерация",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Структурированный редактор: разделы, таблицы,"
+          },
+          {
+            "index": 2,
+            "text": "изображения, стили, нумерация"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Структурированный редактор: разделы, таблицы, изображения, стили, нумерация",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Структурированный редактор: разделы, таблицы, изображения, стили, нумерация",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3yt0vmt8",
+      "id": "13",
+      "bbox": [
+        100,
+        412,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c3mh8rap",
+      "id": "14",
+      "bbox": [
+        126,
+        400,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Черновики, отправка, повторная отправка и история версий",
+      "textPreview": "Черновики, отправка, повторная отправка и история версий",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Черновики, отправка, повторная отправка и история"
+          },
+          {
+            "index": 2,
+            "text": "версий"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Черновики, отправка, повторная отправка и история версий",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Черновики, отправка, повторная отправка и история версий",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d4vi1wba",
+      "id": "15",
+      "bbox": [
+        100,
+        466,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1kz6hsz",
+      "id": "16",
+      "bbox": [
+        126,
+        454,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "API проверки: статусы, inline/general comments, ответы и resolve",
+      "textPreview": "API проверки: статусы, inline/general comments, ответы и resolve",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "API проверки: статусы, inline/general comments, ответы и"
+          },
+          {
+            "index": 2,
+            "text": "resolve"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "API проверки: статусы, inline/general comments, ответы и resolve",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "API проверки: статусы, inline/general comments, ответы и resolve",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r2t0zmt4",
+      "id": "17",
+      "bbox": [
+        100,
+        520,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#6D72FF",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ihwnul",
+      "id": "18",
+      "bbox": [
+        126,
+        508,
+        460,
+        42
+      ],
+      "geometry": "rect",
+      "text": "API-экспорт DOCX/PDF с полями, отступами и форматированием",
+      "textPreview": "API-экспорт DOCX/PDF с полями, отступами и форматированием",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "API-экспорт DOCX/PDF с полями, отступами и"
+          },
+          {
+            "index": 2,
+            "text": "форматированием"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "API-экспорт DOCX/PDF с полями, отступами и форматированием",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "API-экспорт DOCX/PDF с полями, отступами и форматированием",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t8rypsb6",
+      "id": "19",
+      "bbox": [
+        650,
+        192,
+        4,
+        416
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9ojeto3u",
+      "id": "20",
+      "bbox": [
+        676,
+        192,
+        510,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Нужно завершить перед пилотом",
+      "textPreview": "Нужно завершить перед пилотом",
+      "resolvedFontSize": 26,
+      "resolvedTextStyle": {
+        "fontSize": 26,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Нужно завершить перед пилотом"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Нужно завершить перед пилотом",
+          "resolvedTextStyle": {
+            "fontSize": 26,
+            "color": "#18233A",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Нужно завершить перед пилотом",
+              "fontSize": 26,
+              "color": "#18233A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nax0jm9",
+      "id": "21",
+      "bbox": [
+        678,
+        250,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nm1wrelo",
+      "id": "22",
+      "bbox": [
+        704,
+        238,
+        450,
+        48
+      ],
+      "geometry": "rect",
+      "text": "UI публикации практики — API есть, кнопки нет",
+      "textPreview": "UI публикации практики — API есть, кнопки нет",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "UI публикации практики — API есть, кнопки нет"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "UI публикации практики — API есть, кнопки нет",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "UI публикации практики — API есть, кнопки нет",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m1sfy94j",
+      "id": "23",
+      "bbox": [
+        678,
+        311,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xs3yx836",
+      "id": "24",
+      "bbox": [
+        704,
+        299,
+        450,
+        48
+      ],
+      "geometry": "rect",
+      "text": "UI review/comments/history и скачивание экспортов",
+      "textPreview": "UI review/comments/history и скачивание экспортов",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "UI review/comments/history и скачивание экспортов"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "UI review/comments/history и скачивание экспортов",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "UI review/comments/history и скачивание экспортов",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wrux43ml",
+      "id": "25",
+      "bbox": [
+        678,
+        372,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vq1gvyl0",
+      "id": "26",
+      "bbox": [
+        704,
+        360,
+        450,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Рабочие панели Director и Super Admin",
+      "textPreview": "Рабочие панели Director и Super Admin",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Рабочие панели Director и Super Admin"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Рабочие панели Director и Super Admin",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Рабочие панели Director и Super Admin",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/apsf2t4f",
+      "id": "27",
+      "bbox": [
+        678,
+        433,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5w3y1832",
+      "id": "28",
+      "bbox": [
+        704,
+        421,
+        450,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Управление организациями, профилями, группами — пока seed/API foundation",
+      "textPreview": "Управление организациями, профилями, группами — пока seed/API foundation",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Управление организациями, профилями, группами —"
+          },
+          {
+            "index": 2,
+            "text": "пока seed/API foundation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Управление организациями, профилями, группами — пока seed/API foundation",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Управление организациями, профилями, группами — пока seed/API foundation",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kvux83mh",
+      "id": "29",
+      "bbox": [
+        678,
+        494,
+        12,
+        12
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#FFCC74",
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/21obm5kz",
+      "id": "30",
+      "bbox": [
+        704,
+        482,
+        450,
+        48
+      ],
+      "geometry": "rect",
+      "text": "End-to-end проверка Docker и PDF-зависимостей",
+      "textPreview": "End-to-end проверка Docker и PDF-зависимостей",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#18233A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "End-to-end проверка Docker и PDF-зависимостей"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "End-to-end проверка Docker и PDF-зависимостей",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#18233A"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "End-to-end проверка Docker и PDF-зависимостей",
+              "fontSize": 18,
+              "color": "#18233A"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/32xcva1k",
+      "id": "31",
+      "bbox": [
+        72,
+        680,
+        360,
+        22
+      ],
+      "geometry": "rect",
+      "text": "PracticeFlow  •  3-я защита",
+      "textPreview": "PracticeFlow  •  3-я защита",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "+mn-lt",
+        "color": "#60708D",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PracticeFlow  •  3-я защита"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PracticeFlow  •  3-я защита",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#60708D"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PracticeFlow  •  3-я защита",
+              "fontSize": 13,
+              "color": "#60708D"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

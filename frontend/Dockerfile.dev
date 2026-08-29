@@ -1,0 +1,14 @@
+# node:22-slim
+FROM node@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci && chown -R node:node /app
+
+COPY --chown=node:node . .
+
+USER node
+
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

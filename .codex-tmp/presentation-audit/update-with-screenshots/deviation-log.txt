@@ -1,0 +1,3 @@
+Slide 3: placeholders were replaced because the user supplied actual Google Forms results after the first deck version.
+Slide 6: planned screenshot labels were replaced because the user supplied real PracticeFlow interface screenshots after the first deck version.
+No other slide content, visual system, or speaker notes are intentionally changed.

@@ -1,0 +1,173 @@
+{"kind":"deck","id":"pr/r9np3f","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/ju1t03","slide":1,"title":"PF","textShapes":6}
+{"kind":"shape","id":"sh/o3ahs7i9","slide":1,"bbox":[806,126,326,326]}
+{"kind":"shape","id":"sh/yh4f2x8v","slide":1,"bbox":[836,156,326,326]}
+{"kind":"shape","id":"sh/zidwv2pg","slide":1,"bbox":[866,186,326,326]}
+{"kind":"textbox","id":"sh/876x87qd","slide":1,"text":"PF","textPreview":"PF","textChars":2,"textLines":1,"bbox":[930,272,150,84]}
+{"kind":"textbox","id":"sh/98fe1c7i","slide":1,"text":"PRACTICEFLOW","textPreview":"PRACTICEFLOW","textChars":12,"textLines":1,"bbox":[72,94,380,24]}
+{"kind":"textbox","id":"sh/ml4f6h87","slide":1,"text":"Цифровая платформа\nдля управления\nстуденческой практикой","textPreview":"Цифровая платформа | для управления | студенческой практикой","textChars":56,"textLines":3,"bbox":[72,164,675,220]}
+{"kind":"textbox","id":"sh/nmxwz2ps","slide":1,"text":"3-я защита • честный статус MVP на основе аудита репозитория","textPreview":"3-я защита • честный статус MVP на основе аудита репозитория","textChars":60,"textLines":1,"bbox":[74,424,590,40]}
+{"kind":"shape","id":"sh/wb6xcrq9","slide":1,"bbox":[72,522,246,4]}
+{"kind":"textbox","id":"sh/hcfe5w7u","slide":1,"text":"август 2026","textPreview":"август 2026","textChars":11,"textLines":1,"bbox":[72,546,250,26]}
+{"kind":"textbox","id":"sh/p4ji1cju","slide":1,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/ju1t03","slide":1,"text":"Здравствуйте. PracticeFlow — это платформа, которая переводит работу с отчётами по практике из разрозненных файлов в единый процесс. Сегодня покажу проблему, целевой поток и честный статус MVP по фактическому коду.\n\n[Sources]\nАудит локального репозитория PracticeFlow, 20.08.2026."}
+{"kind":"slide","id":"sl/jtztc2","slide":2,"title":"ПРОБЛЕМА","textShapes":9}
+{"kind":"textbox","id":"sh/32xkbalo","slide":2,"text":"ПРОБЛЕМА","textPreview":"ПРОБЛЕМА","textChars":8,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/mhkj2ts7","slide":2,"text":"Проверка отчётов всё ещё живёт в файлах и пересылках","textPreview":"Проверка отчётов всё ещё живёт в файлах и пересылках","textChars":52,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/nit0by9s","slide":2,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/0vi103a1","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"shape","id":"sh/1wbi9orm","slide":2,"bbox":[144,369,796,4]}
+{"kind":"shape","id":"sh/et0jytsb","slide":2,"bbox":[126,327,86,86]}
+{"kind":"textbox","id":"sh/zu907y9w","slide":2,"text":"Word\nфайлы","textPreview":"Word | файлы","textChars":10,"textLines":2,"bbox":[92,433,156,56]}
+{"kind":"shape","id":"sh/cri1wja5","slide":2,"bbox":[364,327,86,86]}
+{"kind":"textbox","id":"sh/dsri5orq","slide":2,"text":"Письма и\nверсии","textPreview":"Письма и | версии","textChars":15,"textLines":2,"bbox":[330,433,156,56]}
+{"kind":"shape","id":"sh/dsfmhk3q","slide":2,"bbox":[602,327,86,86]}
+{"kind":"textbox","id":"sh/sr6lof25","slide":2,"text":"Ручная\nпроверка","textPreview":"Ручная | проверка","textChars":15,"textLines":2,"bbox":[568,433,156,56]}
+{"kind":"shape","id":"sh/rqxkfal0","slide":2,"bbox":[840,327,86,86]}
+{"kind":"textbox","id":"sh/q5o3m5kf","slide":2,"text":"Оформление\nвручную","textPreview":"Оформление | вручную","textChars":18,"textLines":2,"bbox":[806,433,156,56]}
+{"kind":"textbox","id":"sh/54f2d03u","slide":2,"text":"Много версий отчёта • сложно увидеть, что именно исправить • итоговый документ приходится собирать вручную","textPreview":"Много версий отчёта • сложно увидеть, что именно исправить • итоговый документ приходится собирать вручную","textChars":106,"textLines":1,"bbox":[126,538,942,62]}
+{"kind":"textbox","id":"sh/436lkv29","slide":2,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/jtztc2","slide":2,"text":"Сейчас процесс обычно строится вокруг Word-файлов и почты. Отчёт пересылается несколько раз, преподаватель вручную ищет изменения, а студенту не всегда ясно, к какому месту относится замечание. Отдельная работа — финальное оформление документа.\n\n[Sources]\nЛогически обоснованная проблематика из постановки задачи; статистика не заявляется."}
+{"kind":"slide","id":"sl/k8tm4s","slide":3,"title":"ИССЛЕДОВАНИЕ","textShapes":13}
+{"kind":"textbox","id":"sh/of6xwf6l","slide":3,"text":"ИССЛЕДОВАНИЕ","textPreview":"ИССЛЕДОВАНИЕ","textChars":12,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/adkjidcf","slide":3,"text":"Данные преподавателей добавим после Google Forms","textPreview":"Данные преподавателей добавим после Google Forms","textChars":48,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/betkrit0","slide":3,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/kjmlo7ax","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"textbox","id":"sh/lkv2xcb2","slide":3,"text":"В репозитории нет результатов опроса — статистика намеренно не показана.","textPreview":"В репозитории нет результатов опроса — статистика намеренно не показана.","textChars":72,"textLines":1,"bbox":[72,184,910,32]}
+{"kind":"shape","id":"sh/yhk3mxsr","slide":3,"bbox":[72,272,530,128]}
+{"kind":"textbox","id":"sh/zitkv2tc","slide":3,"text":"Участников","textPreview":"Участников","textChars":10,"textLines":1,"bbox":[100,296,420,28]}
+{"kind":"textbox","id":"sh/8nmls7at","slide":3,"text":"[будет заполнено]","textPreview":"[будет заполнено]","textChars":17,"textLines":1,"bbox":[100,335,450,30]}
+{"kind":"shape","id":"sh/t8v21cbe","slide":3,"bbox":[650,272,530,128]}
+{"kind":"textbox","id":"sh/58zexkny","slide":3,"text":"Основная проблема","textPreview":"Основная проблема","textChars":17,"textLines":1,"bbox":[678,296,420,28]}
+{"kind":"textbox","id":"sh/k7qx4z6t","slide":3,"text":"[будет заполнено]","textPreview":"[будет заполнено]","textChars":17,"textLines":1,"bbox":[678,335,450,30]}
+{"kind":"shape","id":"sh/j6hwvu58","slide":3,"bbox":[72,458,530,128]}
+{"kind":"textbox","id":"sh/yl8f2pon","slide":3,"text":"Интерес к онлайн-проверке","textPreview":"Интерес к онлайн-проверке","textChars":25,"textLines":1,"bbox":[100,482,420,28]}
+{"kind":"textbox","id":"sh/tcjy14na","slide":3,"text":"[будет заполнено]","textPreview":"[будет заполнено]","textChars":17,"textLines":1,"bbox":[100,521,450,30]}
+{"kind":"shape","id":"sh/sbax8z6p","slide":3,"bbox":[650,458,530,128]}
+{"kind":"textbox","id":"sh/7ahwzu54","slide":3,"text":"Востребованная функция","textPreview":"Востребованная функция","textChars":22,"textLines":1,"bbox":[678,482,420,28]}
+{"kind":"textbox","id":"sh/698f6poj","slide":3,"text":"[будет заполнено]","textPreview":"[будет заполнено]","textChars":17,"textLines":1,"bbox":[678,521,450,30]}
+{"kind":"textbox","id":"sh/9gfep076","slide":3,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/k8tm4s","slide":3,"text":"Опрос преподавателей запланирован, но его результатов в проекте нет. Поэтому мы не подменяем исследование предположениями. После Google Forms сюда добавим размер выборки, главную проблему, интерес к онлайн-проверке и приоритетную функцию.\n\n[Sources]\nПоиск по репозиторию: отсутствуют Google Forms, survey/опрос и результаты исследования."}
+{"kind":"slide","id":"sl/4wecoe","slide":4,"title":"РЕШЕНИЕ","textShapes":22}
+{"kind":"textbox","id":"sh/8vmpgb2p","slide":4,"text":"РЕШЕНИЕ","textPreview":"РЕШЕНИЕ","textChars":7,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/qpczyhgz","slide":4,"text":"Один маршрут вместо цепочки файлов","textPreview":"Один маршрут вместо цепочки файлов","textChars":34,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/rql07mxk","slide":4,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/4nuhw7yt","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"textbox","id":"sh/5o3y5cfe","slide":4,"text":"Целевой процесс PracticeFlow","textPreview":"Целевой процесс PracticeFlow","textChars":28,"textLines":1,"bbox":[72,188,380,30]}
+{"kind":"shape","id":"sh/ilszuhgn","slide":4,"bbox":[126,369,1028,4]}
+{"kind":"shape","id":"sh/3mlg32x8","slide":4,"bbox":[92,335,68,68]}
+{"kind":"textbox","id":"sh/ojeh8byd","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[92,352,68,26]}
+{"kind":"textbox","id":"sh/9knihgfi","slide":4,"text":"Шаблон","textPreview":"Шаблон","textChars":6,"textLines":1,"bbox":[58,426,136,44]}
+{"kind":"shape","id":"sh/lknul8nu","slide":4,"bbox":[235,335,68,68]}
+{"kind":"textbox","id":"sh/kjudc369","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[235,352,68,26]}
+{"kind":"textbox","id":"sh/zilcjy54","slide":4,"text":"Группа","textPreview":"Группа","textChars":6,"textLines":1,"bbox":[201,426,136,44]}
+{"kind":"shape","id":"sh/yhcvatoj","slide":4,"bbox":[378,335,68,68]}
+{"kind":"textbox","id":"sh/xg3uhony","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[378,352,68,26]}
+{"kind":"textbox","id":"sh/cfut8j6d","slide":4,"text":"Студент","textPreview":"Студент","textChars":7,"textLines":1,"bbox":[344,426,136,44]}
+{"kind":"shape","id":"sh/belcfy5s","slide":4,"bbox":[521,335,68,68]}
+{"kind":"textbox","id":"sh/adcb6to7","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[521,352,68,26]}
+{"kind":"textbox","id":"sh/hc7utsn2","slide":4,"text":"Заполнение","textPreview":"Заполнение","textChars":10,"textLines":1,"bbox":[487,426,136,44]}
+{"kind":"shape","id":"sh/gbydknmh","slide":4,"bbox":[664,335,68,68]}
+{"kind":"textbox","id":"sh/0r65cvy5","slide":4,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[664,352,68,26]}
+{"kind":"textbox","id":"sh/1sf650zq","slide":4,"text":"Проверка","textPreview":"Проверка","textChars":8,"textLines":1,"bbox":[630,426,136,44]}
+{"kind":"shape","id":"sh/eponalgz","slide":4,"bbox":[807,335,68,68]}
+{"kind":"textbox","id":"sh/fqxo3qhk","slide":4,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[807,352,68,26]}
+{"kind":"textbox","id":"sh/s3658byt","slide":4,"text":"Правки","textPreview":"Правки","textChars":6,"textLines":1,"bbox":[773,426,136,44]}
+{"kind":"shape","id":"sh/dof61gze","slide":4,"bbox":[950,335,68,68]}
+{"kind":"textbox","id":"sh/q1on61g3","slide":4,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[950,352,68,26]}
+{"kind":"textbox","id":"sh/r2xoz6ho","slide":4,"text":"Утверждение","textPreview":"Утверждение","textChars":11,"textLines":1,"bbox":[916,426,136,44]}
+{"kind":"shape","id":"sh/4zm54byx","slide":4,"bbox":[1093,335,68,68]}
+{"kind":"textbox","id":"sh/50v6xgzi","slide":4,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[1093,352,68,26]}
+{"kind":"textbox","id":"sh/7udon614","slide":4,"text":"Word / PDF","textPreview":"Word / PDF","textChars":10,"textLines":1,"bbox":[1059,426,136,44]}
+{"kind":"textbox","id":"sh/6tk7e1kj","slide":4,"text":"Роли разделены: преподаватель задаёт структуру и проверяет; студент работает только со своим черновиком.","textPreview":"Роли разделены: преподаватель задаёт структуру и проверяет; студент работает только со своим черновиком.","textChars":104,"textLines":1,"bbox":[128,551,1000,36]}
+{"kind":"textbox","id":"sh/twv6pwja","slide":4,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/4wecoe","slide":4,"text":"Решение строится как единый маршрут: преподаватель создаёт шаблон и назначает практику группе, студент заполняет свой экземпляр, затем начинается проверка, правки и финальное утверждение с экспортом. Этот поток — целевая модель; ниже я отделяю уже реализованные участки от недостающих экранов.\n\n[Sources]\nПостановка задачи пользователя; реализация сверена с API и фронтендом."}
+{"kind":"slide","id":"sl/cos4j3","slide":5,"title":"ФАКТИЧЕСКИЙ СТАТУС","textShapes":17}
+{"kind":"textbox","id":"sh/axk7yto7","slide":5,"text":"ФАКТИЧЕСКИЙ СТАТУС","textPreview":"ФАКТИЧЕСКИЙ СТАТУС","textChars":18,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/zyhkjqhg","slide":5,"text":"MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут","textPreview":"MVP: сильный API-фундамент, но пользовательский поток ещё не замкнут","textChars":68,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/yx8jq50v","slide":5,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/dwz2h0za","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"shape","id":"sh/cvq1ovip","slide":5,"bbox":[72,192,4,416]}
+{"kind":"textbox","id":"sh/buhkfqhk","slide":5,"text":"Реализовано в коде и API","textPreview":"Реализовано в коде и API","textChars":24,"textLines":1,"bbox":[98,192,470,34]}
+{"kind":"shape","id":"sh/qt8jml0z","slide":5,"bbox":[100,250,12,12]}
+{"kind":"textbox","id":"sh/hs32tkzu","slide":5,"text":"JWT, refresh/logout, 4 роли и tenant isolation","textPreview":"JWT, refresh/logout, 4 роли и tenant isolation","textChars":46,"textLines":1,"bbox":[126,238,460,42]}
+{"kind":"shape","id":"sh/wru10fi9","slide":5,"bbox":[100,304,12,12]}
+{"kind":"textbox","id":"sh/ap4bidc7","slide":5,"text":"Группы, шаблоны, версии и назначение практики","textPreview":"Группы, шаблоны, версии и назначение практики","textChars":45,"textLines":1,"bbox":[126,292,460,42]}
+{"kind":"shape","id":"sh/bqxsbits","slide":5,"bbox":[100,358,12,12]}
+{"kind":"textbox","id":"sh/cb6tknud","slide":5,"text":"Структурированный редактор: разделы, таблицы, изображения, стили, нумерация","textPreview":"Структурированный редактор: разделы, таблицы, изображения, стили, нумерация","textChars":75,"textLines":1,"bbox":[126,346,460,42]}
+{"kind":"shape","id":"sh/xcfadsbi","slide":5,"bbox":[100,412,12,12]}
+{"kind":"textbox","id":"sh/2l4bedcv","slide":5,"text":"Черновики, отправка, повторная отправка и история версий","textPreview":"Черновики, отправка, повторная отправка и история версий","textChars":56,"textLines":1,"bbox":[126,400,460,42]}
+{"kind":"shape","id":"sh/nmds7itg","slide":5,"bbox":[100,466,12,12]}
+{"kind":"textbox","id":"sh/onmtgnu1","slide":5,"text":"API проверки: статусы, inline/general comments, ответы и resolve","textPreview":"API проверки: статусы, inline/general comments, ответы и resolve","textChars":64,"textLines":1,"bbox":[126,454,460,42]}
+{"kind":"shape","id":"sh/pova9sbm","slide":5,"bbox":[100,520,12,12]}
+{"kind":"textbox","id":"sh/mhobqxcf","slide":5,"text":"API-экспорт DOCX/PDF с полями, отступами и форматированием","textPreview":"API-экспорт DOCX/PDF с полями, отступами и форматированием","textChars":58,"textLines":1,"bbox":[126,508,460,42]}
+{"kind":"shape","id":"sh/7ihcj2t0","slide":5,"bbox":[650,192,4,416]}
+{"kind":"textbox","id":"sh/jm98bu9c","slide":5,"text":"Нужно завершить перед пилотом","textPreview":"Нужно завершить перед пилотом","textChars":29,"textLines":1,"bbox":[676,192,510,34]}
+{"kind":"shape","id":"sh/i1072psr","slide":5,"bbox":[678,250,12,12]}
+{"kind":"textbox","id":"sh/5orqd4r2","slide":5,"text":"UI публикации практики — API есть, кнопки нет","textPreview":"UI публикации практики — API есть, кнопки нет","textChars":45,"textLines":1,"bbox":[704,238,450,48]}
+{"kind":"shape","id":"sh/4nip4zax","slide":5,"bbox":[678,311,12,12]}
+{"kind":"textbox","id":"sh/rq98fe98","slide":5,"text":"UI review/comments/history и скачивание экспортов","textPreview":"UI review/comments/history и скачивание экспортов","textChars":49,"textLines":1,"bbox":[704,299,450,48]}
+{"kind":"shape","id":"sh/6p0769sn","slide":5,"bbox":[678,372,12,12]}
+{"kind":"textbox","id":"sh/tsbqhore","slide":5,"text":"Рабочие панели Director и Super Admin","textPreview":"Рабочие панели Director и Super Admin","textChars":37,"textLines":1,"bbox":[704,360,450,48]}
+{"kind":"shape","id":"sh/sr2p8jat","slide":5,"bbox":[678,433,12,12]}
+{"kind":"textbox","id":"sh/fut8je9k","slide":5,"text":"Управление организациями, профилями, группами — пока seed/API foundation","textPreview":"Управление организациями, профилями, группами — пока seed/API foundation","textChars":72,"textLines":1,"bbox":[704,421,450,48]}
+{"kind":"shape","id":"sh/etk7atsz","slide":5,"bbox":[678,494,12,12]}
+{"kind":"textbox","id":"sh/cjmp0j6x","slide":5,"text":"End-to-end проверка Docker и PDF-зависимостей","textPreview":"End-to-end проверка Docker и PDF-зависимостей","textChars":45,"textLines":1,"bbox":[704,482,450,48]}
+{"kind":"textbox","id":"sh/xkv69o7i","slide":5,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/cos4j3","slide":5,"text":"По коду реализованы авторизация, роли и tenant isolation, группы и версии шаблонов, документный редактор, отправка и повторная отправка. На backend есть review, комментарии и DOCX/PDF export. Но фронтенд пока не выводит публикацию, проверку, историю и скачивание; Director и Super Admin — заглушки. Поэтому MVP нельзя объявлять готовым end-to-end.\n\n[Sources]\nbackend/app/api/v1, backend/app/services, frontend/src/App.tsx и frontend/src/features; практический запуск не подтверждён из-за окружения."}
+{"kind":"slide","id":"sl/ouxbny","slide":6,"title":"ДЕМОНСТРАЦИЯ","textShapes":22}
+{"kind":"textbox","id":"sh/29wf6tob","slide":6,"text":"ДЕМОНСТРАЦИЯ","textPreview":"ДЕМОНСТРАЦИЯ","textChars":12,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/8vu54v2l","slide":6,"text":"На защите показываем только реальные экраны после запуска","textPreview":"На защите показываем только реальные экраны после запуска","textChars":57,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/tw3mx0j6","slide":6,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/ypsny1kj","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"textbox","id":"sh/zq14r6lo","slide":6,"text":"Скриншотов интерфейса в репозитории нет. Ниже — честный список кадров для захвата после исправления окружения.","textPreview":"Скриншотов интерфейса в репозитории нет. Ниже — честный список кадров для захвата после исправления окружения.","textChars":110,"textLines":1,"bbox":[72,184,1050,36]}
+{"kind":"shape","id":"sh/kra50b29","slide":6,"bbox":[72,268,530,146]}
+{"kind":"textbox","id":"sh/lsjmtgju","slide":6,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[98,293,54,36]}
+{"kind":"textbox","id":"sh/ilcna5kn","slide":6,"text":"Teacher • Мои группы","textPreview":"Teacher • Мои группы","textChars":20,"textLines":1,"bbox":[168,290,376,28]}
+{"kind":"textbox","id":"sh/3m5o3a18","slide":6,"text":"/groups","textPreview":"/groups","textChars":7,"textLines":1,"bbox":[168,327,380,24]}
+{"kind":"textbox","id":"sh/juhcrql8","slide":6,"text":"Список закреплённых групп","textPreview":"Список закреплённых групп","textChars":25,"textLines":1,"bbox":[168,360,400,27]}
+{"kind":"shape","id":"sh/yt8byl4n","slide":6,"bbox":[638,268,530,146]}
+{"kind":"textbox","id":"sh/lwzut03e","slide":6,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[664,293,54,36]}
+{"kind":"textbox","id":"sh/kvqt0vmt","slide":6,"text":"Template editor","textPreview":"Template editor","textChars":15,"textLines":1,"bbox":[734,290,376,28]}
+{"kind":"textbox","id":"sh/7ihcvqlk","slide":6,"text":"/templates/:id/versions/:id","textPreview":"/templates/:id/versions/:id","textChars":27,"textLines":1,"bbox":[734,327,380,24]}
+{"kind":"textbox","id":"sh/6x8v2l4z","slide":6,"text":"Структура, стили и A4 preview","textPreview":"Структура, стили и A4 preview","textChars":29,"textLines":1,"bbox":[734,360,400,27]}
+{"kind":"shape","id":"sh/tkzux03a","slide":6,"bbox":[72,452,530,146]}
+{"kind":"textbox","id":"sh/8jqd4vmp","slide":6,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[98,477,54,36]}
+{"kind":"textbox","id":"sh/vm1czalg","slide":6,"text":"Student • Мои отчёты","textPreview":"Student • Мои отчёты","textChars":20,"textLines":1,"bbox":[168,474,376,28]}
+{"kind":"textbox","id":"sh/ulsv654v","slide":6,"text":"/reports","textPreview":"/reports","textChars":8,"textLines":1,"bbox":[168,511,380,24]}
+{"kind":"textbox","id":"sh/qhcfy9o3","slide":6,"text":"Назначенный отчёт и статус","textPreview":"Назначенный отчёт и статус","textChars":26,"textLines":1,"bbox":[168,544,400,27]}
+{"kind":"shape","id":"sh/rilwre5o","slide":6,"bbox":[638,452,530,146]}
+{"kind":"textbox","id":"sh/sjux0j69","slide":6,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[664,477,54,36]}
+{"kind":"textbox","id":"sh/dknyt4nu","slide":6,"text":"Student report editor","textPreview":"Student report editor","textChars":21,"textLines":1,"bbox":[734,474,376,28]}
+{"kind":"textbox","id":"sh/idcfupo7","slide":6,"text":"/reports/:id/edit","textPreview":"/reports/:id/edit","textChars":17,"textLines":1,"bbox":[734,511,380,24]}
+{"kind":"textbox","id":"sh/3elwnu5s","slide":6,"text":"Редактирование только разрешённых разделов","textPreview":"Редактирование только разрешённых разделов","textChars":42,"textLines":1,"bbox":[734,544,400,27]}
+{"kind":"textbox","id":"sh/4fuxwz6x","slide":6,"text":"Не добавлять фейковые кадры review/export: этих экранов во frontend пока нет.","textPreview":"Не добавлять фейковые кадры review/export: этих экранов во frontend пока нет.","textChars":77,"textLines":1,"bbox":[72,625,1060,30]}
+{"kind":"textbox","id":"sh/5g3ep4ni","slide":6,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/ouxbny","slide":6,"text":"Для демонстрации нужны только реальные экраны из запущенного проекта: группы преподавателя, редактор шаблона, список отчётов студента и редактор отчёта. В репозитории нет готовых UI-скриншотов. Не стоит показывать review или export как существующие экраны: на backend API они есть, но frontend-интерфейс отсутствует.\n\n[Sources]\nfrontend/src/App.tsx и frontend/src/features; в репозитории нет screenshot-файлов UI."}
+{"kind":"slide","id":"sl/n4fvlo","slide":7,"title":"ИТОГ И ПЛАН","textShapes":17}
+{"kind":"textbox","id":"sh/29orqdgb","slide":7,"text":"ИТОГ И ПЛАН","textPreview":"ИТОГ И ПЛАН","textChars":11,"textLines":1,"bbox":[72,50,500,22]}
+{"kind":"textbox","id":"sh/836h4f6t","slide":7,"text":"Следующий этап — замкнуть путь пользователя и подтвердить его на практике","textPreview":"Следующий этап — замкнуть путь пользователя и подтвердить его на практике","textChars":73,"textLines":1,"bbox":[72,82,1020,60]}
+{"kind":"shape","id":"sh/tofixk7e","slide":7,"bbox":[72,151,76,4]}
+{"kind":"textbox","id":"sh/yx4zy5or","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1140,54,66,28]}
+{"kind":"shape","id":"sh/jyx0rqpc","slide":7,"bbox":[144,378,902,4]}
+{"kind":"shape","id":"sh/kz6h0v6x","slide":7,"bbox":[114,344,72,72]}
+{"kind":"textbox","id":"sh/l0fit07i","slide":7,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[114,364,72,22]}
+{"kind":"textbox","id":"sh/at4zulov","slide":7,"text":"Сейчас","textPreview":"Сейчас","textChars":6,"textLines":1,"bbox":[94,450,112,26]}
+{"kind":"textbox","id":"sh/bud0nqpg","slide":7,"text":"MVP-фундамент","textPreview":"MVP-фундамент","textChars":13,"textLines":1,"bbox":[52,486,196,56]}
+{"kind":"shape","id":"sh/jqtonuxs","slide":7,"bbox":[368,344,72,72]}
+{"kind":"textbox","id":"sh/ipk7upw7","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,364,72,22]}
+{"kind":"textbox","id":"sh/5sv6p4fi","slide":7,"text":"Дальше","textPreview":"Дальше","textChars":6,"textLines":1,"bbox":[348,450,112,26]}
+{"kind":"textbox","id":"sh/krmpwzed","slide":7,"text":"Публикация + review UI","textPreview":"Публикация + review UI","textChars":22,"textLines":1,"bbox":[306,486,196,56]}
+{"kind":"shape","id":"sh/7edorexo","slide":7,"bbox":[622,344,72,72]}
+{"kind":"textbox","id":"sh/6t47y9w3","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[622,364,72,22]}
+{"kind":"textbox","id":"sh/tgv6t4fu","slide":7,"text":"Затем","textPreview":"Затем","textChars":5,"textLines":1,"bbox":[602,450,112,26]}
+{"kind":"textbox","id":"sh/sfmp0je9","slide":7,"text":"Export UI + стабильный Docker","textPreview":"Export UI + стабильный Docker","textChars":29,"textLines":1,"bbox":[560,486,196,56]}
+{"kind":"shape","id":"sh/ni9ofaxk","slide":7,"bbox":[876,344,72,72]}
+{"kind":"textbox","id":"sh/mx0nm5wz","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[876,364,72,22]}
+{"kind":"textbox","id":"sh/qd8rudgn","slide":7,"text":"Финал","textPreview":"Финал","textChars":5,"textLines":1,"bbox":[856,450,112,26]}
+{"kind":"textbox","id":"sh/behs3ih8","slide":7,"text":"Пилот с преподавателями","textPreview":"Пилот с преподавателями","textChars":23,"textLines":1,"bbox":[814,486,196,56]}
+{"kind":"textbox","id":"sh/cfq9wnyt","slide":7,"text":"PracticeFlow создаёт прозрачный маршрут практики — от структуры отчёта до проверяемого результата.","textPreview":"PracticeFlow создаёт прозрачный маршрут практики — от структуры отчёта до проверяемого результата.","textChars":98,"textLines":1,"bbox":[160,604,960,38]}
+{"kind":"textbox","id":"sh/dgza5szy","slide":7,"text":"PracticeFlow  •  3-я защита","textPreview":"PracticeFlow  •  3-я защита","textChars":27,"textLines":1,"bbox":[72,680,360,22]}
+{"kind":"notes","id":"nt/n4fvlo","slide":7,"text":"Итог такой: у проекта уже есть серьёзный фундамент, но следующий приоритет — соединить реализованный backend с полноценным пользовательским опытом и проверить весь маршрут в нормальном развёртывании. Ценность PracticeFlow — сделать путь от шаблона до результата прозрачным и управляемым для преподавателя и студента.\n\n[Sources]\nВывод основан на аудите реализации и практических проверках окружения, 20.08.2026."}

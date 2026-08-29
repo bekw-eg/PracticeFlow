@@ -1,0 +1,44 @@
+name: Release image signing (template)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_ref:
+        description: Immutable, already-published image reference (registry/repository@sha256:...)
+        required: false
+        type: string
+      perform_sign:
+        description: Set to true only after the registry image and its SBOM have been reviewed
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  sign:
+    name: Keyless Cosign signing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
+
+      - name: Validate requested immutable image reference
+        env:
+          IMAGE_REF: ${{ inputs.image_ref }}
+        run: |
+          if [ -z "$IMAGE_REF" ]; then
+            echo "Template mode: no image reference supplied; no registry operation will occur."
+            exit 0
+          fi
+          case "$IMAGE_REF" in
+            *@sha256:[0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;;
+            *) echo "image_ref must be an immutable digest reference"; exit 1 ;;
+          esac
+
+      - name: Sign production image with GitHub OIDC (keyless)
+        if: ${{ inputs.perform_sign && inputs.image_ref != '' }}
+        env:
+          IMAGE_REF: ${{ inputs.image_ref }}
+        run: cosign sign --yes "$IMAGE_REF"

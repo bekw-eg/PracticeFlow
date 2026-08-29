@@ -1,0 +1,13 @@
+Business model source notes
+
+1. Product scope: local PracticeFlow code audit and MVP presentation, August 2026.
+   Implemented focus: teacher groups/templates, structured report editor, roles, API workflow.
+   Commercial gaps to fund: publishing UI, review/comments/history UI, export UI, Docker/PDF stabilization.
+
+2. Problem validation: user-provided Google Forms screenshots in feedback folder.
+   Sample: 6 responses. 83.3% reported 5–10 hours per week reviewing reports;
+   83.3% were ready to test a first version.
+
+3. All pricing, volumes, costs, margin, and timing in the workbook are planning assumptions,
+   not observed market data or investment advice. Currency assumed: Kazakhstani tenge (KZT).
+   Replace after customer discovery, quotations, and procurement review.

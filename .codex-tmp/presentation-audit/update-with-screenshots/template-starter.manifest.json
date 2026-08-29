@@ -1,0 +1,89 @@
+{
+  "sourcePptx": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\PracticeFlow_3rd_defense_audit.pptx",
+  "mapPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-frame-map.json",
+  "output": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter.pptx",
+  "outputBytes": 39692,
+  "sourceSlideCount": 7,
+  "slideCount": 7,
+  "previewDir": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview",
+  "layoutDir": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout",
+  "slides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "opening brand chrome",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 1,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-01.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-01.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-01.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-01.layout.json"
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "problem evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 1,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-02.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-02.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-02.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-02.layout.json"
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "survey evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-03.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-03.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-03.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-03.layout.json"
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "workflow map",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 1,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-04.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-04.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-04.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-04.layout.json"
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "narrativeRole": "MVP status analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 1,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-05.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-05.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-05.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-05.layout.json"
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "narrativeRole": "product evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 2,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-06.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-06.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-06.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-06.layout.json"
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 7,
+      "narrativeRole": "closing summary",
+      "reuseMode": "duplicate-slide",
+      "editTargetCount": 1,
+      "previewPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-preview\\starter-slide-07.png",
+      "previewRelativePath": "template-starter-preview/starter-slide-07.png",
+      "layoutPath": "C:\\Users\\zdeat\\Downloads\\practiceflow-phase3-backend-checkpoint_1\\.codex-tmp\\presentation-audit\\update-with-screenshots\\template-starter-layout\\starter-slide-07.layout.json",
+      "layoutRelativePath": "template-starter-layout/starter-slide-07.layout.json"
+    }
+  ]
+}

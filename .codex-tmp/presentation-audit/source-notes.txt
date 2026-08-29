@@ -1,0 +1,4 @@
+Presentation claims are derived only from the local PracticeFlow repository audit on 2026-08-20.
+No external assets or external statistics are used.
+Google Forms results were not found in the repository and are represented only as placeholders.
+The deck intentionally does not include product screenshots because no UI screenshots were present and the application could not be launched in this environment.

@@ -1,0 +1,31 @@
+{
+    email {$CADDY_EMAIL}
+}
+
+http://{$PRACTICEFLOW_DOMAIN} {
+    redir https://{host}{uri} permanent
+}
+
+https://{$PRACTICEFLOW_DOMAIN} {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        -Server
+    }
+
+    @metrics path /metrics
+    handle @metrics {
+        @monitoring_network remote_ip {$METRICS_ALLOWED_CIDR}
+        handle @monitoring_network {
+            reverse_proxy backend:8000
+        }
+        respond "Forbidden" 403
+    }
+
+    handle {
+        # Caddy deliberately discards client-supplied X-Forwarded-* values by
+        # default and writes its own values for the immediate remote client.
+        reverse_proxy frontend:8080
+    }
+}

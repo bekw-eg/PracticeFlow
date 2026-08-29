@@ -1,0 +1,64 @@
+services:
+  test-db:
+    # postgres:16.15-alpine3.24
+    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: ${TEST_POSTGRES_USER:-practiceflow_test}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-practiceflow_test_local_only}
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-practiceflow_test}
+    ports:
+      - "127.0.0.1:${TEST_POSTGRES_PORT:-5433}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 512M }
+        reservations: { cpus: "0.25", memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TEST_POSTGRES_USER:-practiceflow_test} -d ${TEST_POSTGRES_DB:-practiceflow_test}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  migration-db:
+    profiles: ["migration"]
+    # postgres:16.15-alpine3.24
+    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: ${TEST_POSTGRES_USER:-practiceflow_test}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-practiceflow_test_local_only}
+      POSTGRES_DB: practiceflow_migration_test
+    ports:
+      - "127.0.0.1:${MIGRATION_POSTGRES_PORT:-5434}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 512M }
+        reservations: { cpus: "0.25", memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TEST_POSTGRES_USER:-practiceflow_test} -d practiceflow_migration_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  backend-test:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      test-db:
+        condition: service_healthy
+    entrypoint: []
+    environment:
+      ENV: test
+      DATABASE_URL: postgresql+psycopg://practiceflow_test:practiceflow_test_local_only@test-db:5432/practiceflow_app_unused
+      TEST_DATABASE_URL: postgresql+psycopg://practiceflow_test:practiceflow_test_local_only@test-db:5432/practiceflow_test
+      JWT_SECRET_KEY: test-only-secret-that-is-not-used-in-production
+      STORAGE_LOCAL_PATH: /app/storage_data
+    command: ["pytest", "app/tests", "-q", "-p", "no:cacheprovider"]
+    deploy:
+      resources:
+        limits: { cpus: "0.75", memory: 1G }
+        reservations: { cpus: "0.25", memory: 384M }

@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: #0f1b2d;
+  --color-ink-soft: #3a4a63;
+  --color-muted: #667085;
+  --color-surface: #f6f7fb;
+  --color-card: #ffffff;
+  --color-border: #e2e5ee;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #dde5ff;
+  --color-brand-500: #2452e8;
+  --color-brand-600: #1c3fc4;
+  --color-brand-700: #17348c;
+
+  --color-amber-500: #d98e2b;
+  --color-amber-50: #fdf3e4;
+
+  --color-success-500: #1e9e6b;
+  --color-success-50: #e8f8f1;
+
+  --color-danger-500: #d83a3a;
+  --color-danger-50: #fdeaea;
+
+  --shadow-card: 0 1px 2px rgba(15, 27, 45, 0.04), 0 8px 24px rgba(15, 27, 45, 0.05);
+  --shadow-float: 0 16px 42px rgba(15, 27, 45, 0.14), 0 2px 8px rgba(15, 27, 45, 0.06);
+}
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-surface);
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 90% -10%, color-mix(in srgb, var(--color-brand-100) 65%, transparent), transparent 30rem),
+    var(--color-surface);
+  color: var(--color-ink);
+  text-rendering: optimizeLegibility;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button:not(:disabled), [role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-brand-500) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+.input {
+  @apply w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm text-[var(--color-ink)] shadow-[0_1px_1px_rgba(15,27,45,0.02)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--color-muted)] hover:border-[#cbd1df] focus:border-[var(--color-brand-500)] focus:ring-4 focus:ring-[var(--color-brand-100)] disabled:cursor-not-allowed disabled:bg-[var(--color-surface)] disabled:text-[var(--color-muted)] disabled:opacity-70;
+}
+
+.form-label {
+  @apply mb-1.5 block text-sm font-semibold text-[var(--color-ink-soft)];
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 disabled:pointer-events-none disabled:opacity-55;
+}
+
+.btn-primary {
+  @apply bg-[var(--color-brand-500)] text-white shadow-[0_2px_4px_rgba(36,82,232,0.2)] hover:bg-[var(--color-brand-600)] hover:shadow-[0_5px_14px_rgba(36,82,232,0.25)] active:translate-y-px;
+}
+
+.btn-secondary {
+  @apply border border-[var(--color-border)] bg-white text-[var(--color-ink-soft)] shadow-[0_1px_2px_rgba(15,27,45,0.03)] hover:border-[#cbd1df] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
+}
+
+.btn-ghost {
+  @apply text-[var(--color-ink-soft)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
+}
+
+.btn-danger {
+  @apply border border-[var(--color-danger-500)] bg-white text-[var(--color-danger-500)] hover:bg-[var(--color-danger-50)];
+}
+
+.icon-button {
+  @apply inline-flex size-10 items-center justify-center rounded-xl text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
+}
+
+.card {
+  @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)];
+}
+
+.page-kicker {
+  @apply text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-brand-600)];
+}
+
+.page-title {
+  @apply font-display text-2xl font-extrabold tracking-[-0.025em] text-[var(--color-ink)] sm:text-3xl;
+}
+
+.page-description {
+  @apply mt-1.5 max-w-2xl text-sm leading-6 text-[var(--color-muted)];
+}
+
+.empty-state {
+  @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-6 py-12 text-center shadow-[var(--shadow-card)];
+}
+
+.loading-state {
+  @apply flex min-h-36 items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--color-border)] bg-white/60 px-6 py-10 text-sm font-medium text-[var(--color-muted)];
+}
+
+.table-frame {
+  @apply overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)];
+}
+
+.table-base {
+  @apply w-full text-left text-sm;
+}
+
+.table-base thead {
+  @apply border-b border-[var(--color-border)] bg-[#f9fafc] text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)];
+}
+
+.table-base tbody tr {
+  @apply border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-brand-50)]/40;
+}
+
+/* Tiptap editor surface (rule 15 A4 editor UX: readable academic typography) */
+.pf-editor-surface .ProseMirror {
+  min-height: 120px;
+  outline: none;
+  font-family: "Times New Roman", serif;
+  font-size: 14pt;
+  line-height: 1.5;
+}
+
+.pf-editor-surface:focus-within {
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 4px var(--color-brand-100);
+}
+
+.pf-editor-surface .ProseMirror:focus-visible {
+  outline: none;
+}
+
+.pf-editor-surface .ProseMirror p {
+  margin: 0 0 8pt;
+  text-indent: 12.5mm;
+  text-align: justify;
+}
+
+.pf-editor-surface .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-muted);
+  text-indent: 0;
+  pointer-events: none;
+}
+
+.pf-editor-surface .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8pt 0;
+}
+
+.pf-editor-surface .ProseMirror td,
+.pf-editor-surface .ProseMirror th {
+  border: 1px solid var(--color-border);
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.pf-variable-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--color-brand-50);
+  color: var(--color-brand-700);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.pf-pagenumber-chip {
+  display: inline-flex;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.pf-pagebreak {
+  height: 1px;
+  margin: 16px 0;
+  background: repeating-linear-gradient(to right, var(--color-border) 0 6px, transparent 6px 12px);
+}
