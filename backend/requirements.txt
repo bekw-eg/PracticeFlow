@@ -51,7 +51,7 @@ tinycss2==1.5.1
 tinyhtml5==2.1.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
-uvicorn==0.52.1
+uvicorn==0.52.4
 uvloop==0.22.1; sys_platform != "win32"
 watchfiles==1.2.0
 weasyprint==69.0
