@@ -12,7 +12,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # nginxinc/nginx-unprivileged:1.30.4-alpine3.24
-FROM nginxinc/nginx-unprivileged@sha256:5961e0cdaabc43fea28b3bc9228c1ee7e6bd2c47bd93d79e2a2399bb67fc924a
+FROM nginxinc/nginx-unprivileged@sha256:e44b470e571b20d935336bfb9f8277c1468d15e1e4d105a12ab5609d0b4682cb
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
