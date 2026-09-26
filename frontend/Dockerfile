@@ -1,5 +1,5 @@
 # node:22-alpine (Alpine 3.24)
-FROM node@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
+FROM node@sha256:a723b54c35a76e947095a20a67d39585bb09c862e6b1adeb8a9f518f95e34fb0 AS build
 
 WORKDIR /app
 
