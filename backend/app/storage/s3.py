@@ -7,6 +7,8 @@ bytes from this private bucket to the caller.
 from __future__ import annotations
 
 import time
+import uuid
+from contextlib import suppress
 from typing import BinaryIO, Iterator, cast
 
 import boto3
@@ -16,7 +18,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from app.core.config import settings
 from app.observability.metrics import metrics
-from app.storage.base import StorageService, StorageUnavailableError, validate_storage_key
+from app.storage.base import StorageObjectExistsError, StorageService, StorageUnavailableError, validate_storage_key
 
 
 _NOT_FOUND_CODES = {"404", "NoSuchKey", "NoSuchBucket", "NotFound"}
@@ -96,6 +98,41 @@ class S3StorageService(StorageService):
         finally:
             metrics.observe_storage_operation("s3", "upload", result, time.perf_counter() - started)
         return key
+
+    def save_new(self, key: str, data: BinaryIO, content_type: str) -> str:
+        key = validate_storage_key(key)
+        started = time.perf_counter()
+        result = "failure"
+        write_id = uuid.uuid4().hex
+        try:
+            # A single conditional PUT accepts the bounded staged stream.
+            # No preflight HEAD race, public ACL, or presigned URL is involved.
+            self.client.put_object(
+                Bucket=self.bucket, Key=key, Body=data, ContentType=content_type, IfNoneMatch="*",
+                Metadata={"pf-write-id": write_id},
+            )
+            result = "success"
+            return key
+        except ClientError as exc:
+            self._remove_failed_new_object(key, write_id)
+            code = str(exc.response.get("Error", {}).get("Code", ""))
+            if code in {"412", "PreconditionFailed", "ConditionalRequestConflict", "409"}:
+                raise StorageObjectExistsError("Private object already exists") from exc
+            raise self._unavailable(exc) from exc
+        except (BotoCoreError, OSError) as exc:
+            self._remove_failed_new_object(key, write_id)
+            raise self._unavailable(exc) from exc
+        finally:
+            metrics.observe_storage_operation("s3", "upload", result, time.perf_counter() - started)
+
+    def _remove_failed_new_object(self, key: str, write_id: str) -> None:
+        # A remote PUT may succeed before its acknowledgement is lost. Only a
+        # marker from this invocation authorizes removing that unowned object.
+        # Never delete a pre-existing key after a conditional-write rejection.
+        with suppress(BotoCoreError, ClientError, OSError, AttributeError):
+            head = self.client.head_object(Bucket=self.bucket, Key=key)
+            if head.get("Metadata", {}).get("pf-write-id") == write_id and head.get("ETag"):
+                self.client.delete_object(Bucket=self.bucket, Key=key, IfMatch=head["ETag"])
 
     def get(self, key: str) -> bytes:
         key = validate_storage_key(key)

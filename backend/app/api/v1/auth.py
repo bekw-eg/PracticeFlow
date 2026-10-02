@@ -12,7 +12,7 @@ from app.rate_limit.base import LoginRateLimiter
 from app.rate_limit.dependencies import get_login_rate_limiter, get_mfa_rate_limiter
 from app.repositories.user_repository import UserRepository
 from app.schemas.access import CompleteAccessRequest, OrganizationChoice, SwitchOrganizationRequest
-from app.schemas.auth import CurrentUserResponse, LoginRequest, TokenResponse
+from app.schemas.auth import CurrentUserResponse, LoginRequest, ProductFeatures, TokenResponse
 from app.schemas.mfa import (
     MfaBreakGlassStartRequest,
     MfaChallengeResponse,
@@ -151,6 +151,7 @@ def me(ctx: RequestContext = Depends(get_current_context), db: Session = Depends
         full_name=user.full_name,
         email=user.email,
         role=ctx.role,
+        features=ProductFeatures(document_check_enabled=settings.DOCUMENT_CHECK_ENABLED, legacy_document_editor_enabled=settings.LEGACY_DOCUMENT_EDITOR_ENABLED),
     )
 
 

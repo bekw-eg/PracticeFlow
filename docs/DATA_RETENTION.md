@@ -54,6 +54,13 @@ environment.
 
 ## Audit immutability limitation
 
+Group review presentation drafts, immutable snapshots and generated private
+PPTX files are retained without an automatic TTL. Include `group_review_reports`
+and their private storage objects in coordinated backups and tenant retention
+planning. Source DOCX retention cleanup does not delete these reports. See
+[group review presentations](GROUP_REVIEW_PRESENTATIONS.md) for access,
+generation and migration rollback boundaries.
+
 The application audit trail is hash chained in PostgreSQL and can detect many
 consistency breaks within the retained segment. It is **not** true WORM storage:
 

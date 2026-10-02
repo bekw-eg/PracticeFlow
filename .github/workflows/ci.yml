@@ -74,7 +74,7 @@ jobs:
       - name: Backend tests
         run: |
           mkdir -p "$GITHUB_WORKSPACE/artifacts/tests"
-          pytest app/tests -q --junitxml="$GITHUB_WORKSPACE/artifacts/tests/backend-junit.xml"
+          pytest app/tests unit_tests -q --junitxml="$GITHUB_WORKSPACE/artifacts/tests/backend-junit.xml"
       - name: Python dependency audit
         run: pip-audit -r requirements.txt
       - name: Capacity configuration policy

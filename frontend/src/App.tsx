@@ -14,8 +14,14 @@ import { AdminPlaceholderPage } from "./features/admin/AdminPlaceholderPage";
 import { AuditLogPage } from "./features/audit/AuditLogPage";
 import { StudentProfilePage } from "./features/profile/StudentProfilePage";
 import { TeacherReportPage } from "./features/reports/TeacherReportPage";
+import { CheckProfilesPage } from "./features/documentChecks/CheckProfilesPage";
+import { CheckProfileRuleEditorPage } from "./features/documentChecks/CheckProfileRuleEditorPage";
+import { TeacherDocumentChecksPage } from "./features/documentChecks/TeacherDocumentChecksPage";
+import { ReviewGroupsPage, ReviewGroupPage } from "./features/documentChecks/ReviewGroupsPage";
+import { TeacherDocumentReviewPage } from "./features/documentChecks/TeacherDocumentReviewPage";
 import { ToastViewport } from "./components/ToastViewport";
 import { LoadingState } from "./components/ui/StateViews";
+import { useTranslation } from "react-i18next";
 
 // The document editor pulls in Tiptap/ProseMirror, by far the heaviest
 // dependency in the app. Lazy-loading it means someone who only ever visits
@@ -24,13 +30,17 @@ const TemplateEditorPage = lazy(() => import("./features/documents/TemplateEdito
 const ReportEditorPage = lazy(() => import("./features/documents/ReportEditorPage").then((m) => ({ default: m.ReportEditorPage })));
 
 function EditorFallback() {
-  return <LoadingState label="Загрузка редактора…" />;
+  const { t } = useTranslation("editor");
+  return <LoadingState label={t("loadingEditor")} />;
 }
 
 function RoleLandingRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === "TEACHER") return <Navigate to="/groups" replace />;
+  if (user.role === "TEACHER") {
+    const documentCheckEnabled = user.features?.document_check_enabled ?? true;
+    return <Navigate to={documentCheckEnabled ? "/document-checks" : "/groups"} replace />;
+  }
   if (user.role === "STUDENT") return <Navigate to="/reports" replace />;
   return <Navigate to="/admin" replace />;
 }
@@ -75,6 +85,14 @@ export function App() {
           }
         />
         <Route
+          path="/check-profiles"
+          element={<ProtectedRoute allowedRoles={["TEACHER"]}><CheckProfilesPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/check-profiles/:profileId/versions/:versionId"
+          element={<ProtectedRoute allowedRoles={["TEACHER"]}><CheckProfileRuleEditorPage /></ProtectedRoute>}
+        />
+        <Route
           path="/templates/:templateId/versions/:versionId"
           element={
             <ProtectedRoute allowedRoles={["TEACHER"]}>
@@ -83,6 +101,16 @@ export function App() {
               </Suspense>
             </ProtectedRoute>
           }
+        />
+        <Route path="/review-groups" element={<ProtectedRoute allowedRoles={["TEACHER"]}><ReviewGroupsPage /></ProtectedRoute>} />
+        <Route path="/review-groups/:groupId" element={<ProtectedRoute allowedRoles={["TEACHER"]}><ReviewGroupPage /></ProtectedRoute>} />
+        <Route
+          path="/document-checks"
+          element={<ProtectedRoute allowedRoles={["TEACHER"]}><TeacherDocumentChecksPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/document-checks/:submissionId"
+          element={<ProtectedRoute allowedRoles={["TEACHER"]}><TeacherDocumentReviewPage /></ProtectedRoute>}
         />
         <Route
           path="/reports"

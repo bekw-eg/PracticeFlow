@@ -501,6 +501,19 @@ docker run --rm --env-file .env.s3-migration \
 
 The command never runs automatically during deployment and this repository does not run it against real data.
 
+## Презентации проверки группы
+
+Преподаватель открывает **Группы проверки**, создаёт отчёт из завершённых
+проверок, выбирает нарушения и примеры, добавляет текст, сохраняет черновик
+и скачивает редактируемый PPTX. Статистика всей группы и закреплённые результаты
+сохраняются в неизменном снимке. Ранее сформированные файлы доступны для
+повторного приватного скачивания. Поддерживаются RU, KK и EN.
+
+После обновления зависимостей примените `alembic upgrade head`. Полный сценарий,
+API, ограничения и хранение описаны в
+[GROUP_REVIEW_PRESENTATIONS.md](docs/GROUP_REVIEW_PRESENTATIONS.md).
+Основа — [группы преподавательской проверки](docs/TEACHER_REVIEW_GROUPS.md).
+
 ## Лимиты upload и export
 
 Development использует потокобезопасный in-memory guard с безопасными default значениями. Production запускается только с `RESOURCE_GUARD_BACKEND=redis`: недоступный Redis не отключает защиту, а возвращает `503` до upload/export. Все production values должны быть явно заданы в `.env.production`; Compose и backend откажутся запускаться с пропуском.
