@@ -79,7 +79,11 @@ def docx_bytes(*, extra=None, omit=None, content_types=CONTENT_TYPES, body="Stud
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, value in entries.items():
-            archive.writestr(name, value)
+            # Idempotent retry tests must send identical bytes, including ZIP
+            # metadata, even when two uploads cross a two-second ZIP timestamp.
+            info = zipfile.ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, value)
     return output.getvalue()
 
 

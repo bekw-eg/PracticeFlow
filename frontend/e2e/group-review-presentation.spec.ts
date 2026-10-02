@@ -8,12 +8,12 @@ const apiBase = process.env.PLAYWRIGHT_API_BASE_URL
 // Synthetic DOCX constructed in memory with Python's standard library.
 // CI already provides Python; no student file or fixture credentials are read.
 function syntheticDocx() {
-  return execFileSync(process.env.E2E_PYTHON ?? "python", ["-c", `
+  return execFileSync(process.env.E2E_PYTHON ?? (process.platform === "win32" ? "python" : "python3"), ["-c", `
 import io, sys, zipfile
 entries = {
 "[Content_Types].xml": '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
 "_rels/.rels": '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
-"word/document.xml": '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>SYNTHETIC_PRIVATE_MARKER</w:t></w:r></w:p><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="567" w:right="850" w:bottom="1134" w:left="1701"/></w:sectPr></w:body></w:document>'}
+"word/document.xml": '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Synthetic title page</w:t><w:br w:type="page"/></w:r></w:p><w:p><w:r><w:t>SYNTHETIC_PRIVATE_MARKER</w:t></w:r></w:p><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="567" w:right="850" w:bottom="1134" w:left="1701"/></w:sectPr></w:body></w:document>'}
 output = io.BytesIO()
 with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as package:
     for name, value in entries.items(): package.writestr(name, value)
