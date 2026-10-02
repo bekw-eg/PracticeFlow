@@ -62,13 +62,13 @@ test("student role is denied teacher data and cannot discover another tenant rep
   expect(await crossTenantReport.json()).toMatchObject({ detail: "Report not found" });
 });
 
-test("teacher login lands on review groups and the student-only route is blocked in the UI", async ({ page }) => {
+test("teacher login lands on document checks and the student-only route is blocked in the UI", async ({ page }) => {
   await loginThroughUi(page, "teacher@demo.edu");
-  await expect(page).toHaveURL(/\/review-groups$/);
-  await expect(page.getByRole("heading", { name: "Группы проверки" })).toBeVisible();
+  await expect(page).toHaveURL(/\/document-checks$/);
+  await expect(page.getByRole("heading", { name: "Проверка документов" })).toBeVisible();
 
   await page.goto("/reports");
-  await expect(page).toHaveURL(/\/review-groups$/);
+  await expect(page).toHaveURL(/\/document-checks$/);
 });
 
 test("student asynchronous DOCX export is deduplicated, completed by the worker and downloaded", async ({ request }) => {

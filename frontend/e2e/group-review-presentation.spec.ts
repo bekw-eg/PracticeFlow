@@ -61,7 +61,7 @@ test("teacher previews a partial group snapshot and repeatedly downloads its pri
   await page.getByLabel("Email").fill("teacher@demo.edu");
   await page.getByLabel("Пароль").fill("Practice123!");
   await page.getByRole("button", { name: "Войти", exact: true }).click();
-  await expect(page).toHaveURL(/\/review-groups$/);
+  await expect(page).toHaveURL(/\/document-checks$/);
   await page.goto(`/review-groups/${group.id}`);
   await page.getByRole("button", { name: "Сформировать презентацию отчёта о проверке", exact: true }).click();
   await expect(page.getByText("Проверена только часть группы: 1 из 2. В статистику включено: 1.")).toBeVisible();
@@ -88,7 +88,10 @@ test("teacher previews a partial group snapshot and repeatedly downloads its pri
   const originalBytes = await file.body();
   expect(originalBytes.subarray(0, 2).toString()).toBe("PK");
   await body(await request.put(`${base}/groups/${group.id}`, { headers, data: { name: "Changed after report" } }));
-  await body(await request.post(`${base}/submissions/${first.id}/recheck`, { headers }));
+  const settings = await body(await request.get(`${base}/submissions/${first.id}/settings`, { headers }));
+  await body(await request.post(`${base}/submissions/${first.id}/recheck`, {
+    headers: { ...headers, "Idempotency-Key": randomUUID() }, data: { revision: settings.revision },
+  }));
   expect(await (await request.get(`${path}/download`, { headers })).body()).toEqual(originalBytes);
   expect(await body(await request.get(path, { headers }))).toEqual(saved);
   expect((await request.get(`${path}/download`)).status()).toBe(401);
