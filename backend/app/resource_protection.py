@@ -1,6 +1,7 @@
 """Shared, tenant-scoped protection against costly uploads and exports.
 
-The durable storage total remains the ``files`` table.  Redis only tracks
+The durable storage total combines editor ``files`` and immutable document
+submissions in their tenant-owned domain table. Redis only tracks
 short-lived upload reservations while a file is being persisted, plus request
 windows and export slots.  Consequently an expired Redis key can fail closed
 for a short time, but can never expose or attribute another organization's

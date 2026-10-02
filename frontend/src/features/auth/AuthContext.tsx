@@ -4,6 +4,7 @@ import { tokenStorage } from "../../lib/tokenStorage";
 import { restoreAccessToken } from "../../lib/api";
 import type { CurrentUser } from "../../types/api";
 import { AuthContext } from "./authContextValue";
+import { restoreLocale } from "../../i18n";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokenStorage.setAccessToken(tokens.access_token);
     const me = await fetchCurrentUser();
     setUser(me);
+    void restoreLocale();
   };
 
   const logout = async () => {

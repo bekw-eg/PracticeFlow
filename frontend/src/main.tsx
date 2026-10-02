@@ -6,6 +6,7 @@ import "./index.css";
 import { App } from "./App";
 import { AuthProvider } from "./features/auth/AuthContext";
 import { shouldRetryQuery } from "./lib/apiError";
+import "./i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: {

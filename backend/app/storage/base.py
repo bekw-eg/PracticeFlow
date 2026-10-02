@@ -13,6 +13,10 @@ class StorageUnavailableError(RuntimeError):
     """The configured private object store cannot complete an operation."""
 
 
+class StorageObjectExistsError(StorageUnavailableError):
+    """Exclusive creation failed; the pre-existing object must not be deleted."""
+
+
 def validate_storage_key(key: str) -> str:
     """Defence in depth for storage-key callers and every backend.
 
@@ -30,6 +34,14 @@ def validate_storage_key(key: str) -> str:
 
 
 class StorageService(ABC):
+    def save_new(self, key: str, data: BinaryIO, content_type: str) -> str:
+        """Create a private object atomically, refusing any existing key.
+
+        Backends must implement real exclusive creation; an exists/save pair
+        is unsafe under concurrent requests. Unknown adapters fail closed.
+        """
+        raise StorageUnavailableError("Exclusive object creation is unavailable")
+
     @abstractmethod
     def save(self, key: str, data: BinaryIO, content_type: str) -> str:
         """Persists data under `key`, returns the storage key actually used."""
