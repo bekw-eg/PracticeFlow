@@ -13,12 +13,19 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from app.services.group_review_report_service import safe_finding
+from app.storage.base import StorageUnavailableError
 from app.tests.conftest import auth_headers, engine
 from app.tests.test_document_check_phase21 import _additional_actor, private_storage, phase21_database_guards  # noqa: F401
 from app.tests.test_review_groups import (
     BASE, accepted, complete, finish_analysis,
     review_guards, setup_group,  # noqa: F401
 )
+
+
+@pytest.fixture(autouse=True)
+def report_storage(private_storage, monkeypatch):
+    from app.services import group_review_report_service
+    monkeypatch.setattr(group_review_report_service, "get_storage_service", lambda: private_storage)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -170,9 +177,32 @@ def test_example_projection_never_copies_arbitrary_identifying_text():
     from app.models.enums import CheckRuleType
     finding = SimpleNamespace(id=uuid.uuid4(), rule_type=CheckRuleType.FONTS_SIZES,
         location={"paragraph_index": 2, "student_name": "Student", "part": "private-name.docx", "section_index": "Student"},
-        actual={"value": "Student Name", "excerpt": "Private excerpt", "font": "Private Font"},
+        actual={"value": "Student Name", "unit": ["Student Name"], "excerpt": "Private excerpt", "font": "Private Font"},
         expected={"allowed": ["Arial", "Student Name"], "value": 14, "student_name": "Name"})
     projected = safe_finding(finding)
-    assert projected["actual"] == {"value": None}
+    assert projected["actual"] == {"value": None, "unit": None}
     assert projected["expected"] == {"allowed": ["Arial", None], "value": 14}
     assert projected["location"] == {"paragraph_index": 2}
+
+
+def test_storage_outage_keeps_drafts_editable_and_export_retryable(client, db, setup_group, monkeypatch):
+    from app.services import group_review_report_service
+    reviewed(client, db, setup_group, count=0)
+    storage = group_review_report_service.get_storage_service()
+    def unavailable():
+        raise StorageUnavailableError("Internal endpoint must not be disclosed")
+    monkeypatch.setattr(group_review_report_service, "get_storage_service", unavailable)
+    report = create(client, setup_group).json()
+    path = f"{BASE}/groups/{setup_group[2]}/reports/{report['id']}"
+    headers = setup_group[0]
+    assert client.get(path, headers=headers).status_code == 200
+    saved = client.put(path, headers=headers, json=write(report, conclusions="Выводы"))
+    assert saved.status_code == 200
+    request = {"revision": saved.json()["revision"]}
+    failed = client.post(path + "/export", headers=headers, json=request)
+    assert failed.status_code == 503
+    assert "Internal endpoint" not in failed.text
+    assert client.get(path, headers=headers).json()["generated_at"] is None
+    monkeypatch.setattr(group_review_report_service, "get_storage_service", lambda: storage)
+    assert client.post(path + "/export", headers=headers, json=request).status_code == 200
+    assert client.get(path + "/download", headers=headers).status_code == 200

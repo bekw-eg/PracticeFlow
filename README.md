@@ -483,7 +483,7 @@ Image upload читает поток кусками, декодирует и п�
 
 ### Перенос LocalStorage в S3
 
-Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files` и succeeded `export_jobs`; схема БД и API не меняются, потому что existing storage keys сохраняются. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
+Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files`, succeeded `export_jobs` и сформированных `group_review_reports`; схема БД и API не меняются, потому что existing storage keys сохраняются. Сначала примените `alembic upgrade head`. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
 
 Сначала сделайте проверенный LocalStorage backup, создайте private target bucket/versioning и предоставьте deployment credential. Выполняйте реальную копию в maintenance window (остановите backend и export-worker либо исключите cleanup/uploads), чтобы database metadata и набор objects не менялись во время сверки. Пример запуска из image с legacy volume, где `<backend-image>` и Docker network выбирает deployer:
 

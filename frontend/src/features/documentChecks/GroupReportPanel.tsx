@@ -160,11 +160,17 @@ function ReportCoverage({ report }: { report: GroupReport }) {
 function FindingContent({ finding, locale }: { finding: ReportFinding; locale: string }) {
   const { t } = useTranslation("documentChecks", { lng: locale });
   function metric(value: Record<string, unknown>) {
-    const scalar = (item: unknown): string => item == null ? t("groupReport.unknown") : typeof item === "boolean" ? t(item ? "ruleValues.YES" : "ruleValues.NO") : String(item);
+    const scalar = (item: unknown): string => {
+      if (item == null) return t("groupReport.unknown");
+      if (typeof item === "boolean") return t(item ? "ruleValues.YES" : "ruleValues.NO");
+      if (typeof item === "string" && ["LEFT", "CENTER", "RIGHT", "JUSTIFY", "PORTRAIT", "LANDSCAPE", "CUSTOM", "UNKNOWN"].includes(item)) return t(`ruleValues.${item}` as never);
+      return String(item);
+    };
+    const unit = value.unit === "mm" ? t("unitMm") : value.unit === "pt" ? t("unitPt") : value.unit === "multiple" ? t("unitMultiple") : value.unit ?? "";
     if (Array.isArray(value.allowed)) return value.allowed.map(scalar).join(", ") || t("groupReport.unknown");
-    if ("width_mm" in value || "height_mm" in value) return `${scalar(value.width_mm)} × ${scalar(value.height_mm)} mm`;
-    if ("min" in value || "max" in value) return `${scalar(value.min)}–${scalar(value.max)} ${value.unit ?? ""}`;
-    if ("value" in value) return `${scalar(value.value)} ${value.unit ?? ""}`;
+    if ("width_mm" in value || "height_mm" in value) return `${scalar(value.width_mm)} × ${scalar(value.height_mm)} ${t("unitMm")}`;
+    if ("min" in value || "max" in value) return `${scalar(value.min)}–${scalar(value.max)} ${unit}`.trim();
+    if ("value" in value) return `${scalar(value.value)} ${unit}`.trim();
     return t("groupReport.unknown");
   }
   const parts = Object.entries(finding.location).map(([key, value]) => {

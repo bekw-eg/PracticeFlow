@@ -52,7 +52,7 @@ Use the [release runbook](RELEASE_RUNBOOK.md) for pre-deploy backups and the
 only to an approved empty target; never test a restore by overwriting a live
 environment.
 
-## Audit immutability limitation
+## Group review presentation retention
 
 Group review presentation drafts, immutable snapshots and generated private
 PPTX files are retained without an automatic TTL. Include `group_review_reports`
@@ -60,6 +60,12 @@ and their private storage objects in coordinated backups and tenant retention
 planning. Source DOCX retention cleanup does not delete these reports. See
 [group review presentations](GROUP_REVIEW_PRESENTATIONS.md) for access,
 generation and migration rollback boundaries.
+
+The copy-only LocalStorage-to-S3 migration tool also includes generated group
+reports, preserving their object keys and verifying the copied bytes. Apply the
+current schema before running it; drafts do not have storage objects.
+
+## Audit immutability limitation
 
 The application audit trail is hash chained in PostgreSQL and can detect many
 consistency breaks within the retained segment. It is **not** true WORM storage:

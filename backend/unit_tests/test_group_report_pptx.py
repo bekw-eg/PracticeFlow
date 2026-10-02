@@ -43,6 +43,8 @@ def test_real_editable_package_geometry_chart_and_text(kind, locale):
         all_text = []
         for name in slides:
             root = ET.fromstring(package.read(name))
+            assert {item.get("lang") for item in root.findall(".//a:rPr", NS)} == {
+                {"ru": "ru-RU", "kk": "kk-KZ", "en": "en-US"}[locale]}
             all_text.extend(item.text or "" for item in root.findall(".//a:t", NS)
                             if not (item.text or "").startswith("PracticeFlow")
                             and item.text not in {REPORT_TEXT[locale]["conclusions"], REPORT_TEXT[locale]["cover"]})

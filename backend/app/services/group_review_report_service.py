@@ -48,7 +48,10 @@ def safe_finding(finding):
         for key in ("value", "unit", "min", "max", "width_mm", "height_mm", "name", "mode", "allowed"):
             if key not in value:
                 continue
-            result[key] = [scalar(item) for item in value[key]][:20] if isinstance(value[key], list) else scalar(value[key])
+            if key == "allowed":
+                result[key] = [scalar(item) for item in value[key][:20]] if isinstance(value[key], list) else []
+            else:
+                result[key] = scalar(value[key])
         return result
     location = {key: value for key, value in finding.location.items()
                 if key in {"page", "paragraph_index", "run_index", "section_index", "table_index"}
@@ -60,7 +63,15 @@ def safe_finding(finding):
 class GroupReviewReportService:
     def __init__(self, db, storage=None):
         self.db = db
-        self.storage = storage or get_storage_service()
+        self._storage = storage
+
+    @property
+    def storage(self):
+        # Read/edit authorization and snapshots do not require object storage.
+        # Resolve storage only after scoping a generated artifact operation.
+        if self._storage is None:
+            self._storage = get_storage_service()
+        return self._storage
 
     def scope(self, ctx, group_id):
         group = ReviewGroupService(self.db).get(ctx, group_id)

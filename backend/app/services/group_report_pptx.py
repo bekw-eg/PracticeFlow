@@ -16,6 +16,8 @@ from fastapi import HTTPException
 
 REPORT_TEXT = {
     "ru": {
+        "units": {"mm": "мм", "pt": "пт", "multiple": "кратно"},
+        "values": {"LEFT": "По левому краю", "CENTER": "По центру", "RIGHT": "По правому краю", "JUSTIFY": "По ширине", "PORTRAIT": "Книжная", "LANDSCAPE": "Альбомная", "CUSTOM": "Свой вариант", "UNKNOWN": "Не определено"},
         "default_title": "Результаты проверки работ группы {group}", "cover": "Отчёт о проверке группы",
         "date": "Дата формирования", "scope": "Объём проверки", "total": "Всего работ", "reviewed": "Проверено преподавателем",
         "pending": "Ожидают проверки", "included": "Включено в статистику", "problems": "Основные проблемы",
@@ -35,6 +37,8 @@ REPORT_TEXT = {
         "rule_types": ["Формат страницы и поля", "Шрифты и размеры", "Интервалы и отступы", "Заголовки", "Таблицы", "Подписи рисунков", "Список источников", "Обязательные разделы", "Орфография и языки"],
     },
     "kk": {
+        "units": {"mm": "мм", "pt": "пт", "multiple": "есе"},
+        "values": {"LEFT": "Сол жаққа", "CENTER": "Ортаға", "RIGHT": "Оң жаққа", "JUSTIFY": "Ені бойынша", "PORTRAIT": "Кітаптық", "LANDSCAPE": "Альбомдық", "CUSTOM": "Өз нұсқасы", "UNKNOWN": "Анықталмаған"},
         "default_title": "{group} тобының жұмыстарын тексеру нәтижелері", "cover": "Топты тексеру есебі",
         "date": "Қалыптастыру күні", "scope": "Тексеру көлемі", "total": "Барлық жұмыстар", "reviewed": "Оқытушы тексерген",
         "pending": "Тексеруді күтуде", "included": "Статистикаға енгізілген", "problems": "Негізгі мәселелер",
@@ -54,6 +58,8 @@ REPORT_TEXT = {
         "rule_types": ["Бет пішімі мен жиектері", "Қаріптер мен өлшемдер", "Аралықтар мен шегіністер", "Тақырыптар", "Кестелер", "Сурет жазулары", "Дереккөздер тізімі", "Міндетті бөлімдер", "Емле және тілдер"],
     },
     "en": {
+        "units": {"mm": "mm", "pt": "pt", "multiple": "multiple"},
+        "values": {"LEFT": "Left aligned", "CENTER": "Centered", "RIGHT": "Right aligned", "JUSTIFY": "Justified", "PORTRAIT": "Portrait", "LANDSCAPE": "Landscape", "CUSTOM": "Custom", "UNKNOWN": "Unknown"},
         "default_title": "Review results for group {group}", "cover": "Group review report",
         "date": "Report date", "scope": "Review coverage", "total": "Total works", "reviewed": "Reviewed by teacher",
         "pending": "Awaiting review", "included": "Included in statistics", "problems": "Main issues",
@@ -116,7 +122,7 @@ def lines(text, width=1120, size=20, *, break_words=True):
                                       break_long_words=break_words, break_on_hyphens=break_words) or [""]]
 
 
-def paragraphs(parent, value, size=20, color="18334A", bold=False):
+def paragraphs(parent, value, size=20, color="18334A", bold=False, lang="ru-RU"):
     for line in value:
         paragraph = node("a:p", parent)
         props = node("a:pPr", paragraph)
@@ -124,7 +130,7 @@ def paragraphs(parent, value, size=20, color="18334A", bold=False):
         node("a:spcPts", spacing, val=int(size * 150))
         node("a:buNone", props)
         run = node("a:r", paragraph)
-        rp = node("a:rPr", run, lang="ru-RU", sz=size * 100, b=int(bold))
+        rp = node("a:rPr", run, lang=lang, sz=size * 100, b=int(bold))
         fill = node("a:solidFill", rp)
         node("a:srgbClr", fill, val=color)
         for face in ("latin", "ea", "cs"):
@@ -134,8 +140,9 @@ def paragraphs(parent, value, size=20, color="18334A", bold=False):
 
 
 class Deck:
-    def __init__(self, timeout_seconds):
+    def __init__(self, timeout_seconds, locale):
         self.deadline = time.monotonic() + timeout_seconds
+        self.lang = {"ru": "ru-RU", "kk": "kk-KZ", "en": "en-US"}[locale]
         self.slides = []
         self.charts = []
 
@@ -180,7 +187,7 @@ class Deck:
         body_props = node("a:bodyPr", body, wrap="square", lIns=0, rIns=0, tIns=0, bIns=0)
         node("a:noAutofit", body_props)
         node("a:lstStyle", body)
-        paragraphs(body, value, size, color, bold)
+        paragraphs(body, value, size, color, bold, self.lang)
 
     def text_pages(self, heading, text):
         wrapped = lines(text)
@@ -217,7 +224,7 @@ class Deck:
                 node("a:bodyPr", body)
                 node("a:lstStyle", body)
                 paragraphs(body, value, size=16,
-                           color="FFFFFF" if row_number == 0 else "18334A", bold=row_number == 0)
+                           color="FFFFFF" if row_number == 0 else "18334A", bold=row_number == 0, lang=self.lang)
                 props = node("a:tcPr", cell, marL=14 * EMU, marR=14 * EMU, marT=8 * EMU, marB=8 * EMU)
                 node("a:srgbClr", node("a:solidFill", props), val="205B79" if row_number == 0 else ("EDF4F7" if row_number % 2 else "FFFFFF"))
 
@@ -259,7 +266,7 @@ class Deck:
         if self.charts:
             node("ct:Default", types, Extension="xlsx", ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         for number, (categories, values, name) in enumerate(self.charts, 1):
-            files[f"ppt/charts/chart{number}.xml"] = xml(chart_xml(categories, values, name))
+            files[f"ppt/charts/chart{number}.xml"] = xml(chart_xml(categories, values, name, self.lang))
             chart_rels = node("rel:Relationships")
             node("rel:Relationship", chart_rels, Id="workbook", Type=NS["r"] + "/package", Target=f"../embeddings/data{number}.xlsx")
             files[f"ppt/charts/_rels/chart{number}.xml.rels"] = xml(chart_rels)
@@ -278,9 +285,9 @@ class Deck:
         return output.getvalue()
 
 
-def chart_xml(categories, values, name):
+def chart_xml(categories, values, name, lang):
     root = node("c:chartSpace")
-    node("c:lang", root, val="ru-RU")
+    node("c:lang", root, val=lang)
     chart = node("c:chart", root)
     node("c:autoTitleDeleted", chart, val=1)
     plot = node("c:plotArea", chart)
@@ -383,21 +390,22 @@ def format_metric(value, text):
             return text["unknown"]
         if isinstance(item, bool):
             return text["yes"] if item else text["no"]
-        return str(item)
+        return text["values"].get(str(item), str(item))
+    unit = text["units"].get(value.get("unit"), value.get("unit") or "")
     if "allowed" in value:
         return ", ".join(scalar(item) for item in value["allowed"]) or text["unknown"]
     if "width_mm" in value or "height_mm" in value:
-        return f"{scalar(value.get('width_mm'))} × {scalar(value.get('height_mm'))} mm"
+        return f"{scalar(value.get('width_mm'))} × {scalar(value.get('height_mm'))} {text['units']['mm']}"
     if "min" in value or "max" in value:
-        return f"{scalar(value.get('min'))}–{scalar(value.get('max'))} {value.get('unit') or ''}".strip()
+        return f"{scalar(value.get('min'))}–{scalar(value.get('max'))} {unit}".strip()
     if "value" in value:
-        return f"{scalar(value['value'])} {value.get('unit') or ''}".strip()
+        return f"{scalar(value['value'])} {unit}".strip()
     return text["unknown"]
 
 
 def render_group_report(snapshot, content, locale, *, timeout_seconds=60):
     text = REPORT_TEXT[locale]
-    deck = Deck(timeout_seconds)
+    deck = Deck(timeout_seconds, locale)
     names = dict(zip(RULE_TYPES, text["rule_types"], strict=True))
     # Keep the group and date on the first slide even when a long title needs
     # continuation slides. The title remains complete and editable.
