@@ -46,10 +46,10 @@ production images` a required status check in the repository ruleset.
 
 The build uses `npm ci` without modifying `package-lock.json`; Python package
 versions remain in the existing requirements files. This gives repeatable
-application dependency resolution and immutable base-image selection. Debian
-APT packages are still fetched from the base distribution's repository at build
+application dependency resolution and immutable base-image selection. Alpine
+APK packages are still fetched from the base distribution's repository at build
 time, so bit-for-bit hermetic rebuilds additionally require an organisation
-managed, snapshot-pinned APT mirror; that infrastructure is intentionally not
+managed, snapshot-pinned APK mirror; that infrastructure is intentionally not
 created by this repository.
 
 ## Local validation, SBOM and CVE review

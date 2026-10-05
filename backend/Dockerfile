@@ -1,5 +1,5 @@
-# python:3.12-slim-bookworm (manifest resolved 2026-10-05)
-FROM python@sha256:54c85f3c47607a77f32adec749d3c81d1348bf25833671f512b26a9b6d778cb3
+# python:3.12-alpine3.24 (manifest resolved 2026-10-05)
+FROM python@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,25 +8,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Native libraries required by WeasyPrint for production-quality PDF exports.
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libcairo2 \
-    libffi8 \
-    libgdk-pixbuf-2.0-0 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
+RUN apk upgrade --no-cache && apk add --no-cache \
+    cairo \
+    libffi \
+    gdk-pixbuf \
+    pango \
     fontconfig \
-    fonts-dejavu-core \
-    fonts-noto-core \
+    font-dejavu \
+    font-noto \
     openssl \
     poppler-utils \
     shared-mime-info \
-    && fc-cache -f \
-    && rm -rf /var/lib/apt/lists/*
+    && fc-cache -f
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -c "from weasyprint import HTML; assert HTML(string='<p>PDF rendering smoke test</p>').write_pdf().startswith(b'%PDF-')"
 
-RUN addgroup --system practiceflow && adduser --system --ingroup practiceflow --home /app practiceflow
+RUN addgroup -S practiceflow && adduser -S -G practiceflow -h /app practiceflow
 
 COPY --chown=practiceflow:practiceflow alembic.ini docker-entrypoint.sh seed.py e2e_seed.py ./
 COPY --chown=practiceflow:practiceflow scripts ./scripts

@@ -26,7 +26,7 @@ by the owner, without relabelling the original bot commits.
 | #13, #16 | Already superseded by the consistent Tiptap 3.31.4 dependency set in PR #29 |
 | #14 | Vitest 4.1.11 already included in PR #29 |
 | #15, #17 | React Vite plugin 6.1.2 (supersedes 6.1.0) and TypeScript 7.0.2; build compatibility is checked together |
-| #25 | Replace the old Debian Trixie base with a currently resolved Python 3.12 Bookworm manifest and install distribution security updates |
+| #25 | Replace the old Debian Trixie base with a currently resolved Python 3.12 Alpine 3.24 manifest, preserving native PDF libraries and applying available distribution security updates |
 | #27, #30 | Resolve current Node 22 Alpine and unprivileged Nginx 1.30.4 Alpine manifests from the upstream registry |
 
 Bot PRs are superseded only after the replacement integration is confirmed in
@@ -42,6 +42,14 @@ The discontinued Trivy 0.65.0 download is replaced by
 [Trivy 0.75.0](https://github.com/aquasecurity/trivy/releases/tag/v0.75.0).
 Its Linux archive checksum is fixed in the workflow and verified before use.
 Both scans must succeed and produce JSON reports for the final gate to pass.
+
+The first complete scan found unfixed Debian native-library CVEs and fixed
+Alpine `libexpat`/`pcre2` CVEs. The reviewed backend runtime therefore uses
+Python 3.12 on Alpine 3.24 with Cairo/Pango, DejaVu/Noto fonts and Poppler.
+Image construction includes a mandatory native WeasyPrint PDF smoke check.
+The frontend copies the reviewed upstream Nginx binary/config into a fresh
+Alpine runtime with current security-patched libraries. Both application
+processes remain non-root; the private-storage and proxy policies are retained.
 
 The test-only MinIO image is compiled from pinned upstream source commits:
 
