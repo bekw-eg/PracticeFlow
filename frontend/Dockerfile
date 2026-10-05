@@ -20,7 +20,9 @@ FROM nginxinc/nginx-unprivileged@sha256:adf5042a17f4ecdd200c595fa9ffd1be37efb18f
 FROM alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 RUN apk upgrade --no-cache && apk add --no-cache ca-certificates pcre2 zlib libssl3 libcrypto3 \
     && addgroup -g 101 nginx && adduser -D -u 101 -G nginx nginx \
-    && mkdir -p /var/cache/nginx /usr/share/nginx/html \
+    && mkdir -p /var/cache/nginx /var/log/nginx /usr/share/nginx/html \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log \
     && chown -R nginx:nginx /var/cache/nginx /usr/share/nginx/html
 COPY --from=nginx /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=nginx /etc/nginx/ /etc/nginx/
@@ -33,6 +35,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 USER 101
 
 EXPOSE 8080
+STOPSIGNAL SIGQUIT
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD ["wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
 CMD ["nginx", "-g", "daemon off;"]
