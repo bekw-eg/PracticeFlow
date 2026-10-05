@@ -25,7 +25,7 @@ type NavigationSection = { label: string; items: NavigationItem[] };
 
 export function AppShell() {
   const { user, logout } = useAuth();
-  const { t } = useTranslation(["common", "groups", "templates", "reports", "editor", "admin", "audit", "auth", "documentChecks"]);
+  const { t } = useTranslation(["common", "groups", "templates", "reports", "editor", "admin", "audit", "auth", "documentChecks", "disciplines"]);
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -41,6 +41,7 @@ export function AppShell() {
       ]
     : [];
   const teacherAcademicNav: NavigationItem[] = [
+    { to: "/disciplines", label: t("disciplines:title"), icon: DocumentTextIcon },
     { to: "/groups", label: t("groups:myGroups"), icon: UsersIcon },
     ...(legacyDocumentEditorEnabled
       ? [{ to: "/templates", label: t("templates:templates"), icon: DocumentTextIcon }]
@@ -66,6 +67,7 @@ export function AppShell() {
 
   const closeMobile = () => setMobileOpen(false);
   const pageTitle = (pathname: string) => {
+    if (pathname.startsWith("/disciplines")) return t("disciplines:title");
     if (pathname.startsWith("/review-groups")) return t("documentChecks:reviewGroups.title");
     if (pathname === "/document-checks") return t("documentChecks:directChecks");
     if (pathname.startsWith("/document-checks/")) return t("documentChecks:documentReview");

@@ -109,7 +109,10 @@ PostgreSQL базе с именем `*_test`) и
 существующие document-check tests. Общие команды CI описаны в
 [README](../README.md).
 
-### Результаты локальной проверки реализации
+Презентации из сохранённого снимка группы описаны в
+[GROUP_REVIEW_PRESENTATIONS.md](GROUP_REVIEW_PRESENTATIONS.md).
+
+### Результаты локальной проверки первого этапа
 
 - Frontend: 184 теста в 36 файлах прошли; `npm run build` (TypeScript + Vite)
   и `npm run lint` прошли. Vite предупреждает о размере основного JS chunk

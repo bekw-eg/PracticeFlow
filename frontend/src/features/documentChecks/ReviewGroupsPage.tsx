@@ -1,3 +1,4 @@
+import { GroupReportPanel } from "./GroupReportPanel";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -85,6 +86,7 @@ function ReviewGroupDetail({ id }: { id: string }) {
           : <p className="p-5 text-sm">{t(summary.data.included_works ? "reviewGroups.noViolations" : "reviewGroups.noReviewedWorks")}</p>}
       </section>
     </>}
+    {summary.data && <GroupReportPanel groupId={id} includedWorks={summary.data.included_works} />}
     <TeacherDocumentUpload groupId={id} />
     <section className="section-panel overflow-hidden">
       <div className="section-heading flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{t("reviewGroups.works")}</h2>

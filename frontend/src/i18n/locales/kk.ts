@@ -1,3 +1,4 @@
+import { groupReportTextsKk } from "./groupReportTexts";
 import type { ru } from "./ru";
 import { documentRuleTextsKk } from "./documentRuleTexts";
 import type { TranslationShape } from "../types";
@@ -253,6 +254,7 @@ export const kk = {
     descriptionPlaceholder: "Сипаттама",
   },
   documentChecks: {
+    groupReport: groupReportTextsKk,
     reviewGroups: {
       student: "Студент",
       automaticStatus: "Автоматты тексеру",

@@ -1,3 +1,4 @@
+import { groupReportTextsEn } from "./groupReportTexts";
 import type { ru } from "./ru";
 import { documentRuleTextsEn } from "./documentRuleTexts";
 import type { TranslationShape } from "../types";
@@ -252,6 +253,7 @@ export const en = {
     descriptionPlaceholder: "Description",
   },
   documentChecks: {
+    groupReport: groupReportTextsEn,
     reviewGroups: {
       student: "Student",
       automaticStatus: "Automatic analysis",

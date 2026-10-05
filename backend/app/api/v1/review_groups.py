@@ -11,6 +11,7 @@ from app.schemas.review_group import (
     ReviewGroupOut, ReviewGroupSummary, ReviewGroupWrite, ReviewStatus,
     TeacherReviewComplete, TeacherReviewOut, TeacherReviewWrite,
 )
+from app.api.v1.group_review_reports import router as group_reports_router
 from app.services.review_group_service import ReviewGroupService, TeacherReviewService
 
 
@@ -19,6 +20,7 @@ def private_response(response: Response):
 
 
 router = APIRouter(prefix="/document-checks/teacher", dependencies=[Depends(private_response)])
+router.include_router(group_reports_router)
 
 
 @router.get("/groups", response_model=list[ReviewGroupOut])

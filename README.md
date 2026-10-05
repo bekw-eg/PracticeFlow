@@ -13,6 +13,7 @@ Backend — FastAPI, SQLAlchemy 2, Alembic и PostgreSQL. Frontend — React 19,
 - [Operations runbook](docs/OPERATIONS_RUNBOOK.md)
 - [Data retention and recovery boundaries](docs/DATA_RETENTION.md)
 - [Role and tenant-boundary matrix](docs/ROLE_MATRIX.md)
+- [Disciplines, topics and private teaching materials](docs/DISCIPLINES.md)
 - [Capacity planning](docs/CAPACITY_PLANNING.md)
 - [Supply-chain security](docs/SUPPLY_CHAIN_SECURITY.md)
 
@@ -483,7 +484,7 @@ Image upload читает поток кусками, декодирует и п�
 
 ### Перенос LocalStorage в S3
 
-Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files` и succeeded `export_jobs`; схема БД и API не меняются, потому что existing storage keys сохраняются. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
+Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files`, succeeded `export_jobs` и сформированных `group_review_reports`; схема БД и API не меняются, потому что existing storage keys сохраняются. Сначала примените `alembic upgrade head`. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
 
 Сначала сделайте проверенный LocalStorage backup, создайте private target bucket/versioning и предоставьте deployment credential. Выполняйте реальную копию в maintenance window (остановите backend и export-worker либо исключите cleanup/uploads), чтобы database metadata и набор objects не менялись во время сверки. Пример запуска из image с legacy volume, где `<backend-image>` и Docker network выбирает deployer:
 
@@ -500,6 +501,19 @@ docker run --rm --env-file .env.s3-migration \
 ```
 
 The command never runs automatically during deployment and this repository does not run it against real data.
+
+## Презентации проверки группы
+
+Преподаватель открывает **Группы проверки**, создаёт отчёт из завершённых
+проверок, выбирает нарушения и примеры, добавляет текст, сохраняет черновик
+и скачивает редактируемый PPTX. Статистика всей группы и закреплённые результаты
+сохраняются в неизменном снимке. Ранее сформированные файлы доступны для
+повторного приватного скачивания. Поддерживаются RU, KK и EN.
+
+После обновления зависимостей примените `alembic upgrade head`. Полный сценарий,
+API, ограничения и хранение описаны в
+[GROUP_REVIEW_PRESENTATIONS.md](docs/GROUP_REVIEW_PRESENTATIONS.md).
+Основа — [группы преподавательской проверки](docs/TEACHER_REVIEW_GROUPS.md).
 
 ## Лимиты upload и export
 

@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import func, select
 
 from app.models.file import File
+from app.models.discipline import TeachingMaterial
 from app.models.document_check import StudentDocumentSubmission, TeacherDocumentSubmission, TeacherDocumentLifecycle
 from app.repositories.base import TenantScopedRepository
 
@@ -37,4 +38,8 @@ class FileRepository(TenantScopedRepository[File]):
             )
             or 0
         )
-        return image_bytes + submission_bytes + teacher_submission_bytes
+        material_bytes = int(self.db.scalar(select(func.coalesce(func.sum(TeachingMaterial.size_bytes), 0)).where(
+            TeachingMaterial.organization_id == organization_id,
+            TeachingMaterial.storage_deleted_at.is_(None),
+        )) or 0)
+        return image_bytes + submission_bytes + teacher_submission_bytes + material_bytes

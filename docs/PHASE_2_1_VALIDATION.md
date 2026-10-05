@@ -90,8 +90,8 @@
 и LibreOffice. Новые PostgreSQL-тесты не пропущены. Старый код экспорта не менялся ради
 обхода этих проверок. Live MinIO tests запускаются отдельным integration gate.
 
-Схема: [phase21-openapi.json](../outputs/phase21-openapi.json).
-Журналы и JUnit: [outputs/phase21-validation](../outputs/phase21-validation).
+Локальная схема: `outputs/phase21-openapi.json` (не включена в Git).
+Локальные журналы и JUnit: `outputs/phase21-validation` (не включены в Git).
 
 ## Файлы Phase 2.1
 

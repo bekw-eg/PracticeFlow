@@ -41,6 +41,7 @@ function mockGroup() {
     const path = String(url);
     if (path === `${base}/group-1`) return { data: group } as never;
     if (path === `${base}/group-1/summary`) return { data: summary } as never;
+    if (path.startsWith(`${base}/group-1/reports`)) return paged([]);
     if (path.includes("/works")) return paged([submission], 30, Number(new URL(path, "http://test").searchParams.get("offset")));
     if (path.startsWith("/check-profiles")) return paged([profile]);
     if (path.startsWith(base + "?")) return paged([]);
@@ -72,7 +73,7 @@ it("edits group metadata and uses server pagination and review filtering without
   expect(cells[1]).toHaveTextContent("10");
   expect(cells[2]).toHaveTextContent("1");
   expect(screen.getByRole("link", { name: "Открыть работу" })).toHaveAttribute("href", "/document-checks/doc-1");
-  fireEvent.click(screen.getByRole("button", { name: "Следующая страница" }));
+  fireEvent.click(screen.getAllByRole("button", { name: "Следующая страница" }).find(button => !button.hasAttribute("disabled"))!);
   await waitFor(() => expect(get).toHaveBeenCalledWith(`${base}/group-1/works?offset=25&limit=25`));
   fireEvent.change(screen.getByRole("combobox", { name: "Проверка преподавателем" }), { target: { value: "completed" } });
   await waitFor(() => expect(get).toHaveBeenCalledWith(`${base}/group-1/works?review_status=completed&offset=0&limit=25`));

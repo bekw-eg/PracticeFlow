@@ -1,3 +1,4 @@
+import { groupReportTextsRu } from "./groupReportTexts";
 import { documentRuleTextsRu } from "./documentRuleTexts";
 
 export const ru = {
@@ -238,6 +239,7 @@ export const ru = {
     descriptionPlaceholder: "Описание",
   },
   documentChecks: {
+    groupReport: groupReportTextsRu,
     reviewGroups: {
       student: "Студент",
       automaticStatus: "Автоматическая проверка",
