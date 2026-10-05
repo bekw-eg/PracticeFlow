@@ -8,7 +8,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Mm, Pt
 from docx.styles.style import _ParagraphStyle
 
-from app.documents.renderers.docx.oxml_utils import clear_theme_font_and_color
+from app.documents.renderers.docx.oxml_utils import clear_theme_font_and_color, set_all_script_font_families
 from app.documents.schemas import DocumentMeta, ParagraphStyle
 
 _ALIGNMENT_MAP = {
@@ -21,7 +21,7 @@ _ALIGNMENT_MAP = {
 
 def apply_paragraph_style(word_style: _ParagraphStyle, style: ParagraphStyle, meta: DocumentMeta) -> None:
     font = word_style.font
-    font.name = style.font_family or meta.default_font
+    set_all_script_font_families(word_style, style.font_family or meta.default_font)
     font.size = Pt(style.font_size_pt or meta.default_font_size)
     font.bold = bool(style.bold)
     font.italic = bool(style.italic)

@@ -14,7 +14,9 @@ The `Supply chain security` workflow builds the production backend and frontend
 images locally in the runner. It does not push an image or access GitHub
 Secrets, a registry credential, production data, or a deployment `.env` file.
 It produces an SPDX JSON SBOM with Syft `v1.51.1` and a JSON CVE report with
-Trivy `v0.65.0` for each image. Reports and test JUnit XML are workflow
+Trivy `v0.75.0` for each image. The Linux release archive is verified against
+its reviewed SHA-256 before extraction. The removed `v0.65.0` binary is no
+longer used, and scanner installation errors fail the gate. Reports and test JUnit XML are workflow
 artifacts; they contain package and vulnerability metadata, never CI
 environment values or secrets.
 
@@ -44,10 +46,10 @@ production images` a required status check in the repository ruleset.
 
 The build uses `npm ci` without modifying `package-lock.json`; Python package
 versions remain in the existing requirements files. This gives repeatable
-application dependency resolution and immutable base-image selection. Debian
-APT packages are still fetched from the base distribution's repository at build
+application dependency resolution and immutable base-image selection. Alpine
+APK packages are still fetched from the base distribution's repository at build
 time, so bit-for-bit hermetic rebuilds additionally require an organisation
-managed, snapshot-pinned APT mirror; that infrastructure is intentionally not
+managed, snapshot-pinned APK mirror; that infrastructure is intentionally not
 created by this repository.
 
 ## Local validation, SBOM and CVE review

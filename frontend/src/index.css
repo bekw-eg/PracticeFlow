@@ -1,34 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --color-ink: #0f1b2d;
-  --color-ink-soft: #3a4a63;
-  --color-muted: #667085;
-  --color-surface: #f6f7fb;
+  --color-ink: #202a32;
+  --color-ink-soft: #44515a;
+  --color-muted: #69747b;
+  --color-surface: #f4f2ed;
   --color-card: #ffffff;
-  --color-border: #e2e5ee;
+  --color-border: #dddcd6;
 
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #dde5ff;
-  --color-brand-500: #2452e8;
-  --color-brand-600: #1c3fc4;
-  --color-brand-700: #17348c;
+  --color-brand-50: #f0f2f8;
+  --color-brand-100: #dce2f1;
+  --color-brand-500: #3a4e88;
+  --color-brand-600: #2e4077;
+  --color-brand-700: #253564;
 
-  --color-amber-500: #d98e2b;
-  --color-amber-50: #fdf3e4;
+  --color-amber-500: #9b641e;
+  --color-amber-50: #fbf2df;
 
-  --color-success-500: #1e9e6b;
-  --color-success-50: #e8f8f1;
+  --color-success-500: #2d7255;
+  --color-success-50: #e9f3ed;
 
-  --color-danger-500: #d83a3a;
-  --color-danger-50: #fdeaea;
+  --color-danger-500: #9b3f48;
+  --color-danger-50: #f8e9e9;
 
-  --shadow-card: 0 1px 2px rgba(15, 27, 45, 0.04), 0 8px 24px rgba(15, 27, 45, 0.05);
-  --shadow-float: 0 16px 42px rgba(15, 27, 45, 0.14), 0 2px 8px rgba(15, 27, 45, 0.06);
+  --shadow-card: 0 1px 2px rgba(32, 42, 50, 0.035);
+  --shadow-float: 0 12px 28px rgba(32, 42, 50, 0.14), 0 2px 5px rgba(32, 42, 50, 0.05);
 }
 
 :root {
@@ -47,11 +47,10 @@ html {
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 90% -10%, color-mix(in srgb, var(--color-brand-100) 65%, transparent), transparent 30rem),
-    var(--color-surface);
+  background: var(--color-surface);
   color: var(--color-ink);
   text-rendering: optimizeLegibility;
+  font-size: 15px;
 }
 
 button, input, select, textarea {
@@ -62,8 +61,8 @@ button:not(:disabled), [role="button"]:not(:disabled) {
   cursor: pointer;
 }
 
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-brand-500) 28%, transparent);
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-brand-500) 42%, transparent);
   outline-offset: 2px;
 }
 
@@ -75,8 +74,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-family: var(--font-mono);
 }
 
+/* Existing feature components use Tailwind radius utilities. Keep their
+   semantic layout while enforcing the product's restrained radius scale. */
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl {
+  border-radius: 8px;
+}
+
 .input {
-  @apply w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm text-[var(--color-ink)] shadow-[0_1px_1px_rgba(15,27,45,0.02)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--color-muted)] hover:border-[#cbd1df] focus:border-[var(--color-brand-500)] focus:ring-4 focus:ring-[var(--color-brand-100)] disabled:cursor-not-allowed disabled:bg-[var(--color-surface)] disabled:text-[var(--color-muted)] disabled:opacity-70;
+  @apply w-full rounded-[7px] border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm text-[var(--color-ink)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--color-muted)] hover:border-[#b9b9b3] focus:border-[var(--color-brand-500)] focus:ring-3 focus:ring-[var(--color-brand-100)] disabled:cursor-not-allowed disabled:bg-[var(--color-surface)] disabled:text-[var(--color-muted)] disabled:opacity-70;
 }
 
 .form-label {
@@ -84,15 +91,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 disabled:pointer-events-none disabled:opacity-55;
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-[7px] px-4 py-2 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-55;
 }
 
 .btn-primary {
-  @apply bg-[var(--color-brand-500)] text-white shadow-[0_2px_4px_rgba(36,82,232,0.2)] hover:bg-[var(--color-brand-600)] hover:shadow-[0_5px_14px_rgba(36,82,232,0.25)] active:translate-y-px;
+  @apply bg-[var(--color-brand-700)] text-white hover:bg-[var(--color-brand-600)];
 }
 
 .btn-secondary {
-  @apply border border-[var(--color-border)] bg-white text-[var(--color-ink-soft)] shadow-[0_1px_2px_rgba(15,27,45,0.03)] hover:border-[#cbd1df] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
+  @apply border border-[var(--color-border)] bg-white text-[var(--color-ink-soft)] hover:border-[#b9b9b3] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
 }
 
 .btn-ghost {
@@ -104,19 +111,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .icon-button {
-  @apply inline-flex size-10 items-center justify-center rounded-xl text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
+  @apply inline-flex size-10 items-center justify-center rounded-[7px] text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)];
 }
 
 .card {
-  @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)];
+  @apply rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)];
 }
 
 .page-kicker {
-  @apply text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-brand-600)];
+  @apply text-[11px] font-bold uppercase tracking-[0.13em] text-[var(--color-brand-600)];
 }
 
 .page-title {
-  @apply font-display text-2xl font-extrabold tracking-[-0.025em] text-[var(--color-ink)] sm:text-3xl;
+  @apply font-display text-2xl font-bold tracking-[-0.02em] text-[var(--color-ink)] sm:text-[28px];
 }
 
 .page-description {
@@ -124,15 +131,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .empty-state {
-  @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-6 py-12 text-center shadow-[var(--shadow-card)];
+  @apply rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-card)] px-6 py-10 text-center;
 }
 
 .loading-state {
-  @apply flex min-h-36 items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--color-border)] bg-white/60 px-6 py-10 text-sm font-medium text-[var(--color-muted)];
+  @apply flex min-h-36 items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--color-border)] bg-white/60 px-6 py-10 text-sm font-medium text-[var(--color-muted)];
 }
 
 .table-frame {
-  @apply overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)];
+  @apply overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-card)];
 }
 
 .table-base {
@@ -140,11 +147,74 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .table-base thead {
-  @apply border-b border-[var(--color-border)] bg-[#f9fafc] text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)];
+  @apply border-b border-[var(--color-border)] bg-[#f7f6f2] text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)];
 }
 
 .table-base tbody tr {
-  @apply border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-brand-50)]/40;
+  @apply border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[#faf9f6];
+}
+
+.section-panel {
+  @apply rounded-lg border border-[var(--color-border)] bg-[var(--color-card)];
+}
+
+.section-heading {
+  @apply border-b border-[var(--color-border)] px-5 py-4;
+}
+
+.data-row {
+  @apply border-b border-[var(--color-border)] bg-white transition-colors last:border-b-0 hover:bg-[#faf9f6];
+}
+
+@media (max-width: 767px) {
+  .responsive-table,
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody {
+    padding: 12px;
+  }
+
+  .responsive-table tbody tr {
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+  }
+
+  .responsive-table tbody tr:last-child {
+    margin-bottom: 0;
+    border-bottom-width: 1px;
+  }
+
+  .responsive-table td {
+    display: grid;
+    grid-template-columns: minmax(90px, 0.75fr) minmax(0, 1.25fr);
+    gap: 12px;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .responsive-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
 }
 
 /* Tiptap editor surface (rule 15 A4 editor UX: readable academic typography) */
@@ -218,3 +288,184 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin: 16px 0;
   background: repeating-linear-gradient(to right, var(--color-border) 0 6px, transparent 6px 12px);
 }
+
+/* Read-only HTML preview generated from a teacher-uploaded DOCX. */
+.pf-docx-page {
+  box-sizing: border-box;
+  position: relative;
+  flex: none;
+  max-width: none;
+  overflow-wrap: anywhere;
+  background: white;
+  color: #111827;
+  font-family: "Times New Roman", serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  box-shadow: 0 8px 30px rgba(15, 27, 45, 0.16);
+}
+
+.pf-docx-content {
+  display: flow-root;
+  height: 100%;
+  transition: outline-color 160ms, background-color 160ms;
+}
+
+.pf-docx-content p {
+  min-height: 1em;
+  white-space: pre-wrap;
+  scroll-margin-top: 8rem;
+}
+
+.pf-docx-content table {
+  width: 100%;
+  margin: 10pt 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.pf-docx-content td,
+.pf-docx-content th {
+  border: 1px solid #6b7280;
+  padding: 4pt 6pt;
+  vertical-align: top;
+}
+
+.pf-docx-content td p,
+.pf-docx-content th p {
+  margin: 0;
+}
+
+.pf-docx-content img[data-check-image] {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+.pf-docx-list-marker {
+  display: inline-block;
+  width: 1.5em;
+  text-indent: 0;
+}
+
+.pf-docx-image-placeholder {
+  display: inline-flex;
+  min-width: 4rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #9ca3af;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.pf-docx-pagination-note {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pf-docx-pagination-note span {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.pf-docx-scroll {
+  max-height: calc(100vh - 13rem);
+  min-height: 280px;
+  overflow: auto;
+  background: #e7e5df;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.pf-docx-pages {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 28px;
+}
+
+.pf-docx-page-number {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fff;
+  color: #667085;
+  font: 11px/1.4 var(--font-sans);
+}
+
+.pf-docx-excluded-label {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+  font: 12px/1.4 var(--font-sans);
+}
+
+.pf-docx-annotations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pf-docx-error-location {
+  background-color: #fff0c2 !important;
+  box-shadow: inset 0 -2px #d98e2b;
+  cursor: pointer;
+}
+
+.pf-docx-error-location[data-severity="ERROR"] {
+  background-color: #fee2e2 !important;
+  box-shadow: inset 0 -2px #d83a3a;
+}
+
+.pf-docx-error-location[data-severity="INFO"] {
+  background-color: var(--color-brand-100) !important;
+  box-shadow: inset 0 -2px var(--color-brand-500);
+}
+
+.pf-docx-error-badge, .pf-docx-margin-label {
+  pointer-events: auto;
+  position: absolute;
+  border: 1px solid #d83a3a;
+  border-radius: 5px;
+  background: #fff;
+  color: #a21c1c;
+  font: 700 11px/1.4 var(--font-sans);
+  padding: 3px 5px;
+  box-shadow: 0 1px 4px #0002;
+}
+
+.pf-docx-error-badge { right: 3px; z-index: 2; }
+.pf-docx-margin-label { top: 3px; left: 3px; white-space: nowrap; }
+.pf-docx-page-issue { position: absolute; border: 2px dashed #d83a3a; }
+.pf-docx-page-issue.pf-docx-error-location { background-color: #d83a3a10 !important; box-shadow: none; }
+.pf-docx-margin-top { inset: 0 0 auto; height: max(3px, var(--margin-size)); }
+.pf-docx-margin-bottom { inset: auto 0 0; height: max(3px, var(--margin-size)); }
+.pf-docx-margin-left { inset: 0 auto 0 0; width: max(3px, var(--margin-size)); }
+.pf-docx-margin-right { inset: 0 0 0 auto; width: max(3px, var(--margin-size)); }
+.pf-docx-margin-left .pf-docx-margin-label { top: 40%; writing-mode: vertical-rl; }
+.pf-docx-margin-right .pf-docx-margin-label { top: 60%; left: auto; right: 3px; writing-mode: vertical-rl; }
+.pf-docx-page-issue.pf-docx-format-issue { inset: 2px; background-color: transparent !important; }
+.pf-docx-format-issue .pf-docx-margin-label { top: 24px; }
+.pf-docx-selected { outline: 3px solid var(--color-brand-500); outline-offset: 2px; }
+.pf-docx-paragraph-selectable { cursor: pointer; }
+.pf-docx-paragraph-selectable:hover,
+.pf-docx-paragraph-selectable:focus-visible { outline: 2px dashed var(--color-brand-500); outline-offset: 2px; }
+.pf-docx-paragraph-selected { outline: 3px solid var(--color-brand-500); outline-offset: 2px; }

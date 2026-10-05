@@ -1,14 +1,14 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.enums import InternshipStatus
 
 
 class CreateInternshipRequest(BaseModel):
     title: str
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     template_version_id: uuid.UUID
     specialty_id: uuid.UUID | None = None
     start_date: date
@@ -32,7 +32,7 @@ class InternshipOut(BaseModel):
 
 class UpdateInternshipRequest(BaseModel):
     title: str | None = None
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     start_date: date | None = None
     end_date: date | None = None
     deadline: date | None = None

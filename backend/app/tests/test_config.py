@@ -54,6 +54,15 @@ def _production_settings(**overrides):
         "EXPORT_WORKER_REQUEUE_DELAY_SECONDS": 1,
         "EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS": 15,
         "EXPORT_WORKER_HEARTBEAT_TTL_SECONDS": 90,
+        "DOCUMENT_CHECK_WORKER_POLL_SECONDS": 1,
+        "DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS": 60,
+        "DOCUMENT_CHECK_WORKER_LEASE_SECONDS": 120,
+        "DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS": 3,
+        "DOCUMENT_CHECK_MAX_FINDINGS": 5000,
+        "LOCAL_PLAGIARISM_MIN_MATCH_WORDS": 8,
+        "LOCAL_PLAGIARISM_MAX_MATCHES": 1000,
+        "LOCAL_PLAGIARISM_MAX_CANDIDATE_DOCUMENTS": 500,
+        "LOCAL_PLAGIARISM_MAX_INDEXED_WORDS": 100000,
         "TRUSTED_PROXY_IPS": "172.30.0.10,172.30.0.11",
         "MFA_TOTP_ENCRYPTION_KEY": "JQFzqBCnqc_YZjyDyObIEqomNrVDnpgymh2WryBuxSk=",
         "MFA_RECOVERY_CODE_PEPPER": "a-production-recovery-code-pepper-with-more-than-32-bytes",
@@ -112,6 +121,8 @@ def test_secure_production_configuration_is_accepted():
 def test_production_rejects_unsafe_worker_heartbeat_timing():
     with pytest.raises(ValidationError, match="HEARTBEAT_INTERVAL"):
         _production_settings(EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS=90)
+    with pytest.raises(ValidationError, match="DOCUMENT_CHECK_WORKER_LEASE_SECONDS"):
+        _production_settings(DOCUMENT_CHECK_WORKER_LEASE_SECONDS=60)
 
 
 def test_production_requires_non_default_mfa_secrets_and_two_custodians():

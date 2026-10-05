@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
@@ -16,6 +17,61 @@ class NotificationService:
         self.db.add(item)
         self.db.flush()
         return item
+
+    def create_once(
+        self,
+        organization_id: uuid.UUID,
+        user_id: uuid.UUID,
+        type: str,
+        title: str,
+        *,
+        dedupe_key: str,
+        body: str | None = None,
+        link: str | None = None,
+    ) -> tuple[Notification, bool]:
+        """Create one durable notification for a producer-specific key.
+
+        The pre-check keeps the usual polling path inexpensive. The database
+        unique constraint is still authoritative when two app processes reach
+        the same reminder at the same time.
+        """
+        existing = self.db.scalar(
+            select(Notification).where(
+                Notification.organization_id == organization_id,
+                Notification.user_id == user_id,
+                Notification.dedupe_key == dedupe_key,
+            )
+        )
+        if existing is not None:
+            return existing, False
+
+        item = Notification(
+            organization_id=organization_id,
+            user_id=user_id,
+            type=type,
+            title=title,
+            body=body,
+            link=link,
+            dedupe_key=dedupe_key,
+        )
+        try:
+            # A duplicate raised by a concurrent transaction must not roll
+            # back the notification-list request that discovered it.
+            with self.db.begin_nested():
+                self.db.add(item)
+                self.db.flush()
+        except IntegrityError:
+            existing = self.db.scalar(
+                select(Notification).where(
+                    Notification.organization_id == organization_id,
+                    Notification.user_id == user_id,
+                    Notification.dedupe_key == dedupe_key,
+                )
+            )
+            if existing is None:
+                raise
+            return existing, False
+        return item, True
 
     def list_for_user(
         self, organization_id: uuid.UUID, user_id: uuid.UUID, offset: int = 0, limit: int = 50

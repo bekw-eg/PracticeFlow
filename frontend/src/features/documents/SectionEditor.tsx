@@ -5,6 +5,7 @@ import { BlockView } from "./BlockView";
 import { useSectionEditor } from "./tiptap/useSectionEditor";
 import { EditorToolbar } from "./tiptap/EditorToolbar";
 import { NumberingProvider } from "./tiptap/NumberingContext";
+import { useTranslation } from "react-i18next";
 
 /**
  * A section's `editable` flag (set by the teacher) decides everything here:
@@ -38,15 +39,16 @@ export function SectionEditor({
   onTitleChange?: (title: string) => void;
   onBlocksChange: (blocks: Block[]) => void;
 }) {
+  const { t } = useTranslation("editor");
   const isEditable = canEdit && section.editable;
 
   return (
-    <div id={`node-${section.id}`} className="card mb-6 scroll-mt-24 p-4 sm:p-5">
-      <div className="mb-3 flex items-center gap-2">
+    <section id={`node-${section.id}`} className="mb-5 scroll-mt-24 overflow-hidden rounded-lg border border-[var(--color-border)] bg-white">
+      <div className="flex items-center gap-2 border-b border-[var(--color-border)] bg-[#faf9f6] px-4 py-3 sm:px-5">
         <span className="text-sm font-semibold text-[var(--color-muted)]">{numbering[section.id]}</span>
         {canEditTitle ? (
           <input
-            aria-label="Название раздела"
+            aria-label={t("sectionName")}
             value={section.title}
             onChange={(event) => onTitleChange?.(event.target.value)}
             className="min-w-0 flex-1 border-0 bg-transparent px-0 font-display font-bold text-[var(--color-ink)] outline-none focus:ring-0"
@@ -56,12 +58,12 @@ export function SectionEditor({
         )}
         {!section.editable && (
           <span className="ml-1 inline-flex items-center gap-1 rounded bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] text-[var(--color-muted)]">
-            <LockClosedIcon className="size-3" /> закреплено преподавателем
+            <LockClosedIcon className="size-3" aria-hidden="true" /> {t("lockedByTeacher")}
           </span>
         )}
       </div>
 
-      {isEditable ? (
+      <div className="p-4 sm:p-5">{isEditable ? (
         <NumberingProvider value={numbering}>
           <SectionRichTextEditor
             section={section}
@@ -72,8 +74,8 @@ export function SectionEditor({
         </NumberingProvider>
       ) : (
         section.blocks.map((block) => <BlockView key={block.id} block={block} meta={meta} numberPrefix={numbering[block.id]} />)
-      )}
-    </div>
+      )}</div>
+    </section>
   );
 }
 
@@ -88,7 +90,8 @@ function SectionRichTextEditor({
   allowVariableInsertion: boolean;
   onBlocksChange: (blocks: Block[]) => void;
 }) {
-  const accessibleName = `Редактор раздела: ${section.title || "Без названия"}`;
+  const { t } = useTranslation("editor");
+  const accessibleName = t("sectionEditor", { title: section.title || t("untitled") });
   const editor = useSectionEditor({
     blocks: section.blocks,
     variableCatalog,
@@ -97,12 +100,12 @@ function SectionRichTextEditor({
     onBlocksChange,
   });
 
-  if (!editor) return <p className="text-xs text-[var(--color-muted)]">Загрузка редактора…</p>;
+  if (!editor) return <p className="text-xs text-[var(--color-muted)]">{t("loadingEditor")}</p>;
 
   return (
     <div>
       <EditorToolbar editor={editor} variableCatalog={variableCatalog} allowVariableInsertion={allowVariableInsertion} />
-      <div className="pf-editor-surface rounded-xl border border-[var(--color-border)] bg-white px-3 py-3 transition-shadow">
+      <div className="pf-editor-surface min-h-52 rounded-[6px] border border-[var(--color-border)] bg-white px-4 py-4 transition-shadow sm:px-6 sm:py-5">
         <EditorContent editor={editor} />
       </div>
     </div>

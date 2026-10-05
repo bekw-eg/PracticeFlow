@@ -9,9 +9,12 @@ from app.api.v1.router import api_router
 from app.api.pagination import PAGINATION_RESPONSE_HEADERS
 from app.core.config import settings
 from app.db.session import get_db, update_pool_metrics
+from app.document_submission_limits import DocumentSubmissionBodyLimitMiddleware
 from app.middleware import RequestObservabilityMiddleware, SecurityHeadersMiddleware, configure_structured_logging
 from app.models.export_job import ExportJob
 from app.models.file import File
+from app.models.discipline import TeachingMaterial
+from app.models.document_check import StudentDocumentSubmission, TeacherDocumentSubmission, TeacherDocumentLifecycle
 from app.observability.error_tracking import configure_error_tracking
 from app.observability.metrics import metrics as observability_metrics
 from app.observability.redis_memory import observe_redis_memory
@@ -26,6 +29,7 @@ app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_PREFIX
 configure_structured_logging(settings.LOG_LEVEL)
 configure_error_tracking(settings.SENTRY_DSN, settings.SENTRY_ENVIRONMENT or settings.ENV)
 
+app.add_middleware(DocumentSubmissionBodyLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -127,7 +131,14 @@ def prometheus_metrics(
             for job_status, count in db.execute(select(ExportJob.status, func.count()).group_by(ExportJob.status)).all()
         }
         storage_usage = db.scalar(select(func.coalesce(func.sum(File.size_bytes), 0))) or 0
+        storage_usage += db.scalar(select(func.coalesce(func.sum(StudentDocumentSubmission.size_bytes), 0))) or 0
+        storage_usage += db.scalar(select(func.coalesce(func.sum(TeacherDocumentSubmission.size_bytes), 0)).where(
+            ~TeacherDocumentSubmission.lifecycle.has(TeacherDocumentLifecycle.original_deleted_at.is_not(None)),
+        )) or 0
         observability_metrics.set_export_job_states(states)
+        storage_usage += db.scalar(select(func.coalesce(func.sum(TeachingMaterial.size_bytes), 0)).where(
+            TeachingMaterial.storage_deleted_at.is_(None),
+        )) or 0
         observability_metrics.set_storage_usage_bytes(int(storage_usage))
         observability_metrics.observe_dependency("postgres", "success")
         update_pool_metrics()

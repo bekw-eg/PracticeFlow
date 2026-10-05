@@ -38,7 +38,7 @@ describe("AuditLogPage", () => {
     get.mockResolvedValue(page());
     renderPage();
 
-    expect((await screen.findAllByText("REPORT_SUBMITTED")).length).toBeGreaterThan(1);
+    expect((await screen.findAllByText("Отчёт отправлен")).length).toBeGreaterThan(1);
     expect(screen.getByText(/version_number: 2/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: "Действие аудита" }), { target: { value: "REPORT_SUBMITTED" } });
     await waitFor(() => expect(get).toHaveBeenLastCalledWith(expect.stringContaining("action=REPORT_SUBMITTED")));
@@ -51,6 +51,6 @@ describe("AuditLogPage", () => {
 
     expect(await screen.findByText("Событий по выбранным фильтрам нет")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Проверить целостность" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Цепочка проверена: 4 событий.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Цепочка проверена: 4 события.");
   });
 });

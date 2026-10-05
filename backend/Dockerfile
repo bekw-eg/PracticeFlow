@@ -1,5 +1,5 @@
-# python:3.12.14-slim-trixie
-FROM python@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217
+# python:3.12-alpine3.24 (manifest resolved 2026-10-05)
+FROM python@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,20 +8,25 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Native libraries required by WeasyPrint for production-quality PDF exports.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcairo2 \
-    libffi8 \
-    libgdk-pixbuf-2.0-0 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
+RUN apk upgrade --no-cache && apk add --no-cache \
+    cairo \
+    libffi \
+    gdk-pixbuf \
+    pango \
+    fontconfig \
+    font-dejavu \
+    font-noto \
     openssl \
+    poppler-utils \
     shared-mime-info \
-    && rm -rf /var/lib/apt/lists/*
+    && fc-cache -f
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -c "from weasyprint import HTML; assert HTML(string='<p>PDF rendering smoke test</p>').write_pdf().startswith(b'%PDF-')"
 
-RUN addgroup --system practiceflow && adduser --system --ingroup practiceflow --home /app practiceflow
+# Preserve the previous Debian image's UID/GID for existing storage volumes.
+RUN addgroup -S -g 101 practiceflow && adduser -S -u 100 -G practiceflow -h /app practiceflow
 
 COPY --chown=practiceflow:practiceflow alembic.ini docker-entrypoint.sh seed.py e2e_seed.py ./
 COPY --chown=practiceflow:practiceflow scripts ./scripts

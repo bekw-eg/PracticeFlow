@@ -1,0 +1,10 @@
+#!/bin/sh
+# Fail before committing if an environment override changes the owner identity.
+expected='bekw-eg <217148214+bekw-eg@users.noreply.github.com>'
+for role in AUTHOR COMMITTER; do
+    actual=$(git var "GIT_${role}_IDENT") || exit 1
+    case "$actual" in
+        "$expected "*) ;;
+        *) echo "PracticeFlow commits require the configured bekw-eg identity ($role)." >&2; exit 1 ;;
+    esac
+done

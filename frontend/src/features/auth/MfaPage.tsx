@@ -1,173 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { KeyIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
-
 import { getApiErrorPresentation } from "../../lib/apiError";
-import {
-  completePeerMfaRecovery,
-  getPeerMfaRecoveryStatus,
-  requestPeerMfaRecovery,
-  startMfaEnrollment,
-  submitMfaRecoveryCode,
-  verifyMfaCode,
-  verifyMfaEnrollment,
-  type MfaChallenge,
-  type MfaEnrollmentStart,
-} from "./api";
+import { completePeerMfaRecovery, getPeerMfaRecoveryStatus, requestPeerMfaRecovery, startMfaEnrollment, submitMfaRecoveryCode, verifyMfaCode, verifyMfaEnrollment, type MfaChallenge, type MfaEnrollmentStart } from "./api";
 import { useAuth } from "./useAuth";
 
 const STORAGE_KEY = "practiceflow_mfa_challenge";
-
-function getStoredChallenge(): MfaChallenge | null {
-  try {
-    const value = sessionStorage.getItem(STORAGE_KEY);
-    return value ? JSON.parse(value) as MfaChallenge : null;
-  } catch {
-    return null;
-  }
-}
+function getStoredChallenge(): MfaChallenge | null { try { const value = sessionStorage.getItem(STORAGE_KEY); return value ? JSON.parse(value) as MfaChallenge : null; } catch { return null; } }
 
 export function MfaPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { completeMfaSession } = useAuth();
+  const { t } = useTranslation("auth");
+  const location = useLocation(); const navigate = useNavigate(); const { completeMfaSession } = useAuth();
   const initialChallenge = (location.state as { challenge?: MfaChallenge } | null)?.challenge ?? getStoredChallenge();
-  const [challenge, setChallenge] = useState<MfaChallenge | null>(initialChallenge);
-  const [enrollment, setEnrollment] = useState<MfaEnrollmentStart | null>(null);
-  const [code, setCode] = useState("");
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [showRecovery, setShowRecovery] = useState(false);
-  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const isEnrollment = challenge?.status === "MFA_ENROLLMENT_REQUIRED";
-  const isPeerPending = challenge?.status === "MFA_RECOVERY_PENDING";
-
-  useEffect(() => {
-    if (!challenge) {
-      navigate("/login", { replace: true });
-      return;
-    }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(challenge));
-    if (!isEnrollment) return;
-    let current = true;
-    setError(null);
-    void startMfaEnrollment(challenge.challenge_id)
-      .then((value) => { if (current) setEnrollment(value); })
-      .catch((requestError) => { if (current) setError(requestError); });
-    return () => { current = false; };
-  }, [challenge, isEnrollment, navigate]);
-
-  const title = useMemo(() => {
-    if (isEnrollment) return "Подключите приложение-аутентификатор";
-    if (isPeerPending) return "Ожидание подтверждения";
-    return "Подтвердите вход";
-  }, [isEnrollment, isPeerPending]);
-
-  const finish = async (tokens: { access_token: string; token_type: string }) => {
-    await completeMfaSession(tokens);
-  };
-
-  const handleVerify = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!challenge) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      if (isEnrollment) {
-        const result = await verifyMfaEnrollment(challenge.challenge_id, code);
-        await finish(result);
-        setRecoveryCodes(result.recovery_codes);
-      } else {
-        const result = await verifyMfaCode(challenge.challenge_id, code);
-        await finish(result);
-        sessionStorage.removeItem(STORAGE_KEY);
-        navigate("/", { replace: true });
-      }
-    } catch (requestError) {
-      setError(requestError);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRecoveryCode = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!challenge) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const replacement = await submitMfaRecoveryCode(challenge.challenge_id, recoveryCode);
-      setChallenge(replacement);
-      setRecoveryCode("");
-      setShowRecovery(false);
-    } catch (requestError) {
-      setError(requestError);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const requestPeerRecovery = async () => {
-    if (!challenge) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const result = await requestPeerMfaRecovery(challenge.challenge_id);
-      setChallenge({ status: result.status, challenge_id: result.challenge_id, expires_at: result.expires_at });
-    } catch (requestError) {
-      setError(requestError);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const checkPeerRecovery = async () => {
-    if (!challenge) return;
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const status = await getPeerMfaRecoveryStatus(challenge.challenge_id);
-      if (!status.approved) return;
-      const replacement = await completePeerMfaRecovery(challenge.challenge_id);
-      setChallenge(replacement);
-    } catch (requestError) {
-      setError(requestError);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!challenge) return null;
-  if (recoveryCodes) {
-    return <RecoveryCodesScreen codes={recoveryCodes} onContinue={() => { sessionStorage.removeItem(STORAGE_KEY); navigate("/", { replace: true }); }} />;
-  }
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)] px-4 py-10">
-      <main className="w-full max-w-[480px] card p-6 sm:p-8">
-        <div className="mb-6 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[var(--color-brand-500)] text-white"><ShieldCheckIcon className="size-6" /></div><p className="page-kicker mt-4">Защита аккаунта</p><h1 className="mt-1 font-display text-2xl font-bold text-[var(--color-ink)]">{title}</h1></div>
-        {error !== null && <p className="mb-4 rounded-xl bg-[var(--color-danger-50)] px-3 py-2.5 text-sm text-[var(--color-danger-500)]" role="alert">{getApiErrorPresentation(error).description}</p>}
-        {isPeerPending ? <PeerPending onCheck={checkPeerRecovery} isSubmitting={isSubmitting} /> : <>
-          {isEnrollment && <EnrollmentDetails enrollment={enrollment} />}
-          {showRecovery && !isEnrollment ? <form onSubmit={handleRecoveryCode} className="space-y-3"><label className="block"><span className="form-label">Одноразовый recovery code</span><input autoFocus value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value)} className="input font-mono-code" placeholder="ABCD-EFGH-IJKL" required /></label><button disabled={isSubmitting} className="btn btn-primary w-full">Продолжить с recovery code</button><button type="button" className="btn btn-ghost w-full" onClick={() => setShowRecovery(false)}>Назад к коду приложения</button></form> : <form onSubmit={handleVerify} className="space-y-4"><label className="block"><span className="form-label">6-значный код</span><input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="input text-center font-mono-code text-xl tracking-[0.35em]" aria-label="Код из приложения-аутентификатора" placeholder="000000" required /></label><button disabled={isSubmitting || code.length !== 6 || (isEnrollment && !enrollment)} className="btn btn-primary w-full">{isSubmitting ? "Проверяем…" : isEnrollment ? "Подключить MFA" : "Подтвердить вход"}</button></form>}
-          {!isEnrollment && !showRecovery && <div className="mt-5 border-t border-[var(--color-border)] pt-4 text-center"><button type="button" onClick={() => setShowRecovery(true)} className="text-sm font-semibold text-[var(--color-brand-600)]">Использовать recovery code</button><p className="mt-3 text-xs text-[var(--color-muted)]">Super Admin без recovery code может запросить подтверждение у другого Super Admin.</p><button type="button" disabled={isSubmitting} onClick={() => void requestPeerRecovery()} className="mt-1 text-sm font-semibold text-[var(--color-brand-600)]">Запросить peer recovery</button></div>}
-        </>}
-      </main>
-    </div>
-  );
+  const [challenge, setChallenge] = useState<MfaChallenge | null>(initialChallenge); const [enrollment, setEnrollment] = useState<MfaEnrollmentStart | null>(null); const [code, setCode] = useState(""); const [recoveryCode, setRecoveryCode] = useState(""); const [showRecovery, setShowRecovery] = useState(false); const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null); const [error, setError] = useState<unknown>(null); const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEnrollment = challenge?.status === "MFA_ENROLLMENT_REQUIRED"; const isPeerPending = challenge?.status === "MFA_RECOVERY_PENDING";
+  useEffect(() => { if (!challenge) { navigate("/login", { replace: true }); return; } sessionStorage.setItem(STORAGE_KEY, JSON.stringify(challenge)); if (!isEnrollment) return; let current = true; setError(null); void startMfaEnrollment(challenge.challenge_id).then((value) => { if (current) setEnrollment(value); }).catch((requestError) => { if (current) setError(requestError); }); return () => { current = false; }; }, [challenge, isEnrollment, navigate]);
+  const title = useMemo(() => isEnrollment ? t("enrollAuthenticator") : isPeerPending ? t("peerRecoveryPending") : t("confirmSignIn"), [isEnrollment, isPeerPending, t]);
+  const finish = async (tokens: { access_token: string; token_type: string }) => { await completeMfaSession(tokens); };
+  const handleVerify = async (event: React.FormEvent) => { event.preventDefault(); if (!challenge) return; setError(null); setIsSubmitting(true); try { if (isEnrollment) { const result = await verifyMfaEnrollment(challenge.challenge_id, code); await finish(result); setRecoveryCodes(result.recovery_codes); } else { const result = await verifyMfaCode(challenge.challenge_id, code); await finish(result); sessionStorage.removeItem(STORAGE_KEY); navigate("/", { replace: true }); } } catch (requestError) { setError(requestError); } finally { setIsSubmitting(false); } };
+  const handleRecoveryCode = async (event: React.FormEvent) => { event.preventDefault(); if (!challenge) return; setError(null); setIsSubmitting(true); try { const replacement = await submitMfaRecoveryCode(challenge.challenge_id, recoveryCode); setChallenge(replacement); setRecoveryCode(""); setShowRecovery(false); } catch (requestError) { setError(requestError); } finally { setIsSubmitting(false); } };
+  const requestPeerRecovery = async () => { if (!challenge) return; setError(null); setIsSubmitting(true); try { const result = await requestPeerMfaRecovery(challenge.challenge_id); setChallenge({ status: result.status, challenge_id: result.challenge_id, expires_at: result.expires_at }); } catch (requestError) { setError(requestError); } finally { setIsSubmitting(false); } };
+  const checkPeerRecovery = async () => { if (!challenge) return; setError(null); setIsSubmitting(true); try { const status = await getPeerMfaRecoveryStatus(challenge.challenge_id); if (!status.approved) return; setChallenge(await completePeerMfaRecovery(challenge.challenge_id)); } catch (requestError) { setError(requestError); } finally { setIsSubmitting(false); } };
+  if (!challenge) return null; if (recoveryCodes) return <RecoveryCodesScreen codes={recoveryCodes} onContinue={() => { sessionStorage.removeItem(STORAGE_KEY); navigate("/", { replace: true }); }} />;
+  return <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)] px-4 py-10"><main className="w-full max-w-[480px] card p-6 sm:p-8"><div className="mb-6 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[var(--color-brand-500)] text-white"><ShieldCheckIcon aria-hidden="true" className="size-6" /></div><p className="page-kicker mt-4">{t("accountSecurity")}</p><h1 className="mt-1 font-display text-2xl font-bold text-[var(--color-ink)]">{title}</h1></div>{error !== null && <p className="mb-4 rounded-xl bg-[var(--color-danger-50)] px-3 py-2.5 text-sm text-[var(--color-danger-500)]" role="alert">{getApiErrorPresentation(error, "mfa").description}</p>}{isPeerPending ? <PeerPending onCheck={checkPeerRecovery} isSubmitting={isSubmitting} /> : <>{isEnrollment && <EnrollmentDetails enrollment={enrollment} />}{showRecovery && !isEnrollment ? <form onSubmit={handleRecoveryCode} className="space-y-3"><label className="block"><span className="form-label">{t("recoveryCode")}</span><input autoFocus value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value)} className="input font-mono-code" placeholder="ABCD-EFGH-IJKL" required /></label><button disabled={isSubmitting} className="btn btn-primary w-full">{t("continueWithRecovery")}</button><button type="button" className="btn btn-ghost w-full" onClick={() => setShowRecovery(false)}>{t("backToAuthenticatorCode")}</button></form> : <form onSubmit={handleVerify} className="space-y-4"><label className="block"><span className="form-label">{t("authenticatorCode")}</span><input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="input text-center font-mono-code text-xl tracking-[0.35em]" aria-label={t("authenticatorCodeLabel")} placeholder="000000" required /></label><button disabled={isSubmitting || code.length !== 6 || (isEnrollment && !enrollment)} className="btn btn-primary w-full">{isSubmitting ? t("verifying") : isEnrollment ? t("enableMfa") : t("confirmSignIn")}</button></form>}{!isEnrollment && !showRecovery && <div className="mt-5 border-t border-[var(--color-border)] pt-4 text-center"><button type="button" onClick={() => setShowRecovery(true)} className="text-sm font-semibold text-[var(--color-brand-600)]">{t("useRecoveryCode")}</button><p className="mt-3 text-xs text-[var(--color-muted)]">{t("peerRecoveryHint")}</p><button type="button" disabled={isSubmitting} onClick={() => void requestPeerRecovery()} className="mt-1 text-sm font-semibold text-[var(--color-brand-600)]">{t("requestPeerRecovery")}</button></div>}</>}</main></div>;
 }
-
-function EnrollmentDetails({ enrollment }: { enrollment: MfaEnrollmentStart | null }) {
-  if (!enrollment) return <p className="mb-4 text-center text-sm text-[var(--color-muted)]" role="status">Создаём QR-код…</p>;
-  return <section className="mb-5 rounded-2xl bg-[var(--color-surface)] p-4 text-center"><img className="mx-auto size-44 rounded-lg" src={enrollment.qr_data_url} alt="QR-код для добавления PracticeFlow в приложение-аутентификатор" /><p className="mt-3 text-sm text-[var(--color-ink-soft)]">Отсканируйте QR-код приложением-аутентификатором.</p><p className="mt-3 text-xs text-[var(--color-muted)]">Если камера недоступна, введите ключ вручную:</p><code className="mt-1 block break-all rounded-lg bg-white p-2 font-mono-code text-xs text-[var(--color-ink)]">{enrollment.manual_key}</code></section>;
-}
-
-function PeerPending({ onCheck, isSubmitting }: { onCheck: () => Promise<void>; isSubmitting: boolean }) {
-  return <section className="space-y-4 text-center"><p className="text-sm text-[var(--color-ink-soft)]">Другой Super Admin должен подтвердить запрос в своей панели управления. После подтверждения вы сможете подключить новый аутентификатор — сессия не будет выдана автоматически.</p><button disabled={isSubmitting} onClick={() => void onCheck()} className="btn btn-primary w-full">Проверить подтверждение</button></section>;
-}
-
-function RecoveryCodesScreen({ codes, onContinue }: { codes: string[]; onContinue: () => void }) {
-  return <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)] px-4 py-10"><main className="w-full max-w-[560px] card p-6 sm:p-8"><div className="flex items-center gap-3"><KeyIcon className="size-7 text-[var(--color-brand-600)]" /><div><p className="page-kicker">MFA подключена</p><h1 className="font-display text-xl font-bold text-[var(--color-ink)]">Сохраните recovery codes</h1></div></div><p className="mt-4 text-sm text-[var(--color-ink-soft)]" role="alert">Покажем эти коды только один раз. Храните их офлайн в защищённом месте; каждый код можно использовать только один раз.</p><div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-surface)] p-4 font-mono-code text-sm text-[var(--color-ink)] sm:grid-cols-3">{codes.map((code) => <span key={code}>{code}</span>)}</div><button onClick={onContinue} className="btn btn-primary mt-6 w-full">Я сохранил(а) коды</button></main></div>;
-}
+function EnrollmentDetails({ enrollment }: { enrollment: MfaEnrollmentStart | null }) { const { t } = useTranslation("auth"); if (!enrollment) return <p className="mb-4 text-center text-sm text-[var(--color-muted)]" role="status">{t("creatingQrCode")}</p>; return <section className="mb-5 rounded-2xl bg-[var(--color-surface)] p-4 text-center"><img className="mx-auto size-44 rounded-lg" src={enrollment.qr_data_url} alt={t("qrCodeAlt")} /><p className="mt-3 text-sm text-[var(--color-ink-soft)]">{t("scanQrCode")}</p><p className="mt-3 text-xs text-[var(--color-muted)]">{t("manualKeyHint")}</p><code className="mt-1 block break-all rounded-lg bg-white p-2 font-mono-code text-xs text-[var(--color-ink)]">{enrollment.manual_key}</code></section>; }
+function PeerPending({ onCheck, isSubmitting }: { onCheck: () => Promise<void>; isSubmitting: boolean }) { const { t } = useTranslation("auth"); return <section className="space-y-4 text-center"><p className="text-sm text-[var(--color-ink-soft)]">{t("peerRecoveryDescription")}</p><button disabled={isSubmitting} onClick={() => void onCheck()} className="btn btn-primary w-full">{t("checkApproval")}</button></section>; }
+function RecoveryCodesScreen({ codes, onContinue }: { codes: string[]; onContinue: () => void }) { const { t } = useTranslation("auth"); return <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)] px-4 py-10"><main className="w-full max-w-[560px] card p-6 sm:p-8"><div className="flex items-center gap-3"><KeyIcon aria-hidden="true" className="size-7 text-[var(--color-brand-600)]" /><div><p className="page-kicker">{t("mfaEnabled")}</p><h1 className="font-display text-xl font-bold text-[var(--color-ink)]">{t("saveRecoveryCodes")}</h1></div></div><p className="mt-4 text-sm text-[var(--color-ink-soft)]" role="alert">{t("recoveryCodesWarning")}</p><div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-surface)] p-4 font-mono-code text-sm text-[var(--color-ink)] sm:grid-cols-3">{codes.map((code) => <span key={code}>{code}</span>)}</div><button onClick={onContinue} className="btn btn-primary mt-6 w-full">{t("recoveryCodesSaved")}</button></main></div>; }

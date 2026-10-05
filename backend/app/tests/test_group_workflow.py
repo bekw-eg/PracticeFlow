@@ -1,3 +1,12 @@
+from datetime import date, datetime, timedelta, timezone
+from uuid import uuid4
+
+import pytest
+from pydantic import ValidationError
+
+from app.api.v1.reports import _deadline_state
+from app.schemas.internship import CreateInternshipRequest
+from app.schemas.report import ReportDeadlineState
 from app.tests.conftest import OrgFixture, auth_headers
 
 
@@ -23,6 +32,68 @@ def _internship_payload(template_version_id, title="Practice Internship"):
         "end_date": "2025-07-15",
         "deadline": "2025-07-20",
     }
+
+
+def test_internship_description_is_limited_to_two_thousand_characters():
+    payload = {
+        "title": "Practice Internship",
+        "template_version_id": uuid4(),
+        "start_date": "2026-06-01",
+        "end_date": "2026-07-15",
+        "deadline": "2026-07-20",
+    }
+    assert CreateInternshipRequest(**payload, description="Student instructions").description == "Student instructions"
+    with pytest.raises(ValidationError):
+        CreateInternshipRequest(**payload, description="x" * 2001)
+
+
+def test_deadline_state_distinguishes_upcoming_due_and_submitted_reports():
+    today = date(2026, 9, 1)
+
+    assert _deadline_state(today + timedelta(days=4), None, today=today) == ReportDeadlineState.UPCOMING
+    assert _deadline_state(today + timedelta(days=3), None, today=today) == ReportDeadlineState.DUE_SOON
+    assert _deadline_state(today, None, today=today) == ReportDeadlineState.DUE_TODAY
+    assert _deadline_state(today - timedelta(days=1), None, today=today) == ReportDeadlineState.OVERDUE
+    assert _deadline_state(today, datetime(2026, 9, 1, 12, tzinfo=timezone.utc), today=today) == ReportDeadlineState.SUBMITTED_ON_TIME
+    assert _deadline_state(today, datetime(2026, 9, 2, 12, tzinfo=timezone.utc), today=today) == ReportDeadlineState.SUBMITTED_LATE
+
+
+def test_student_report_list_exposes_internship_context_without_document_content(client, db, org_a: OrgFixture):
+    from app.models.group_member import GroupMember
+
+    today = datetime.now(timezone.utc).date()
+    db.add(GroupMember(group_id=org_a.group.id, student_id=org_a.student.id))
+    db.commit()
+
+    teacher_token = org_a.teacher_token(client)
+    create_response = client.post(
+        f"/api/v1/groups/{org_a.group.id}/internships",
+        headers=auth_headers(teacher_token),
+        json={
+            "title": "Frontend practice",
+            "description": "Prepare the practice diary before submitting the report.",
+            "template_version_id": str(org_a.template_version.id),
+            "start_date": (today - timedelta(days=7)).isoformat(),
+            "end_date": (today + timedelta(days=7)).isoformat(),
+            "deadline": (today + timedelta(days=2)).isoformat(),
+        },
+    )
+    internship_id = create_response.json()["id"]
+    assert client.post(f"/api/v1/internships/{internship_id}/publish", headers=auth_headers(teacher_token)).status_code == 200
+
+    student_response = client.get("/api/v1/reports", headers=auth_headers(org_a.student_token(client)))
+
+    assert student_response.status_code == 200
+    report = student_response.json()[0]
+    assert report["internship_title"] == "Frontend practice"
+    assert report["internship_description"] == "Prepare the practice diary before submitting the report."
+    assert report["group_name"] == org_a.group.name
+    assert report["start_date"] == (today - timedelta(days=7)).isoformat()
+    assert report["end_date"] == (today + timedelta(days=7)).isoformat()
+    assert report["deadline"] == (today + timedelta(days=2)).isoformat()
+    assert report["deadline_state"] == "DUE_SOON"
+    assert "document" not in report
+    assert "document_data" not in report
 
 
 def test_create_internship_fixes_template_version_permanently(client, db, org_a: OrgFixture):

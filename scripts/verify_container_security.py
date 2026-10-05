@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCKERFILES = ("backend/Dockerfile", "backend/Dockerfile.dev", "frontend/Dockerfile", "frontend/Dockerfile.dev")
+DOCKERFILES = ("backend/Dockerfile", "backend/Dockerfile.dev", "frontend/Dockerfile", "frontend/Dockerfile.dev", "testing/minio/Dockerfile")
 COMPOSE_FILES = (
     "docker-compose.yml",
     "docker-compose.prod.yml",

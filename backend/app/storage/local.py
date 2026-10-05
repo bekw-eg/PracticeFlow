@@ -6,7 +6,7 @@ from typing import BinaryIO
 
 from app.core.config import settings
 from app.observability.metrics import metrics
-from app.storage.base import StorageService, validate_storage_key
+from app.storage.base import StorageObjectExistsError, StorageService, StorageUnavailableError, validate_storage_key
 
 
 class LocalStorageService(StorageService):
@@ -40,6 +40,34 @@ class LocalStorageService(StorageService):
         finally:
             metrics.observe_storage_operation("local", "upload", result, time.perf_counter() - started)
         return key
+
+    def save_new(self, key: str, data: BinaryIO, content_type: str) -> str:
+        started = time.perf_counter()
+        result = "failure"
+        path = self._resolve(key)
+        created = False
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            # O_EXCL prevents a race from ever replacing an existing original.
+            with path.open("xb") as target:
+                created = True
+                shutil.copyfileobj(data, target, length=64 * 1024)
+                target.flush()
+                os.fsync(target.fileno())
+            result = "success"
+            return key
+        except FileExistsError as exc:
+            raise StorageObjectExistsError("Private object already exists") from exc
+        except Exception as exc:
+            # Only the handle created by this invocation authorizes cleanup.
+            if created:
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            raise StorageUnavailableError("Private object storage is unavailable") from exc
+        finally:
+            metrics.observe_storage_operation("local", "upload", result, time.perf_counter() - started)
 
     def get(self, key: str) -> bytes:
         started = time.perf_counter()

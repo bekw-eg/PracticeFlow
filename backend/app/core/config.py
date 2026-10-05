@@ -4,7 +4,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 from cryptography.fernet import Fernet
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
     SEED_ON_START: bool = False
 
+    # Migration controls. Both default to on so deploying this additive phase
+    # cannot strand existing students before DOCX submission is available.
+    DOCUMENT_CHECK_ENABLED: bool = True
+    DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED: bool = False
+    LEGACY_DOCUMENT_EDITOR_ENABLED: bool = True
+
     REFRESH_COOKIE_NAME: str = "practiceflow_refresh"
     COOKIE_SECURE: bool = False
     COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
@@ -92,6 +98,24 @@ class Settings(BaseSettings):
     # so a second backend replica cannot bypass quotas or export slots.
     RESOURCE_GUARD_BACKEND: Literal["memory", "redis"] = "memory"
     UPLOAD_MAX_FILE_BYTES: int = 5 * 1024 * 1024
+    # DOCX preflight limits are separate from editor image upload limits.
+    DOCX_MAX_UPLOAD_BYTES: int = Field(default=20 * 1024 * 1024, gt=0)
+    DOCX_MAX_ZIP_ENTRIES: int = Field(default=2048, gt=0)
+    DOCX_MAX_UNCOMPRESSED_BYTES: int = Field(default=100 * 1024 * 1024, gt=0)
+    DOCX_MAX_ENTRY_BYTES: int = Field(default=20 * 1024 * 1024, gt=0)
+    DOCX_MAX_COMPRESSION_RATIO: float = Field(default=200.0, gt=0, allow_inf_nan=False)
+    DOCUMENT_CHECK_WORKER_POLL_SECONDS: float = Field(default=1.0, gt=0, le=60)
+    DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS: int = Field(default=60, ge=1, le=3600)
+    DOCUMENT_CHECK_WORKER_LEASE_SECONDS: int = Field(default=120, ge=10, le=7200)
+    DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS: int = Field(default=3, ge=1, le=20)
+    DOCUMENT_CHECK_MAX_FINDINGS: int = Field(default=5000, ge=1, le=50000)
+    # Local similarity compares one Teacher-uploaded DOCX only with indexed
+    # originals of the same organization.  The bounds keep one scan from
+    # consuming an unbounded amount of worker CPU or database memory.
+    LOCAL_PLAGIARISM_MIN_MATCH_WORDS: int = Field(default=8, ge=3, le=100)
+    LOCAL_PLAGIARISM_MAX_MATCHES: int = Field(default=300, ge=1, le=5000)
+    LOCAL_PLAGIARISM_MAX_CANDIDATE_DOCUMENTS: int = Field(default=250, ge=1, le=5000)
+    LOCAL_PLAGIARISM_MAX_INDEXED_WORDS: int = Field(default=100000, ge=1000, le=1000000)
     UPLOAD_RATE_LIMIT_REQUESTS: int = 20
     UPLOAD_RATE_LIMIT_WINDOW_SECONDS: int = 60
     UPLOAD_USER_MAX_FILES: int = 100
@@ -269,6 +293,15 @@ class Settings(BaseSettings):
             "EXPORT_WORKER_REQUEUE_DELAY_SECONDS",
             "EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS",
             "EXPORT_WORKER_HEARTBEAT_TTL_SECONDS",
+            "DOCUMENT_CHECK_WORKER_POLL_SECONDS",
+            "DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS",
+            "DOCUMENT_CHECK_WORKER_LEASE_SECONDS",
+            "DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS",
+            "DOCUMENT_CHECK_MAX_FINDINGS",
+            "LOCAL_PLAGIARISM_MIN_MATCH_WORDS",
+            "LOCAL_PLAGIARISM_MAX_MATCHES",
+            "LOCAL_PLAGIARISM_MAX_CANDIDATE_DOCUMENTS",
+            "LOCAL_PLAGIARISM_MAX_INDEXED_WORDS",
         )
         if any(getattr(self, field) <= 0 for field in resource_limit_fields):
             raise ValueError("Upload and export resource-protection values must be positive")
@@ -288,6 +321,8 @@ class Settings(BaseSettings):
             raise ValueError("EXPORT_WORKER_LEASE_SECONDS must be at least EXPORT_WORKER_HARD_TIMEOUT_SECONDS")
         if self.EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS >= self.EXPORT_WORKER_HEARTBEAT_TTL_SECONDS:
             raise ValueError("EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS must be shorter than its TTL")
+        if self.DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS >= self.DOCUMENT_CHECK_WORKER_LEASE_SECONDS:
+            raise ValueError("DOCUMENT_CHECK_WORKER_LEASE_SECONDS must exceed the analyzer timeout")
         return self
 
 

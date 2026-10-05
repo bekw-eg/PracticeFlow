@@ -13,6 +13,8 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.models.access_link import AccessLink
 from app.models.enums import AuditEventType
+from app.models.membership import OrganizationMembership
+from app.models.organization import Organization
 from app.models.user import User
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.services.mfa_service import MfaService
@@ -75,6 +77,34 @@ class AccessLinkService:
             metadata={"purpose": record.purpose},
         )
         self.db.commit()
+
+    def request_password_reset(self, email: str, organization_slug: str) -> None:
+        """Send a reset link only for an active membership, without revealing
+        whether an account or organization matched the supplied details.
+
+        The public flow can only deliver a link through configured SMTP.  The
+        administrator-only flow remains available when SMTP is intentionally
+        disabled, because only an authenticated administrator may receive a
+        copyable one-time link.
+        """
+        if not settings.SMTP_HOST:
+            return
+
+        membership = self.db.scalar(
+            select(OrganizationMembership)
+            .join(OrganizationMembership.user)
+            .join(OrganizationMembership.organization)
+            .where(
+                User.email == email.strip().lower(),
+                Organization.slug == organization_slug.strip(),
+                User.is_active.is_(True),
+                OrganizationMembership.is_active.is_(True),
+            )
+        )
+        if membership is not None:
+            # Do not return the result: it contains the bearer token and is
+            # intended solely for delivery to the account's existing mailbox.
+            self.create(membership.user, membership.organization_id, "PASSWORD_RESET")
 
     def _send_email(self, recipient: str, purpose: str, url: str) -> str:
         if not settings.SMTP_HOST:

@@ -18,10 +18,16 @@ from app.documents.renderers.pdf.html_builder import build_html
 from app.documents.schemas import DocumentModel
 
 
-def render_pdf(document: DocumentModel, numbering: dict, load_image: ImageLoader) -> io.BytesIO:
+def render_pdf(
+    document: DocumentModel,
+    numbering: dict,
+    load_image: ImageLoader,
+    *,
+    document_language: str | None = None,
+) -> io.BytesIO:
     """`document` must already have variables resolved -- same contract as
     render_docx, so both renderers stay in lockstep on that responsibility."""
-    html_content = build_html(document, numbering, load_image)
+    html_content = build_html(document, numbering, load_image, document_language=document_language)
     buffer = io.BytesIO()
     HTML(string=html_content).write_pdf(buffer)
     buffer.seek(0)

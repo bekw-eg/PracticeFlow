@@ -1,9 +1,10 @@
 import uuid
+from datetime import date
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.security import validate_password
-from app.models.enums import RoleName
+from app.models.enums import InternshipStatus, ReportStatus, RoleName
 
 
 class OrganizationOut(BaseModel):
@@ -21,6 +22,65 @@ class ManagementOverview(BaseModel):
     teachers_count: int
     groups_count: int
     active_reports_count: int
+
+
+class DirectorReportStatusCount(BaseModel):
+    """A safe, tenant-scoped total for one report workflow status."""
+
+    status: ReportStatus
+    count: int
+
+
+class DirectorGroupSummary(BaseModel):
+    """Operational group information that does not expose student reports."""
+
+    id: uuid.UUID
+    name: str
+    academic_year: str | None
+    student_count: int
+    internships_count: int
+    reports_count: int
+    overdue_reports_count: int
+
+
+class DirectorInternshipSummary(BaseModel):
+    """Read-only internship progress metadata for a Director."""
+
+    id: uuid.UUID
+    title: str
+    group_id: uuid.UUID
+    group_name: str
+    status: InternshipStatus
+    start_date: date
+    end_date: date
+    deadline: date
+    reports_count: int
+    overdue_reports_count: int
+
+
+class DirectorTeacherLoad(BaseModel):
+    """Workload totals only; no report or comment content is included."""
+
+    id: uuid.UUID
+    full_name: str
+    groups_count: int
+    active_internships_count: int
+    reports_to_review_count: int
+
+
+class DirectorDashboard(BaseModel):
+    """Read-only tenant dashboard deliberately limited to operational data."""
+
+    organization: OrganizationOut
+    groups_count: int
+    internships_count: int
+    active_internships_count: int
+    reports_count: int
+    overdue_reports_count: int
+    report_statuses: list[DirectorReportStatusCount]
+    groups: list[DirectorGroupSummary]
+    internships: list[DirectorInternshipSummary]
+    teacher_loads: list[DirectorTeacherLoad]
 
 
 class DepartmentOut(BaseModel):

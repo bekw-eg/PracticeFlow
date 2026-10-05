@@ -1,25 +1,46 @@
 import type { DocumentModel } from "../../types/document";
+import { useTranslation } from "react-i18next";
+import { useLocaleFormatters } from "../../i18n/formatters";
 
 /** Renders a heading tree (sections -> their heading blocks) with server
  * numbering, and scrolls to the corresponding element on click. Doubles as
  * the foundation for a future automatic Table of Contents. */
-export function DocumentOutline({ document, numbering }: { document: DocumentModel; numbering: Record<string, string> }) {
+export function DocumentOutline({
+  document,
+  numbering,
+}: {
+  document: DocumentModel;
+  numbering: Record<string, string>;
+}) {
+  const { t } = useTranslation("editor");
+  const { formatNumber } = useLocaleFormatters();
   const scrollTo = (id: string) => {
-    globalThis.document.getElementById(`node-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    globalThis.document
+      .getElementById(`node-${id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <div className="card p-4">
-      <div className="mb-2 flex items-center justify-between"><h3 className="font-display text-sm font-bold text-[var(--color-ink)]">Оглавление</h3><span className="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-muted)]">{document.sections.length}</span></div>
-      <nav className="space-y-1 text-sm">
+    <div className="section-panel p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-display text-sm font-bold text-[var(--color-ink)]">
+          {t("outline")}
+        </h3>
+        <span className="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-muted)]">
+          {formatNumber(document.sections.length)}
+        </span>
+      </div>
+      <nav aria-label={t("outline")} className="space-y-1 text-sm">
         {document.sections.map((section) => (
           <div key={section.id}>
             <button
               type="button"
               onClick={() => scrollTo(section.id)}
-              className="block w-full truncate rounded-lg px-2 py-1.5 text-left text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-600)]"
+              className="block w-full truncate rounded-[5px] px-2 py-1.5 text-left text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-600)]"
             >
-              <span className="mr-1.5 text-[var(--color-muted)]">{numbering[section.id]}</span>
+              <span className="mr-1.5 text-[var(--color-muted)]">
+                {numbering[section.id]}
+              </span>
               {section.title}
             </button>
             {section.blocks
@@ -29,10 +50,16 @@ export function DocumentOutline({ document, numbering }: { document: DocumentMod
                   key={heading.id}
                   type="button"
                   onClick={() => scrollTo(heading.id)}
-                  className="block w-full truncate rounded-lg py-1 pl-7 pr-2 text-left text-xs text-[var(--color-muted)] transition-colors hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-600)]"
+                  className="block w-full truncate rounded-[5px] py-1 pl-7 pr-2 text-left text-xs text-[var(--color-muted)] transition-colors hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-600)]"
                 >
-                  {numbering[heading.id] && <span className="mr-1.5">{numbering[heading.id]}</span>}
-                  {"runs" in heading ? heading.runs.map((r) => (r.kind === "text" ? r.text : "")).join("") || "Без названия" : ""}
+                  {numbering[heading.id] && (
+                    <span className="mr-1.5">{numbering[heading.id]}</span>
+                  )}
+                  {"runs" in heading
+                    ? heading.runs
+                        .map((r) => (r.kind === "text" ? r.text : ""))
+                        .join("") || t("untitled")
+                    : ""}
                 </button>
               ))}
           </div>

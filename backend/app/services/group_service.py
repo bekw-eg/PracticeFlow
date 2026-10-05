@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.group_member import GroupMember
@@ -10,7 +11,7 @@ from app.models.student import Student
 from app.models.user import User
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
-from app.permissions.rbac import require_teacher_owns_group
+from app.permissions.rbac import PermissionDenied, require_teacher_owns_group
 from app.repositories.group_member_repository import GroupMemberRepository
 from app.repositories.group_repository import GroupRepository
 from app.repositories.student_repository import StudentRepository
@@ -128,6 +129,41 @@ class GroupService:
         self.audit.record(organization_id=org_id, actor_user_id=actor_user_id, event_type=AuditEventType.STUDENT_UPDATED, entity_type="student", entity_id=student_id, metadata={"group_membership_changed": True})
         self.db.commit()
 
+    def bulk_remove_students(
+        self,
+        org_id: uuid.UUID,
+        teacher_id: uuid.UUID,
+        group_id: uuid.UUID,
+        student_ids: list[uuid.UUID],
+        actor_user_id: uuid.UUID | None = None,
+    ) -> dict:
+        """Remove memberships only from ``group_id`` and report per-student outcomes.
+
+        The ownership check happens before any mutation; each membership lookup is
+        tenant scoped and each successful mutation is committed independently so
+        one stale selection does not prevent the rest of the batch completing.
+        """
+        self._require_owned_group(org_id, teacher_id, group_id)
+        succeeded: list[uuid.UUID] = []
+        failed: list[dict] = []
+        for student_id in self._unique_student_ids(student_ids):
+            member = self.member_repo.get(org_id, group_id, student_id)
+            if member is None or self.student_repo.get_by_id(org_id, student_id) is None:
+                failed.append({"student_id": student_id, "code": "NOT_IN_SOURCE_GROUP"})
+                continue
+            self.member_repo.delete(member)
+            self.audit.record(
+                organization_id=org_id,
+                actor_user_id=actor_user_id,
+                event_type=AuditEventType.STUDENT_UPDATED,
+                entity_type="student",
+                entity_id=student_id,
+                metadata={"group_membership_changed": True},
+            )
+            self.db.commit()
+            succeeded.append(student_id)
+        return {"succeeded_student_ids": succeeded, "failed": failed}
+
     def transfer_student(
         self, org_id: uuid.UUID, teacher_id: uuid.UUID, source_group_id: uuid.UUID, target_group_id: uuid.UUID,
         student_id: uuid.UUID, actor_user_id: uuid.UUID | None = None,
@@ -144,3 +180,62 @@ class GroupService:
         self.audit.record(organization_id=org_id, actor_user_id=actor_user_id, event_type=AuditEventType.STUDENT_UPDATED, entity_type="student", entity_id=student_id, metadata={"group_membership_changed": True})
         self.db.commit()
         return created
+
+    def bulk_transfer_students(
+        self,
+        org_id: uuid.UUID,
+        teacher_id: uuid.UUID,
+        source_group_id: uuid.UUID,
+        target_group_id: uuid.UUID,
+        student_ids: list[uuid.UUID],
+        actor_user_id: uuid.UUID | None = None,
+    ) -> dict:
+        """Move memberships between two groups owned by the current teacher.
+
+        A transfer removes only the selected student's membership from the source
+        group. Memberships in every other group are left untouched.
+        """
+        self._require_owned_group(org_id, teacher_id, source_group_id)
+        self._require_owned_group(org_id, teacher_id, target_group_id)
+        succeeded: list[uuid.UUID] = []
+        failed: list[dict] = []
+        for student_id in self._unique_student_ids(student_ids):
+            member = self.member_repo.get(org_id, source_group_id, student_id)
+            if member is None or self.student_repo.get_by_id(org_id, student_id) is None:
+                failed.append({"student_id": student_id, "code": "NOT_IN_SOURCE_GROUP"})
+                continue
+            if self.member_repo.exists(target_group_id, student_id):
+                failed.append({"student_id": student_id, "code": "ALREADY_IN_TARGET_GROUP"})
+                continue
+            try:
+                self.member_repo.delete(member)
+                self.member_repo.add(GroupMember(group_id=target_group_id, student_id=student_id))
+                self.audit.record(
+                    organization_id=org_id,
+                    actor_user_id=actor_user_id,
+                    event_type=AuditEventType.STUDENT_UPDATED,
+                    entity_type="student",
+                    entity_id=student_id,
+                    metadata={"group_membership_changed": True},
+                )
+                self.db.commit()
+            except IntegrityError:
+                # A concurrent transfer can make the target membership appear
+                # after the pre-check. Roll back this student's transaction so
+                # their source membership is never lost.
+                self.db.rollback()
+                failed.append({"student_id": student_id, "code": "TRANSFER_CONFLICT"})
+                continue
+            succeeded.append(student_id)
+        return {"succeeded_student_ids": succeeded, "failed": failed}
+
+    def _require_owned_group(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID) -> None:
+        """Apply tenant and ownership checks together for bulk operations."""
+        if self.group_repo.get(org_id, group_id) is None:
+            raise PermissionDenied("Group not found or not accessible.")
+        require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
+
+    @staticmethod
+    def _unique_student_ids(student_ids: list[uuid.UUID]) -> list[uuid.UUID]:
+        """Avoid performing an accidental duplicate mutation in one request."""
+        return list(dict.fromkeys(student_ids))

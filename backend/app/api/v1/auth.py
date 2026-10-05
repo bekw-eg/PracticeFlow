@@ -11,8 +11,8 @@ from app.dependencies.auth import RequestContext, get_current_context
 from app.rate_limit.base import LoginRateLimiter
 from app.rate_limit.dependencies import get_login_rate_limiter, get_mfa_rate_limiter
 from app.repositories.user_repository import UserRepository
-from app.schemas.access import CompleteAccessRequest, OrganizationChoice, SwitchOrganizationRequest
-from app.schemas.auth import CurrentUserResponse, LoginRequest, TokenResponse
+from app.schemas.access import CompleteAccessRequest, OrganizationChoice, PasswordResetRequest, SwitchOrganizationRequest
+from app.schemas.auth import CurrentUserResponse, LoginRequest, ProductFeatures, TokenResponse
 from app.schemas.mfa import (
     MfaBreakGlassStartRequest,
     MfaChallengeResponse,
@@ -36,6 +36,19 @@ def _login_rate_key(request: Request, email: str) -> str:
     remote = request.client.host if request.client else "unknown"
     normalized = f"{remote}:{email.strip().lower()}"
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _password_reset_rate_keys(request: Request, email: str, organization_slug: str) -> tuple[str, str]:
+    """Apply both a per-IP and a per-identity bucket to public reset requests.
+    The values are hashed before reaching the limiter, so neither a raw email
+    nor an organization slug becomes a cache key or a metric label.
+    """
+    remote = request.client.host if request.client else "unknown"
+    identity = f"{email.strip().lower()}:{organization_slug.strip()}"
+    return (
+        hashlib.sha256(f"password-reset:ip:{remote}".encode("utf-8")).hexdigest(),
+        hashlib.sha256(f"password-reset:identity:{identity}".encode("utf-8")).hexdigest(),
+    )
 
 
 def _check_login_rate(limiter: LoginRateLimiter, key: str, reason: str = "login_rate") -> None:
@@ -151,6 +164,10 @@ def me(ctx: RequestContext = Depends(get_current_context), db: Session = Depends
         full_name=user.full_name,
         email=user.email,
         role=ctx.role,
+        features=ProductFeatures(
+            document_check_enabled=settings.DOCUMENT_CHECK_ENABLED,
+            legacy_document_editor_enabled=settings.LEGACY_DOCUMENT_EDITOR_ENABLED,
+        ),
     )
 
 
@@ -317,3 +334,25 @@ def mfa_break_glass_start(
 @router.post("/complete-access", status_code=204)
 def complete_access(payload: CompleteAccessRequest, db: Session = Depends(get_db)) -> None:
     AccessLinkService(db).complete(payload.token, payload.password)
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+def request_password_reset(
+    payload: PasswordResetRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    limiter: LoginRateLimiter = Depends(get_login_rate_limiter),
+) -> None:
+    """Accept a public password-reset request without account enumeration.
+
+    The response is deliberately identical for unknown users, unknown
+    organizations, inactive memberships, and successful email delivery.
+    Password reset links do not authenticate a session; normal MFA still runs
+    on the next sign-in.
+    """
+    rate_keys = _password_reset_rate_keys(request, payload.email, payload.organization_slug)
+    for rate_key in rate_keys:
+        _check_login_rate(limiter, rate_key, "password_reset_rate")
+    for rate_key in rate_keys:
+        limiter.record_failure(rate_key)
+    AccessLinkService(db).request_password_reset(payload.email, payload.organization_slug)
