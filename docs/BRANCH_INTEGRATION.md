@@ -50,6 +50,8 @@ Image construction includes a mandatory native WeasyPrint PDF smoke check.
 The frontend copies the reviewed upstream Nginx binary/config into a fresh
 Alpine runtime with current security-patched libraries. Both application
 processes remain non-root; the private-storage and proxy policies are retained.
+The backend explicitly retains its previous UID 100/GID 101 for compatibility
+with existing private storage volumes.
 
 The test-only MinIO image is compiled from pinned upstream source commits:
 

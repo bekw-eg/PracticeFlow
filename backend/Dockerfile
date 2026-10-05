@@ -25,7 +25,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c "from weasyprint import HTML; assert HTML(string='<p>PDF rendering smoke test</p>').write_pdf().startswith(b'%PDF-')"
 
-RUN addgroup -S practiceflow && adduser -S -G practiceflow -h /app practiceflow
+# Preserve the previous Debian image's UID/GID for existing storage volumes.
+RUN addgroup -S -g 101 practiceflow && adduser -S -u 100 -G practiceflow -h /app practiceflow
 
 COPY --chown=practiceflow:practiceflow alembic.ini docker-entrypoint.sh seed.py e2e_seed.py ./
 COPY --chown=practiceflow:practiceflow scripts ./scripts

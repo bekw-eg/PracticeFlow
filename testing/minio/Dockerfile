@@ -7,8 +7,8 @@ ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOSUMDB=sum.golang.org
 RUN go install -trimpath -ldflags="-s -w" github.com/minio/minio@9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a \
     && go install -trimpath -ldflags="-s -w" github.com/minio/mc@7394ce0dd2a80935aded936b09fa12cbb3cb8096 \
     && mkdir /licenses \
-    && cp /go/pkg/mod/github.com/minio/minio@*/LICENSE /licenses/MinIO-LICENSE \
-    && cp /go/pkg/mod/github.com/minio/mc@*/LICENSE /licenses/mc-LICENSE
+    && cp "$(go list -m -f '{{.Dir}}' github.com/minio/minio@9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a)/LICENSE" /licenses/MinIO-LICENSE \
+    && cp "$(go list -m -f '{{.Dir}}' github.com/minio/mc@7394ce0dd2a80935aded936b09fa12cbb3cb8096)/LICENSE" /licenses/mc-LICENSE
 
 # alpine:3.24 (manifest resolved 2026-10-05)
 FROM alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
