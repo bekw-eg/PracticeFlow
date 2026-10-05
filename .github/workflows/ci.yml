@@ -166,7 +166,15 @@ jobs:
       - name: Save E2E container status without application logs
         if: failure()
         working-directory: .
-        run: docker compose --project-name "$COMPOSE_PROJECT_NAME" -f docker-compose.e2e.yml ps --format json
+        run: |
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" -f docker-compose.e2e.yml ps --format json
+          for container_id in $(docker compose --project-name "$COMPOSE_PROJECT_NAME" -f docker-compose.e2e.yml ps --all --quiet); do
+            docker inspect "$container_id" | jq '.[0] | {
+              service: .Config.Labels["com.docker.compose.service"],
+              state: {status: .State.Status, exit_code: .State.ExitCode, oom_killed: .State.OOMKilled},
+              health: {status: .State.Health.Status, probes: [.State.Health.Log[]? | {start: .Start, end: .End, exit_code: .ExitCode}]}
+            }'
+          done
       - name: Stop isolated E2E stack
         if: always()
         working-directory: .

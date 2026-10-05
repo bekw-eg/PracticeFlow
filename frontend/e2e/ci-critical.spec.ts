@@ -16,7 +16,7 @@ async function loginThroughUi(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Пароль").fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Войти" }).click();
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
 }
 
 async function loginThroughApi(request: APIRequestContext, email: string, organizationSlug = "demo-university") {

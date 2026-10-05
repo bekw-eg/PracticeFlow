@@ -66,6 +66,13 @@ remains enabled; upstream AGPL licenses are included in the image. The image
 runs as UID/GID 10001, keeps the bucket private and is used only by the isolated
 E2E stack. Production S3 configuration is unchanged.
 The first source build may take longer, so E2E has a 40-minute job limit.
+Worker health probes still verify database/storage and export dependencies.
+Their E2E timeout is 15 seconds with a 20-second startup grace period and
+10-second interval, allowing Python imports under the existing CPU limits.
+Failure diagnostics include probe timings/exit codes and container status;
+application logs, probe output and container environment are excluded.
+Browser login scenarios select the exact submit button name because the
+password-recovery action also contains the word "войти".
 
 Validation results and any remaining merge blockers are recorded in the
 integration pull request. Merge requires successful CI and supply-chain scans

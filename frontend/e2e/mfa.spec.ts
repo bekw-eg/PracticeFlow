@@ -5,7 +5,7 @@ test("Director password stage creates an MFA enrollment challenge without issuin
   await page.getByLabel("Email").fill("director@demo.edu");
   await page.getByLabel("Пароль").fill("Practice123!");
   const loginResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/v1/auth/login");
-  await page.getByRole("button", { name: "Войти" }).click();
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
 
   const response = await loginResponse;
   expect(response.status()).toBe(202);
