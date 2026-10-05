@@ -1,15 +1,13 @@
-"""Foundation-only routes for SUPER_ADMIN and DIRECTOR (rule 3).
-
-Deliberately minimal: authentication + a single placeholder response, proving
-the role exists end-to-end (login works, RBAC recognizes it) without any real
-business functionality — that's future-phase work and is not stubbed here
-with fake data.
-"""
+"""Small administration routes, including the Director's read-only dashboard."""
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.dependencies.auth import RequestContext, get_current_context
+from app.db.session import get_db
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
+from app.schemas.management import DirectorDashboard
+from app.services.management_service import ManagementService
 
 router = APIRouter(tags=["admin-foundation"])
 
@@ -20,7 +18,11 @@ def super_admin_placeholder(ctx: RequestContext = Depends(get_current_context)) 
     return {"message": "Super Admin dashboard is not yet implemented in this phase.", "role": ctx.role}
 
 
-@router.get("/director/dashboard")
-def director_placeholder(ctx: RequestContext = Depends(get_current_context)) -> dict:
+@router.get("/director/dashboard", response_model=DirectorDashboard)
+def director_dashboard(
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+) -> DirectorDashboard:
+    """Tenant-scoped aggregates only; report documents and review data stay private."""
     require_role(ctx.role, RoleName.DIRECTOR)
-    return {"message": "Director dashboard is not yet implemented in this phase.", "role": ctx.role}
+    return ManagementService(db).director_dashboard(ctx.organization_id)

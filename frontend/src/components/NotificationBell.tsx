@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import type { NotificationOut } from "../types/api";
 import { BellIcon, CheckIcon, InboxIcon } from "@heroicons/react/24/outline";
 import { ErrorState, LoadingState } from "./ui/StateViews";
 import { PaginationControls } from "./ui/PaginationControls";
 import { DEFAULT_PAGE_SIZE, fetchPage } from "../lib/pagination";
+import { useLocaleFormatters } from "../i18n/formatters";
+import { notificationBody, notificationTitle } from "../lib/notificationContent";
 
 export function NotificationBell() {
+  const { t } = useTranslation("common");
+  const { formatCount, formatNotificationBadge } = useLocaleFormatters();
   const [open, setOpen] = useState(false);
   const [offset, setOffset] = useState(0);
   const queryClient = useQueryClient();
@@ -16,5 +21,10 @@ export function NotificationBell() {
   const readAll = useMutation({ mutationFn: async () => api.post("/notifications/read-all"), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["notifications"] }) });
   const items = page?.items ?? [];
   const unread = items.filter((item) => !item.read_at).length;
-  return <div className="relative"><button onClick={() => setOpen((value) => !value)} className="icon-button relative" aria-label="Уведомления" aria-expanded={open}><BellIcon className="size-5" aria-hidden="true" />{unread > 0 && <span className="absolute right-1 top-1 min-w-4 rounded-full bg-[var(--color-danger-500)] px-1 text-center text-[10px] font-bold leading-4 text-white">{unread > 9 ? "9+" : unread}</span>}</button>{open && <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-float)]"><div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3.5"><p className="font-display font-bold text-[var(--color-ink)]">Уведомления</p>{unread > 0 && <button onClick={() => readAll.mutate()} className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-600)]"><CheckIcon className="size-3.5" />Прочитать всё</button>}</div><div className="max-h-96 overflow-y-auto">{isLoading && <div className="p-4"><LoadingState label="Загрузка уведомлений…" /></div>}{isError && <div className="p-4"><ErrorState compact error={error} onRetry={() => void refetch()} /></div>}{!isLoading && !isError && items.length === 0 && <div className="p-7 text-center"><InboxIcon className="mx-auto size-6 text-[var(--color-muted)]" /><p className="mt-2 text-sm text-[var(--color-muted)]">Новых событий нет.</p></div>}{!isError && items.map((item) => <Link key={item.id} onClick={() => setOpen(false)} to={item.link ?? "#"} className={`block border-b border-[var(--color-border)] px-4 py-3.5 transition-colors last:border-0 hover:bg-[var(--color-surface)] ${item.read_at ? "bg-white" : "bg-[var(--color-brand-50)]"}`}><p className="text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>{item.body && <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">{item.body}</p>}</Link>)}{!isError && page && <div className="px-4 pb-3"><PaginationControls pagination={page} onPageChange={setOffset} isFetching={isFetching} label="Уведомления" /></div>}</div></div>}</div>;
+  const buttonLabel = unread > 0 ? formatCount(unread, (values) => t("unreadNotifications", values)) : t("notifications");
+
+  return <div className="relative">
+    <button onClick={() => setOpen((value) => !value)} className="icon-button relative" aria-label={buttonLabel} aria-expanded={open} aria-haspopup="dialog"><BellIcon className="size-5" aria-hidden="true" />{unread > 0 && <span aria-hidden="true" className="absolute right-1 top-1 min-w-4 rounded-full bg-[var(--color-danger-500)] px-1 text-center text-[10px] font-bold leading-4 text-white">{formatNotificationBadge(unread)}</span>}</button>
+    {open && <div role="dialog" aria-label={t("notificationCenter")} className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-float)]"><div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3.5"><p className="font-display font-bold text-[var(--color-ink)]">{t("notifications")}</p>{unread > 0 && <button onClick={() => readAll.mutate()} className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-600)]"><CheckIcon className="size-3.5" aria-hidden="true" />{t("markAllNotificationsRead")}</button>}</div><div className="max-h-96 overflow-y-auto">{isLoading && <div className="p-4"><LoadingState label={t("loadingNotifications")} /></div>}{isError && <div className="p-4"><ErrorState compact error={error} onRetry={() => void refetch()} /></div>}{!isLoading && !isError && items.length === 0 && <div className="p-7 text-center"><InboxIcon className="mx-auto size-6 text-[var(--color-muted)]" aria-hidden="true" /><p className="mt-2 text-sm text-[var(--color-muted)]">{t("noNotifications")}</p></div>}{!isError && items.map((item) => { const body = notificationBody(item, t); return <Link key={item.id} onClick={() => setOpen(false)} to={item.link ?? "#"} className={`block border-b border-[var(--color-border)] px-4 py-3.5 transition-colors last:border-0 hover:bg-[var(--color-surface)] ${item.read_at ? "bg-white" : "bg-[var(--color-brand-50)]"}`}><p className="text-sm font-semibold text-[var(--color-ink)]">{notificationTitle(item, t)}</p>{body && <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">{body}</p>}</Link>; })}{!isError && page && <div className="px-4 pb-3"><PaginationControls pagination={page} onPageChange={setOffset} isFetching={isFetching} label={t("notifications")} /></div>}</div></div>}
+  </div>;
 }

@@ -13,6 +13,7 @@ Backend — FastAPI, SQLAlchemy 2, Alembic и PostgreSQL. Frontend — React 19,
 - [Operations runbook](docs/OPERATIONS_RUNBOOK.md)
 - [Data retention and recovery boundaries](docs/DATA_RETENTION.md)
 - [Role and tenant-boundary matrix](docs/ROLE_MATRIX.md)
+- [Disciplines, topics and private teaching materials](docs/DISCIPLINES.md)
 - [Capacity planning](docs/CAPACITY_PLANNING.md)
 - [Supply-chain security](docs/SUPPLY_CHAIN_SECURITY.md)
 
@@ -483,7 +484,7 @@ Image upload читает поток кусками, декодирует и п�
 
 ### Перенос LocalStorage в S3
 
-Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files` и succeeded `export_jobs`; схема БД и API не меняются, потому что existing storage keys сохраняются. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
+Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в `files`, succeeded `export_jobs` и сформированных `group_review_reports`; схема БД и API не меняются, потому что existing storage keys сохраняются. Сначала примените `alembic upgrade head`. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
 
 Сначала сделайте проверенный LocalStorage backup, создайте private target bucket/versioning и предоставьте deployment credential. Выполняйте реальную копию в maintenance window (остановите backend и export-worker либо исключите cleanup/uploads), чтобы database metadata и набор objects не менялись во время сверки. Пример запуска из image с legacy volume, где `<backend-image>` и Docker network выбирает deployer:
 
@@ -500,6 +501,19 @@ docker run --rm --env-file .env.s3-migration \
 ```
 
 The command never runs automatically during deployment and this repository does not run it against real data.
+
+## Презентации проверки группы
+
+Преподаватель открывает **Группы проверки**, создаёт отчёт из завершённых
+проверок, выбирает нарушения и примеры, добавляет текст, сохраняет черновик
+и скачивает редактируемый PPTX. Статистика всей группы и закреплённые результаты
+сохраняются в неизменном снимке. Ранее сформированные файлы доступны для
+повторного приватного скачивания. Поддерживаются RU, KK и EN.
+
+После обновления зависимостей примените `alembic upgrade head`. Полный сценарий,
+API, ограничения и хранение описаны в
+[GROUP_REVIEW_PRESENTATIONS.md](docs/GROUP_REVIEW_PRESENTATIONS.md).
+Основа — [группы преподавательской проверки](docs/TEACHER_REVIEW_GROUPS.md).
 
 ## Лимиты upload и export
 
@@ -518,6 +532,41 @@ Development использует потокобезопасный in-memory guar
 - `EXPORT_JOB_RETENTION_SECONDS=86400` — хранить готовый artifact и job result 24 часа; `EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS=5`, `EXPORT_WORKER_REQUEUE_DELAY_SECONDS=1` — polling Redis worker и задержка при занятых slots.
 
 Счётчики Redis именуются tenant-scoped (`organization_id + user_id`); org storage reservation не содержит filename, document или данные другой организации. Redis Lua operations атомарно резервируют user quota, org quota и worker export slots, поэтому параллельные worker не могут пройти через проверку одновременно. При `429` backend добавляет `Retry-After`: frontend показывает понятное сообщение; кнопка export не создаёт повторные jobs, пока активная job готовится.
+
+### Асинхронная проверка готовых DOCX
+
+Преподавателю также доступен раздел **Группы проверки**: загрузка курсовых и
+отчётов по группам без студенческих аккаунтов, замечания, отдельное завершение
+преподавательской проверки и общая сводка нарушений по закреплённым запускам.
+Для обновления нужна новая миграция `4c5d6e7f8091` (`alembic upgrade head`).
+Сценарий, API и правила расчёта описаны в
+[Группах проверки преподавателя](docs/TEACHER_REVIEW_GROUPS.md).
+
+Раздел проверки документов доступен только преподавателю. Преподаватель сам
+выбирает опубликованную версию профиля, при необходимости указывает имя
+студента или название работы и загружает готовый `.docx`. Аккаунт студента,
+группа и назначение для этого не требуются. Принятый оригинал сохраняется
+неизменяемым и создаёт `DocumentCheckJob` в PostgreSQL. Отдельный
+`document-check-worker` забирает задания через `FOR UPDATE SKIP LOCKED`, повторно
+проверяет размер и SHA-256 неизменяемого оригинала и запускает разбор OOXML в
+дочернем процессе с жёстким таймаутом. В Phase 2.2 выполняются правила формата
+страницы и полей, шрифтов и размеров, интервалов и отступов. Остальные типы
+правил явно учитываются как пропущенные, поэтому интерфейс не выдаёт их за
+выполненные.
+
+Результат содержит только структурные координаты и ожидаемые/обнаруженные
+параметры без текста документа. Историю, результаты и оригинал видит только тот
+преподаватель, который загрузил файл, внутри своей текущей организации.
+Студенческие маршруты проверки скрыты из интерфейса и OpenAPI и по умолчанию
+возвращают `404`; совместимость включается только явной настройкой
+`DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED=true`. Оригинал не изменяется;
+автоматическая оценка и исправленный DOCX/PDF не создаются.
+
+Параметры `DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS`,
+`DOCUMENT_CHECK_WORKER_LEASE_SECONDS`, `DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS`,
+`DOCUMENT_CHECK_WORKER_POLL_SECONDS` и `DOCUMENT_CHECK_MAX_FINDINGS` задаются в
+окружении. Lease должен быть больше таймаута. Compose автоматически поднимает
+worker и проверяет его доступ к PostgreSQL и private storage.
 
 ### Асинхронный DOCX/PDF export
 

@@ -11,7 +11,12 @@ class Group(UUIDPKMixin, TimestampMixin, Base):
     """A student cohort, e.g. BK2405."""
 
     __tablename__ = "groups"
-    __table_args__ = (UniqueConstraint("organization_id", "name", name="uq_group_org_name"),)
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_group_org_name"),
+        # Redundant with the UUID primary key for uniqueness, but required as
+        # the target of tenant-aware composite foreign keys in additive domains.
+        UniqueConstraint("organization_id", "id", name="uq_groups_org_id"),
+    )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True

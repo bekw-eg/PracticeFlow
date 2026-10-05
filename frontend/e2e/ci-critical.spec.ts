@@ -16,7 +16,7 @@ async function loginThroughUi(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Пароль").fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Войти" }).click();
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
 }
 
 async function loginThroughApi(request: APIRequestContext, email: string, organizationSlug = "demo-university") {
@@ -62,13 +62,13 @@ test("student role is denied teacher data and cannot discover another tenant rep
   expect(await crossTenantReport.json()).toMatchObject({ detail: "Report not found" });
 });
 
-test("teacher login lands on groups and the student-only route is blocked in the UI", async ({ page }) => {
+test("teacher login lands on document checks and the student-only route is blocked in the UI", async ({ page }) => {
   await loginThroughUi(page, "teacher@demo.edu");
-  await expect(page).toHaveURL(/\/groups$/);
-  await expect(page.getByRole("heading", { name: "Мои группы" })).toBeVisible();
+  await expect(page).toHaveURL(/\/document-checks$/);
+  await expect(page.getByRole("heading", { name: "Проверка документов" })).toBeVisible();
 
   await page.goto("/reports");
-  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page).toHaveURL(/\/document-checks$/);
 });
 
 test("student asynchronous DOCX export is deduplicated, completed by the worker and downloaded", async ({ request }) => {

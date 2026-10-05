@@ -21,11 +21,17 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class ProductFeatures(BaseModel):
+    document_check_enabled: bool
+    legacy_document_editor_enabled: bool
+
+
 class CurrentUserResponse(BaseModel):
     user_id: uuid.UUID
     organization_id: uuid.UUID
     full_name: str
     email: str
     role: str
+    features: ProductFeatures
 
     model_config = {"from_attributes": True}

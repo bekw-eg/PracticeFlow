@@ -34,6 +34,24 @@ def add_page_number_field(paragraph: Paragraph) -> None:
     run._r.append(fld_end)
 
 
+def set_all_script_font_families(word_style, font_family: str) -> None:
+    """Set the preferred font for every script slot Word and LibreOffice use.
+
+    ``python-docx`` only writes a subset of ``w:rFonts`` for ``font.name``.
+    Explicitly setting the Latin, high-ANSI, East Asian and complex-script
+    slots keeps Cyrillic Kazakh glyphs on the document's selected font in both
+    renderers while preserving every authored character unchanged.
+    """
+    word_style.font.name = font_family
+    rpr = word_style.element.get_or_add_rPr()
+    rfonts = rpr.find(qn("w:rFonts"))
+    if rfonts is None:
+        rfonts = OxmlElement("w:rFonts")
+        rpr.append(rfonts)
+    for script in ("ascii", "hAnsi", "eastAsia", "cs"):
+        rfonts.set(qn(f"w:{script}"), font_family)
+
+
 def clear_theme_font_and_color(word_style) -> None:
     """python-docx's `font.name = ...` sets `w:rFonts/@w:ascii` but leaves
     any pre-existing `w:asciiTheme`/`w:eastAsiaTheme`/`w:hAnsiTheme`/

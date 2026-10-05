@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.pagination import PaginationParams, set_pagination_headers
 from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
+from app.dependencies.features import require_legacy_document_editor_enabled
 from app.documents.numbering import compute_numbering
 from app.documents.schemas import DocumentModel
 from app.models.enums import RoleName
@@ -57,7 +58,10 @@ def list_templates(response: Response, page: PaginationParams = Depends(), ctx: 
 
 @router.post("", response_model=TemplateOut, status_code=201)
 def create_template(
-    payload: CreateTemplateRequest, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)
+    payload: CreateTemplateRequest,
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> TemplateOut:
     require_role(ctx.role, RoleName.TEACHER)
     service = TemplateService(db)
@@ -71,6 +75,7 @@ def create_version(
     payload: CreateTemplateVersionRequest,
     ctx: RequestContext = Depends(get_current_context),
     db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> TemplateVersionSummary:
     require_role(ctx.role, RoleName.TEACHER)
     service = TemplateService(db)
@@ -111,6 +116,7 @@ def update_version_document(
     payload: UpdateTemplateVersionDocumentRequest,
     ctx: RequestContext = Depends(get_current_context),
     db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> TemplateVersionDetail:
     require_role(ctx.role, RoleName.TEACHER)
     service = TemplateService(db)

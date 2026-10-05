@@ -6,6 +6,8 @@ __pycache__
 *.env
 *.env.*
 .pytest_cache
+.codex-test-tmp
+.t
 .mypy_cache
 .ruff_cache
 storage_data

@@ -2,8 +2,10 @@ import type { Block, DocumentMeta } from "../../types/document";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { resolveStyle } from "./resolveStyle";
 import { RunView } from "./RunView";
+import { useTranslation } from "react-i18next";
 
 export function BlockView({ block, meta, numberPrefix }: { block: Block; meta: DocumentMeta; numberPrefix?: string }) {
+  const { t } = useTranslation("editor");
   switch (block.type) {
     case "paragraph":
       return (
@@ -33,7 +35,7 @@ export function BlockView({ block, meta, numberPrefix }: { block: Block; meta: D
             />
           ) : (
             <div className="inline-flex h-32 w-48 items-center justify-center rounded border border-dashed border-[var(--color-border)] text-xs text-[var(--color-muted)]">
-              Нет изображения
+              {t("noImage")}
             </div>
           )}
           {block.caption && <figcaption className="mt-1 text-xs text-[var(--color-muted)]">{block.caption}</figcaption>}
@@ -83,7 +85,7 @@ export function BlockView({ block, meta, numberPrefix }: { block: Block; meta: D
       return (
         <div className="my-4 flex items-center gap-2 text-xs text-[var(--color-muted)]">
           <span className="h-px flex-1 bg-[var(--color-border)]" />
-          разрыв страницы
+          {t("pageBreak")}
           <span className="h-px flex-1 bg-[var(--color-border)]" />
         </div>
       );

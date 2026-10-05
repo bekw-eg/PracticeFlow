@@ -1,17 +1,18 @@
-# python:3.12.14-slim-trixie
-FROM python@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217
+# python:3.12-alpine3.24 (manifest resolved 2026-10-05)
+FROM python@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libcairo2 libffi-dev libgdk-pixbuf-2.0-0 \
-    libpango-1.0-0 libpangocairo-1.0-0 openssl shared-mime-info \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache && apk add --no-cache \
+    build-base cairo libffi-dev gdk-pixbuf pango fontconfig \
+    font-dejavu font-noto openssl poppler-utils shared-mime-info \
+    && fc-cache -f
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN addgroup --system practiceflow && adduser --system --ingroup practiceflow --home /app practiceflow
+# Preserve the previous Debian image's UID/GID for existing storage volumes.
+RUN addgroup -S -g 101 practiceflow && adduser -S -u 100 -G practiceflow -h /app practiceflow
 
 COPY --chown=practiceflow:practiceflow . .
 RUN mkdir -p /app/storage_data \
@@ -22,4 +23,4 @@ USER practiceflow
 
 EXPOSE 8000
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-access-log"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app", "--no-access-log"]

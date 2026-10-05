@@ -6,8 +6,10 @@ import {
   ListBulletIcon, TableCellsIcon, PhotoIcon, ScissorsIcon, CodeBracketSquareIcon,
 } from "@heroicons/react/24/outline";
 import type { VariableCatalogEntry } from "../../../types/document";
+import { useTranslation } from "react-i18next";
 
 export function EditorToolbar({ editor, variableCatalog, allowVariableInsertion = true }: { editor: Editor; variableCatalog: VariableCatalogEntry[]; allowVariableInsertion?: boolean }) {
+  const { t } = useTranslation("editor");
   const [showVariablePicker, setShowVariablePicker] = useState(false);
 
   const setAlignment = (alignment: "left" | "center" | "right" | "justify") => {
@@ -17,18 +19,22 @@ export function EditorToolbar({ editor, variableCatalog, allowVariableInsertion 
   };
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1 rounded-xl border border-[var(--color-border)] bg-[#fbfcff] p-1.5 shadow-[0_1px_2px_rgba(15,27,45,0.03)]">
-      <ToolbarButton icon={ArrowUturnLeftIcon} label="Отменить" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} />
-      <ToolbarButton icon={ArrowUturnRightIcon} label="Повторить" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} />
+    <div
+      role="toolbar"
+      aria-label={t("toolbar")}
+      className="mb-3 flex flex-wrap items-center gap-1 rounded-[6px] border border-[var(--color-border)] bg-[#f7f6f2] p-1.5"
+    >
+      <ToolbarButton icon={ArrowUturnLeftIcon} label={t("undo")} onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} />
+      <ToolbarButton icon={ArrowUturnRightIcon} label={t("redo")} onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} />
       <Divider />
-      <ToolbarButton icon={BoldIcon} label="Жирный" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} />
-      <ToolbarButton icon={ItalicIcon} label="Курсив" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} />
-      <ToolbarButton icon={UnderlineIcon} label="Подчёркнутый" onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} />
+      <ToolbarButton icon={BoldIcon} label={t("bold")} onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} />
+      <ToolbarButton icon={ItalicIcon} label={t("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} />
+      <ToolbarButton icon={UnderlineIcon} label={t("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} />
       <Divider />
-      <ToolbarButton icon={Bars3BottomLeftIcon} label="По левому краю" onClick={() => setAlignment("left")} />
-      <ToolbarButton icon={Bars3CenterLeftIcon} label="По центру" onClick={() => setAlignment("center")} />
-      <ToolbarButton icon={Bars3BottomRightIcon} label="По правому краю" onClick={() => setAlignment("right")} />
-      <ToolbarButton icon={Bars3Icon} label="По ширине" onClick={() => setAlignment("justify")} />
+      <ToolbarButton icon={Bars3BottomLeftIcon} label={t("alignLeft")} onClick={() => setAlignment("left")} />
+      <ToolbarButton icon={Bars3CenterLeftIcon} label={t("alignCenter")} onClick={() => setAlignment("center")} />
+      <ToolbarButton icon={Bars3BottomRightIcon} label={t("alignRight")} onClick={() => setAlignment("right")} />
+      <ToolbarButton icon={Bars3Icon} label={t("alignJustify")} onClick={() => setAlignment("justify")} />
       <Divider />
       <select
         value={editor.isActive("heading", { level: 1 }) ? "1" : editor.isActive("heading", { level: 2 }) ? "2" : editor.isActive("heading", { level: 3 }) ? "3" : "0"}
@@ -37,24 +43,29 @@ export function EditorToolbar({ editor, variableCatalog, allowVariableInsertion 
           if (v === "0") editor.chain().focus().setNode("paragraph").run();
           else editor.chain().focus().setNode("heading", { level: Number(v) }).run();
         }}
-        className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]"
-        title="Стиль абзаца"
+        aria-label={t("paragraphStyle")}
+        className="rounded-[5px] border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]"
+        title={t("paragraphStyle")}
       >
-        <option value="0">Обычный текст</option>
-        <option value="1">Заголовок 1</option>
-        <option value="2">Заголовок 2</option>
-        <option value="3">Заголовок 3</option>
+        <option value="0">{t("normalText")}</option>
+        <option value="1">{t("heading1")}</option>
+        <option value="2">{t("heading2")}</option>
+        <option value="3">{t("heading3")}</option>
       </select>
       <Divider />
-      <ToolbarButton icon={ListBulletIcon} label="Список" onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} />
-      <ToolbarButton icon={TableCellsIcon} label="Таблица" onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: false }).run()} />
-      <ToolbarButton icon={PhotoIcon} label="Изображение" onClick={() => editor.chain().focus().insertContent({ type: "pfImage" }).run()} />
-      <ToolbarButton icon={ScissorsIcon} label="Разрыв страницы" onClick={() => editor.chain().focus().insertContent({ type: "pfPageBreak" }).run()} />
+      <ToolbarButton icon={ListBulletIcon} label={t("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} />
+      <ToolbarButton icon={TableCellsIcon} label={t("table")} onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: false }).run()} />
+      <ToolbarButton icon={PhotoIcon} label={t("image")} onClick={() => editor.chain().focus().insertContent({ type: "pfImage" }).run()} />
+      <ToolbarButton icon={ScissorsIcon} label={t("pageBreak")} onClick={() => editor.chain().focus().insertContent({ type: "pfPageBreak" }).run()} />
       {allowVariableInsertion && (
         <span className="relative">
-          <ToolbarButton icon={CodeBracketSquareIcon} label="Вставить переменную" onClick={() => setShowVariablePicker((v) => !v)} />
+          <ToolbarButton icon={CodeBracketSquareIcon} label={t("insertVariable")} onClick={() => setShowVariablePicker((v) => !v)} />
           {showVariablePicker && (
-            <div className="absolute left-0 top-10 z-20 max-h-56 w-56 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-float)]">
+            <div
+              role="group"
+              aria-label={t("variablePicker")}
+              className="absolute left-0 top-10 z-20 max-h-56 w-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-float)]"
+            >
               {variableCatalog.map((v) => (
                 <button
                   key={v.key}
@@ -63,7 +74,7 @@ export function EditorToolbar({ editor, variableCatalog, allowVariableInsertion 
                     editor.chain().focus().insertContent({ type: "pfVariable", attrs: { key: v.key, label: v.label } }).run();
                     setShowVariablePicker(false);
                   }}
-                  className="block w-full rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]"
+                  className="block w-full rounded-[5px] px-2.5 py-2 text-left text-xs font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]"
                 >
                   {v.label}
                 </button>
@@ -100,7 +111,7 @@ function ToolbarButton({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg p-1.5 transition-colors ${active ? "bg-[var(--color-brand-50)] text-[var(--color-brand-700)]" : "text-[var(--color-ink-soft)] hover:bg-[var(--color-surface)]"} disabled:opacity-30`}
+      className={`rounded-[4px] p-1.5 transition-colors ${active ? "bg-[var(--color-brand-100)] text-[var(--color-brand-700)]" : "text-[var(--color-ink-soft)] hover:bg-white"} disabled:opacity-30`}
     >
       {(() => { const Icon = icon; return <Icon className="size-4" aria-hidden="true" />; })()}
     </button>

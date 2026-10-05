@@ -14,7 +14,7 @@ test("student reports replaces a 404 response with an accessible error and can r
   await page.goto("/login");
   await page.getByLabel("Email").fill("student1@demo.edu");
   await page.getByLabel("Пароль").fill("Practice123!");
-  await page.getByRole("button", { name: "Войти" }).click();
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
 
   await expect(page).toHaveURL(/\/reports$/);
   const error = page.getByRole("alert");

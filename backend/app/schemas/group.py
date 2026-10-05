@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GroupSummary(BaseModel):
@@ -32,6 +32,26 @@ class GroupDetail(BaseModel):
 
 class AddGroupMemberRequest(BaseModel):
     student_id: uuid.UUID
+
+
+class BulkStudentOperationRequest(BaseModel):
+    """A bounded, explicit list keeps one bulk request auditable and safe."""
+
+    student_ids: list[uuid.UUID] = Field(min_length=1, max_length=100)
+
+
+class BulkTransferStudentsRequest(BulkStudentOperationRequest):
+    target_group_id: uuid.UUID
+
+
+class BulkStudentOperationFailure(BaseModel):
+    student_id: uuid.UUID
+    code: str
+
+
+class BulkStudentOperationResult(BaseModel):
+    succeeded_student_ids: list[uuid.UUID]
+    failed: list[BulkStudentOperationFailure]
 
 
 class StudentOptionOut(BaseModel):
