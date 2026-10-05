@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.main import app
 from app.models.membership import OrganizationMembership
 from app.rate_limit.dependencies import get_login_rate_limiter
+from app.services.access_link_service import AccessLinkService
 from app.tests.conftest import DEV_PASSWORD, OrgFixture, auth_headers
 
 
@@ -175,3 +176,65 @@ def test_login_rate_limiter_is_injectable_and_blocks_failures(client, org_a: Org
     assert client.post("/api/v1/auth/login", json=payload).status_code == 401
     assert client.post("/api/v1/auth/login", json=payload).status_code == 401
     assert client.post("/api/v1/auth/login", json=payload).status_code == 429
+
+
+def test_password_reset_request_sends_an_access_link_for_an_active_membership(client, org_a: OrgFixture, monkeypatch):
+    created: list[tuple[str, str]] = []
+    monkeypatch.setattr(settings, "SMTP_HOST", "smtp.test")
+    monkeypatch.setattr(
+        AccessLinkService,
+        "create",
+        lambda _self, user, organization_id, purpose: created.append((user.email, purpose)),
+    )
+
+    response = client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": org_a.student_user.email, "organization_slug": org_a.org.slug},
+    )
+
+    assert response.status_code == 202
+    assert created == [(org_a.student_user.email, "PASSWORD_RESET")]
+
+
+def test_password_reset_request_does_not_reveal_or_create_links_for_unknown_users(client, org_a: OrgFixture, monkeypatch):
+    created: list[tuple[str, str]] = []
+    monkeypatch.setattr(settings, "SMTP_HOST", "smtp.test")
+    monkeypatch.setattr(
+        AccessLinkService,
+        "create",
+        lambda _self, user, organization_id, purpose: created.append((user.email, purpose)),
+    )
+
+    response = client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": "unknown@example.edu", "organization_slug": org_a.org.slug},
+    )
+
+    assert response.status_code == 202
+    assert created == []
+
+
+class _PasswordResetLimiter:
+    def __init__(self):
+        self.failures: dict[str, int] = {}
+
+    def is_blocked(self, key: str) -> bool:
+        return self.failures.get(key, 0) >= 2
+
+    def record_failure(self, key: str) -> None:
+        self.failures[key] = self.failures.get(key, 0) + 1
+
+    def reset(self, key: str) -> None:
+        self.failures.pop(key, None)
+
+
+def test_password_reset_request_is_rate_limited_without_disclosing_the_account(client, org_a: OrgFixture):
+    limiter = _PasswordResetLimiter()
+    app.dependency_overrides[get_login_rate_limiter] = lambda: limiter
+    payload = {"email": org_a.student_user.email, "organization_slug": org_a.org.slug}
+
+    assert client.post("/api/v1/auth/password-reset/request", json=payload).status_code == 202
+    assert client.post("/api/v1/auth/password-reset/request", json=payload).status_code == 202
+    response = client.post("/api/v1/auth/password-reset/request", json=payload)
+
+    assert response.status_code == 429

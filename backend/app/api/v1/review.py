@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
+from app.dependencies.features import require_legacy_document_editor_enabled
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
 from app.schemas.report import ReportOut
@@ -29,6 +30,7 @@ def request_revision(
     payload: RequestRevisionRequest,
     ctx: RequestContext = Depends(get_current_context),
     db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> ReportOut:
     require_role(ctx.role, RoleName.TEACHER)
     report = ReportReviewService(db).request_revision(

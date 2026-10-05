@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
+from app.dependencies.features import require_legacy_document_editor_enabled
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
 from app.rate_limit.dependencies import get_resource_guard
@@ -21,6 +22,7 @@ def upload_file(
     ctx: RequestContext = Depends(get_current_context),
     db: Session = Depends(get_db),
     guard: ResourceGuard = Depends(get_resource_guard),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> dict:
     """Rule 24/25: image upload for the document editor. Any authenticated
     org member (teacher building a template, student adding to their report)

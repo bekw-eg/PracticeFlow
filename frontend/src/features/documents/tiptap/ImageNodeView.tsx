@@ -1,12 +1,14 @@
 import { PhotoIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
 import { uploadErrorMessage } from "../../../lib/resourceErrorMessages";
 import { uploadImage } from "../api";
 
 export function ImageNodeView({ node, updateAttributes, editor }: NodeViewProps) {
+  const { t } = useTranslation("editor");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,34 +39,37 @@ export function ImageNodeView({ node, updateAttributes, editor }: NodeViewProps)
           />
           {editable ? (
             <input
+              aria-label={t("imageCaption")}
               value={node.attrs.caption}
               onChange={(event) => updateAttributes({ caption: event.target.value })}
-              placeholder="Подпись к изображению"
+              placeholder={t("imageCaption")}
               className="input mt-1 block text-xs"
             />
           ) : (
             node.attrs.caption && <figcaption className="mt-1 text-xs text-[var(--color-muted)]">{node.attrs.caption}</figcaption>
           )}
           {editable && (
-            <div className="mt-1 flex items-center gap-2 text-xs">
+            <div role="group" aria-label={t("imageControls")} className="mt-1 flex items-center gap-2 text-xs">
               <select
+                aria-label={t("imageAlignment")}
                 value={node.attrs.alignment}
                 onChange={(event) => updateAttributes({ alignment: event.target.value })}
                 className="rounded border border-[var(--color-border)] bg-white px-1 py-0.5"
               >
-                <option value="left">Слева</option>
-                <option value="center">По центру</option>
-                <option value="right">Справа</option>
+                <option value="left">{t("alignLeft")}</option>
+                <option value="center">{t("alignCenter")}</option>
+                <option value="right">{t("alignRight")}</option>
               </select>
               <input
                 type="range"
+                aria-label={t("imageWidth")}
                 min={30}
                 max={170}
                 value={node.attrs.widthMm}
                 onChange={(event) => updateAttributes({ widthMm: Number(event.target.value) })}
               />
               <button type="button" onClick={() => inputRef.current?.click()} className="text-[var(--color-brand-600)]">
-                Заменить
+                {isUploading ? t("uploadingImage") : t("replaceImage")}
               </button>
             </div>
           )}
@@ -77,13 +82,14 @@ export function ImageNodeView({ node, updateAttributes, editor }: NodeViewProps)
           disabled={isUploading || !editable}
           className="flex h-28 w-40 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-muted)] transition-colors hover:border-[var(--color-brand-500)] hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-600)]"
         >
-          {isUploading ? <ArrowPathIcon className="size-[22px] animate-spin" /> : <PhotoIcon className="size-[22px]" />}
-          <span className="text-xs">{isUploading ? "Загрузка…" : "Загрузить изображение"}</span>
+          {isUploading ? <ArrowPathIcon className="size-[22px] animate-spin" aria-hidden="true" /> : <PhotoIcon className="size-[22px]" aria-hidden="true" />}
+          <span className="text-xs">{isUploading ? t("uploadingImage") : t("uploadImage")}</span>
         </button>
       )}
       <input
         ref={inputRef}
         type="file"
+        aria-label={t("imageFile")}
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
         onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])}

@@ -3,6 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { Block, VariableCatalogEntry } from "../../../types/document";
 import { ParagraphNode } from "./ParagraphNode";
 import { HeadingNode } from "./HeadingNode";
@@ -30,6 +31,7 @@ export function useSectionEditor({
   accessibleName: string;
   onBlocksChange: (blocks: Block[]) => void;
 }) {
+  const { t } = useTranslation("editor");
   // Only the FIRST render's content seeds the editor — subsequent prop
   // changes to `blocks` come from OUR OWN onUpdate round-trip, never from
   // outside, so we deliberately do not resync content on every prop change:
@@ -48,7 +50,7 @@ export function useSectionEditor({
         horizontalRule: false,
         link: false,
       }),
-      Placeholder.configure({ placeholder: "Начните печатать…" }),
+      Placeholder.configure({ placeholder: t("startTyping") }),
       TableKit.configure({ table: { resizable: false } }),
       ParagraphNode,
       HeadingNode,

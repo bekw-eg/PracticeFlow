@@ -2,6 +2,7 @@ import { api } from "../lib/api";
 import { exportErrorMessage } from "../lib/resourceErrorMessages";
 import { DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function filenameFromHeader(contentDisposition: string | undefined, fallback: string) {
   const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
@@ -31,6 +32,7 @@ async function download(downloadUrl: string, format: ExportFormat) {
 }
 
 export function ExportButtons({ reportId, compact = false }: { reportId: string; compact?: boolean }) {
+  const { t } = useTranslation("export");
   const [active, setActive] = useState<ActiveExport | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -54,7 +56,7 @@ export function ExportButtons({ reportId, compact = false }: { reportId: string;
         }
         if (job.status === "failed" || job.status === "timed_out" || job.status === "cancelled") {
           setActive(null);
-          setError("Не удалось сформировать файл. Повторите экспорт.");
+          setError(t("failed"));
           return;
         }
         timeoutId = window.setTimeout(() => void poll(), 1500);
@@ -70,7 +72,7 @@ export function ExportButtons({ reportId, compact = false }: { reportId: string;
       cancelled = true;
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
-  }, [active]);
+  }, [active, t]);
 
   const startExport = async (format: ExportFormat) => {
     if (active || isDownloading || isStarting) return;
@@ -107,15 +109,15 @@ export function ExportButtons({ reportId, compact = false }: { reportId: string;
   return (
     <div>
       <div className="flex gap-2">
-        <button type="button" disabled={disabled} onClick={() => void startExport("docx")} className={baseClass}><DocumentArrowDownIcon className="size-4" />DOCX</button>
-        <button type="button" disabled={disabled} onClick={() => void startExport("pdf")} className={baseClass}><DocumentArrowDownIcon className="size-4" />PDF</button>
+        <button type="button" disabled={disabled} onClick={() => void startExport("docx")} className={baseClass} aria-label={t("startFormat", { format: "DOCX" })}><DocumentArrowDownIcon className="size-4" aria-hidden="true" />DOCX</button>
+        <button type="button" disabled={disabled} onClick={() => void startExport("pdf")} className={baseClass} aria-label={t("startFormat", { format: "PDF" })}><DocumentArrowDownIcon className="size-4" aria-hidden="true" />PDF</button>
         {active?.status === "succeeded" && active.downloadUrl && (
           <button type="button" disabled={isDownloading} onClick={() => void downloadReadyExport()} className={baseClass}>
-            <DocumentArrowDownIcon className="size-4" />{isDownloading ? "Скачивание…" : `Скачать ${active.format.toUpperCase()}`}
+            <DocumentArrowDownIcon className="size-4" aria-hidden="true" />{isDownloading ? t("downloading") : t("download", { format: active.format.toUpperCase() })}
           </button>
         )}
       </div>
-      {preparing && <p role="status" className="mt-2 text-xs text-[var(--color-ink-soft)]">Экспорт готовится…</p>}
+      {preparing && <p role="status" className="mt-2 text-xs text-[var(--color-ink-soft)]">{t("preparing")}</p>}
       {error && <p role="alert" className="mt-2 text-xs text-[var(--color-danger-500)]">{error}</p>}
     </div>
   );

@@ -84,6 +84,9 @@ class ReportReviewService:
         report = self._get_owned_report(org_id, teacher_id, report_id)
         if report.status != ReportStatus.UNDER_REVIEW:
             raise InvalidReportTransition(report.status, "request revision on")
+        comment = general_comment.strip() if general_comment else ""
+        if not comment:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="A revision comment is required.")
 
         report.status = ReportStatus.REVISION_REQUIRED
         self.audit.record(
@@ -95,12 +98,11 @@ class ReportReviewService:
         # A revision message is naturally just a general comment (rule 19) -
         # created through the same CommentService path as any other general
         # comment, not a separate parallel "message" concept.
-        if general_comment:
-            self.comments.create_general_comment(org_id, teacher_id, actor_user_id, report.id, general_comment)
+        self.comments.create_general_comment(org_id, teacher_id, actor_user_id, report.id, comment)
 
         student_user_id = self.db.scalar(select(OrganizationMembership.user_id).join(Student).where(Student.id == report.student_id))
         if student_user_id:
-            self.notifications.create(org_id, student_user_id, "REVISION_REQUIRED", "Отчёт возвращён на доработку", general_comment or "Преподаватель запросил доработку отчёта.", f"/reports/{report.id}/edit")
+            self.notifications.create(org_id, student_user_id, "REVISION_REQUIRED", "Отчёт возвращён на доработку", comment, f"/reports/{report.id}/edit")
             self.db.commit()
 
         self.db.refresh(report)

@@ -4,16 +4,12 @@ import { useMyGroups } from "./api";
 import { ArrowRightIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { EmptyState, ErrorState, LoadingState } from "../../components/ui/StateViews";
 import { PaginationControls } from "../../components/ui/PaginationControls";
-
-function studentWord(count: number): string {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return "студент";
-  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "студента";
-  return "студентов";
-}
+import { useTranslation } from "react-i18next";
+import { useLocaleFormatters } from "../../i18n/formatters";
 
 export function MyGroupsPage() {
+  const { t } = useTranslation("groups");
+  const { formatCount } = useLocaleFormatters();
   const [searchParams, setSearchParams] = useSearchParams();
   const offset = Math.max(0, Number(searchParams.get("offset") ?? "0") || 0);
   const { data: page, isLoading, isFetching, isError, error, refetch } = useMyGroups(offset);
@@ -27,36 +23,36 @@ export function MyGroupsPage() {
 
   return (
     <div>
-      <header className="mb-7">
-        <p className="page-kicker">Преподаватель</p><h1 className="page-title mt-1">Мои группы</h1><p className="page-description">Ваше основное рабочее пространство — практика ведётся по группам.</p>
+      <header className="mb-7 border-b border-[var(--color-border)] pb-6">
+        <p className="page-kicker">{t("teacher")}</p><h1 className="page-title mt-1">{t("myGroups")}</h1><p className="page-description">{t("teacherWorkspaceDescription")}</p>
       </header>
 
-      {isLoading && <LoadingState label="Загрузка групп…" />}
+      {isLoading && <LoadingState label={t("loadingGroups")} />}
       {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && groups?.length === 0 && (
-        <EmptyState title="Группы ещё не назначены" description="Обратитесь к директору, чтобы получить доступ к группе и начать работу с практикой." />
+        <EmptyState title={t("groupsNotAssigned")} description={t("groupsNotAssignedDescription")} />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {groups.length > 0 && <div className="section-panel divide-y divide-[var(--color-border)] overflow-hidden">
         {!isError && groups?.map((group) => (
           <Link
             key={group.id}
             to={`/groups/${group.id}`}
-            className="card group relative overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--color-brand-100)] hover:shadow-[var(--shadow-float)]"
+            className="group grid gap-4 bg-white p-5 transition-colors hover:bg-[#faf9f6] sm:grid-cols-[minmax(180px,1fr)_minmax(140px,0.55fr)_auto] sm:items-center"
           >
-            <div className="flex items-start justify-between">
+            <div className="min-w-0">
               <GroupCodeChip code={group.name} />
-              {group.academic_year && <span className="text-xs text-[var(--color-muted)]">{group.academic_year}</span>}
+              {group.academic_year && <p className="mt-2 text-xs text-[var(--color-muted)]">{group.academic_year}</p>}
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm text-[var(--color-ink-soft)]"><UserGroupIcon className="size-4 text-[var(--color-muted)]" />
-              {group.student_count} {studentWord(group.student_count)}
+            <div className="flex items-center gap-2 text-sm text-[var(--color-ink-soft)]"><UserGroupIcon className="size-4 text-[var(--color-muted)]" />
+              {formatCount(group.student_count, (values) => t("studentCount", values))}
             </div>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-brand-500)] group-hover:text-[var(--color-brand-600)]">Открыть группу<ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" /></span>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-brand-600)] group-hover:text-[var(--color-brand-700)]">{t("openGroup")}<ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" /></span>
           </Link>
         ))}
-      </div>
-      {!isError && page && <PaginationControls pagination={page} onPageChange={changePage} isFetching={isFetching} label="Группы" />}
+      </div>}
+      {!isError && page && <PaginationControls pagination={page} onPageChange={changePage} isFetching={isFetching} label={t("myGroups")} />}
     </div>
   );
 }

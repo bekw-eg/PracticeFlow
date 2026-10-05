@@ -6,9 +6,18 @@ automatic backup policy or promise of recovery objective.
 
 ## Current application behavior
 
+Teacher document originals have an explicit owner-controlled lifecycle. Archive
+hides a submission from the active list and from the local comparison corpus;
+it does not remove history. Deleting an original first records a durable
+pending-removal state, then removes only the DOCX object after storage confirms
+the operation. Completed checks, paragraph excerpts, settings snapshots and
+audit events remain available. A storage failure leaves the request retryable
+and does not release quota. Active checks block the operation.
+
 | Data | Current behavior | Owner decision still required |
 | --- | --- | --- |
 | Original uploaded images | No repository-wide automatic deletion period is configured. Objects remain while their authorized application record remains. | Legal basis, user deletion workflow, lifecycle/versioning and hold policy |
+| Teacher original DOCX | Owner can archive or request original removal; removal keeps immutable submission metadata and check history, and is retryable if storage is unavailable. | Legal hold, recovery window and whether retained excerpts/index text meet policy |
 | Completed export artifact and terminal job | `EXPORT_JOB_RETENTION_SECONDS=86400` (24 hours) in the production example; worker cleanup removes expired terminal artifact/job state. | Whether 24 hours meets business/legal needs; export archival and incident hold procedure |
 | Audit trail | `AUDIT_RETENTION_DAYS=365`; cleanup creates a retention checkpoint for the remaining application hash chain. | Required duration, legal hold, archive destination, access review and evidence policy |
 | PostgreSQL backup | Scripts can create/check a local-volume bundle with manifest checksums. No schedule is configured. | Frequency, encryption, immutable/off-site location, monitoring and restore testing |

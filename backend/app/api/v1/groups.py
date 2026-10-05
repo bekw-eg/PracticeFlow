@@ -10,7 +10,16 @@ from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
-from app.schemas.group import AddGroupMemberRequest, GroupDetail, GroupMemberOut, GroupSummary, StudentOptionOut
+from app.schemas.group import (
+    AddGroupMemberRequest,
+    BulkStudentOperationRequest,
+    BulkStudentOperationResult,
+    BulkTransferStudentsRequest,
+    GroupDetail,
+    GroupMemberOut,
+    GroupSummary,
+    StudentOptionOut,
+)
 from app.services.group_service import GroupService
 
 router = APIRouter(prefix="/groups", tags=["groups"])
@@ -101,6 +110,19 @@ def remove_student(group_id: uuid.UUID, student_id: uuid.UUID, ctx: RequestConte
     GroupService(db).remove_student_from_group(ctx.organization_id, ctx.teacher_id, group_id, student_id, ctx.user_id)
 
 
+@router.post("/{group_id}/students/bulk-remove", response_model=BulkStudentOperationResult)
+def bulk_remove_students(
+    group_id: uuid.UUID,
+    payload: BulkStudentOperationRequest,
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+) -> BulkStudentOperationResult:
+    require_role(ctx.role, RoleName.TEACHER)
+    return GroupService(db).bulk_remove_students(
+        ctx.organization_id, ctx.teacher_id, group_id, payload.student_ids, ctx.user_id
+    )
+
+
 @router.post("/{group_id}/students/{student_id}/transfer/{target_group_id}", response_model=GroupMemberOut)
 def transfer_student(
     group_id: uuid.UUID, student_id: uuid.UUID, target_group_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)
@@ -108,3 +130,21 @@ def transfer_student(
     require_role(ctx.role, RoleName.TEACHER)
     member = GroupService(db).transfer_student(ctx.organization_id, ctx.teacher_id, group_id, target_group_id, student_id, ctx.user_id)
     return GroupMemberOut(id=member.id, student_id=member.student_id, full_name=member.student.membership.user.full_name, email=member.student.membership.user.email)
+
+
+@router.post("/{group_id}/students/bulk-transfer", response_model=BulkStudentOperationResult)
+def bulk_transfer_students(
+    group_id: uuid.UUID,
+    payload: BulkTransferStudentsRequest,
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+) -> BulkStudentOperationResult:
+    require_role(ctx.role, RoleName.TEACHER)
+    return GroupService(db).bulk_transfer_students(
+        ctx.organization_id,
+        ctx.teacher_id,
+        group_id,
+        payload.target_group_id,
+        payload.student_ids,
+        ctx.user_id,
+    )

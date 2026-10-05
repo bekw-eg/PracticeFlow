@@ -171,6 +171,23 @@ services:
       timeout: 3s
       retries: 30
 
+  document-check-worker:
+    extends:
+      service: export-worker
+    command: ["python", "-m", "app.workers.document_check_worker"]
+    environment:
+      DOCX_MAX_UPLOAD_BYTES: "20971520"
+      DOCUMENT_CHECK_WORKER_POLL_SECONDS: "0.2"
+      DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS: "30"
+      DOCUMENT_CHECK_WORKER_LEASE_SECONDS: "60"
+      DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS: "3"
+      DOCUMENT_CHECK_MAX_FINDINGS: "5000"
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.workers.document_check_worker", "--check"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   frontend:
     build:
       context: ./frontend
