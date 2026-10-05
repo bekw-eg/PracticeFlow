@@ -54,37 +54,35 @@ jobs:
           output-file: artifacts/sbom/practiceflow-frontend.spdx.json
           upload-artifact: "false"
 
+      - name: Install checksum-pinned Trivy release
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz \
+            --output "$RUNNER_TEMP/trivy.tar.gz"
+          echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  $RUNNER_TEMP/trivy.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/trivy"
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP/trivy" trivy
+          "$RUNNER_TEMP/trivy/trivy" --version
+
       - name: Scan backend image for High and Critical CVEs
         id: trivy_backend
         continue-on-error: true
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: practiceflow-backend:${{ github.sha }}
-          format: json
-          output: artifacts/trivy/practiceflow-backend.json
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          version: v0.65.0
-          scanners: vuln
-          ignore-unfixed: "false"
-          trivyignores: .trivyignore
-          hide-progress: "true"
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --format json --output artifacts/trivy/practiceflow-backend.json
+          --severity HIGH,CRITICAL --exit-code 1 --scanners vuln
+          --ignore-unfixed=false --ignorefile .trivyignore --no-progress
+          practiceflow-backend:${{ github.sha }}
 
       - name: Scan frontend image for High and Critical CVEs
         id: trivy_frontend
         continue-on-error: true
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: practiceflow-frontend:${{ github.sha }}
-          format: json
-          output: artifacts/trivy/practiceflow-frontend.json
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          version: v0.65.0
-          scanners: vuln
-          ignore-unfixed: "false"
-          trivyignores: .trivyignore
-          hide-progress: "true"
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --format json --output artifacts/trivy/practiceflow-frontend.json
+          --severity HIGH,CRITICAL --exit-code 1 --scanners vuln
+          --ignore-unfixed=false --ignorefile .trivyignore --no-progress
+          practiceflow-frontend:${{ github.sha }}
 
       - name: Upload SBOM and vulnerability scan reports
         if: always()
@@ -103,7 +101,9 @@ jobs:
           BACKEND_SCAN: ${{ steps.trivy_backend.outcome }}
           FRONTEND_SCAN: ${{ steps.trivy_frontend.outcome }}
         run: |
-          if [ "$BACKEND_SCAN" = "failure" ] || [ "$FRONTEND_SCAN" = "failure" ]; then
-            echo "High or Critical CVEs found outside .trivyignore; see the uploaded Trivy report."
+          if [ "$BACKEND_SCAN" != "success" ] || [ "$FRONTEND_SCAN" != "success" ]; then
+            echo "Both vulnerability scans must succeed; see the uploaded Trivy reports."
             exit 1
           fi
+          test -s artifacts/trivy/practiceflow-backend.json
+          test -s artifacts/trivy/practiceflow-frontend.json

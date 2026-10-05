@@ -38,6 +38,10 @@ the migrations from #29 and #31 remain in their original order.
 The expired `.trivyignore` entries are removed. High/Critical scanning remains
 blocking, includes unfixed vulnerabilities and produces SPDX SBOMs and JSON
 scan reports for both production images. No risk exception is renewed.
+The discontinued Trivy 0.65.0 download is replaced by
+[Trivy 0.75.0](https://github.com/aquasecurity/trivy/releases/tag/v0.75.0).
+Its Linux archive checksum is fixed in the workflow and verified before use.
+Both scans must succeed and produce JSON reports for the final gate to pass.
 
 The test-only MinIO image is compiled from pinned upstream source commits:
 

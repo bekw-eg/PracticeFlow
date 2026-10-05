@@ -14,7 +14,9 @@ The `Supply chain security` workflow builds the production backend and frontend
 images locally in the runner. It does not push an image or access GitHub
 Secrets, a registry credential, production data, or a deployment `.env` file.
 It produces an SPDX JSON SBOM with Syft `v1.51.1` and a JSON CVE report with
-Trivy `v0.65.0` for each image. Reports and test JUnit XML are workflow
+Trivy `v0.75.0` for each image. The Linux release archive is verified against
+its reviewed SHA-256 before extraction. The removed `v0.65.0` binary is no
+longer used, and scanner installation errors fail the gate. Reports and test JUnit XML are workflow
 artifacts; they contain package and vulnerability metadata, never CI
 environment values or secrets.
 
