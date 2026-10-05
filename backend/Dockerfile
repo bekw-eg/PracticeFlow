@@ -1,5 +1,5 @@
-# python:3.12.14-slim-trixie
-FROM python@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217
+# python:3.12-slim-bookworm (manifest resolved 2026-10-05)
+FROM python@sha256:54c85f3c47607a77f32adec749d3c81d1348bf25833671f512b26a9b6d778cb3
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Native libraries required by WeasyPrint for production-quality PDF exports.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libcairo2 \
     libffi8 \
     libgdk-pixbuf-2.0-0 \
