@@ -37,6 +37,12 @@ git config --local user.name "bekw-eg"
 git config --local user.email "217148214+bekw-eg@users.noreply.github.com"
 ```
 
+Для всех checkout/worktree используй общий Git hook из `.githooks/pre-commit`.
+Установи его в каталог `hooks` из `git rev-parse --git-common-dir`, сохранив
+существующий hook, если он уже есть. Hook проверяет Author и Committer, включая
+переопределения окружения, до создания коммита. Не меняй глобальную конфигурацию
+и не отключай проверку для обхода неверной личности.
+
 Author и Committer должны соответствовать этой конфигурации. Проверь их перед
 push через `git log -1 --format=fuller`. При переопределениях GIT_AUTHOR_* или
 GIT_COMMITTER_* обеспечь правильную личность для создаваемого коммита, не выводя

@@ -89,8 +89,26 @@ class TestReviewStateMachine:
 
     def test_cannot_request_revision_before_review_started(self, client, db, org_a: OrgFixture):
         teacher_token, _student_token, report_id = _setup_submitted_report(client, db, org_a)
-        resp = client.post(f"/api/v1/reports/{report_id}/review/request-revision", headers=auth_headers(teacher_token), json={})
+        resp = client.post(
+            f"/api/v1/reports/{report_id}/review/request-revision",
+            headers=auth_headers(teacher_token),
+            json={"general_comment": "Please revise the conclusion."},
+        )
         assert resp.status_code == 409
+
+    def test_request_revision_requires_a_non_blank_comment(self, client, db, org_a: OrgFixture):
+        teacher_token, _student_token, report_id = _setup_submitted_report(client, db, org_a)
+        client.post(f"/api/v1/reports/{report_id}/review/start", headers=auth_headers(teacher_token))
+
+        response = client.post(
+            f"/api/v1/reports/{report_id}/review/request-revision",
+            headers=auth_headers(teacher_token),
+            json={"general_comment": "   "},
+        )
+
+        assert response.status_code == 422
+        report = client.get(f"/api/v1/reports/{report_id}", headers=auth_headers(teacher_token)).json()
+        assert report["status"] == "UNDER_REVIEW"
 
     def test_student_cannot_call_review_endpoints(self, client, db, org_a: OrgFixture):
         _teacher_token, student_token, report_id = _setup_submitted_report(client, db, org_a)
@@ -201,7 +219,11 @@ class TestComments:
         ).json()
         assert comment["anchor_status"] == "valid"
 
-        client.post(f"/api/v1/reports/{report_id}/review/request-revision", headers=auth_headers(teacher_token), json={})
+        client.post(
+            f"/api/v1/reports/{report_id}/review/request-revision",
+            headers=auth_headers(teacher_token),
+            json={"general_comment": "Please revise this section."},
+        )
 
         new_blocks = [
             {"type": "paragraph", "id": block["id"], "style_name": "Normal", "style_override": None,
@@ -235,7 +257,11 @@ class TestComments:
             json={"node_id": block["id"], "start_offset": 0, "end_offset": len(text), "text_snapshot": text, "body": "Fix this"},
         )
 
-        client.post(f"/api/v1/reports/{report_id}/review/request-revision", headers=auth_headers(teacher_token), json={})
+        client.post(
+            f"/api/v1/reports/{report_id}/review/request-revision",
+            headers=auth_headers(teacher_token),
+            json={"general_comment": "Please revise this section."},
+        )
 
         other_block = other_section["blocks"][0]
         new_blocks = [

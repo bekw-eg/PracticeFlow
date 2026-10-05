@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.security import validate_password
 
@@ -18,6 +18,11 @@ class CompleteAccessRequest(BaseModel):
     @classmethod
     def password_policy(cls, value: str) -> str:
         return validate_password(value)
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    organization_slug: str = Field(min_length=1, max_length=100)
 
 
 class OrganizationChoice(BaseModel):

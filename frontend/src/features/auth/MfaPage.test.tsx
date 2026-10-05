@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MfaPage } from "./MfaPage";
 import { startMfaEnrollment, submitMfaRecoveryCode } from "./api";
+import { changeLocale } from "../../i18n";
 
 const completeMfaSession = vi.fn();
 
@@ -27,7 +28,18 @@ describe("MfaPage recovery", () => {
     vi.mocked(startMfaEnrollment).mockResolvedValue({ challenge_id: "challenge-2", expires_at: "2026-08-28T12:00:00Z", manual_key: "ABCDEFGHIJKLMNOP", qr_data_url: "data:image/png;base64,abc" });
   });
 
+  it.each([
+    ["ru", "Подтвердите вход"],
+    ["kk", "Кіруді растаңыз"],
+    ["en", "Confirm sign in"],
+  ] as const)("renders the MFA screen in %s", async (locale, title) => {
+    await changeLocale(locale);
+    render(<MemoryRouter initialEntries={[{ pathname: "/mfa", state: { challenge } }]}><MfaPage /></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
+  });
+
   it("moves recovery-code users into fresh enrollment rather than a session", async () => {
+    await changeLocale("ru");
     vi.mocked(submitMfaRecoveryCode).mockResolvedValue({ status: "MFA_ENROLLMENT_REQUIRED", challenge_id: "challenge-2", expires_at: "2026-08-28T12:00:00Z" });
     render(<MemoryRouter initialEntries={[{ pathname: "/mfa", state: { challenge } }]}><MfaPage /></MemoryRouter>);
 

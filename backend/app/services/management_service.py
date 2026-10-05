@@ -6,16 +6,18 @@ and catalogue operations below remain scoped to the organization in the
 authenticated request context.
 """
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import hash_password
 from app.models.department import Department
-from app.models.enums import AuditEventType, RoleName
+from app.models.enums import AuditEventType, InternshipStatus, ReportStatus, RoleName
 from app.models.group import Group
 from app.models.group_member import GroupMember
+from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
 from app.models.report import Report
@@ -30,6 +32,11 @@ from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.schemas.management import (
     CreateGroupRequest,
     CreateMemberRequest,
+    DirectorDashboard,
+    DirectorGroupSummary,
+    DirectorInternshipSummary,
+    DirectorReportStatusCount,
+    DirectorTeacherLoad,
     ManagementGroupOut,
     MemberOut,
     UpdateMemberRequest,
@@ -58,6 +65,251 @@ class ManagementService:
         groups = self.db.scalar(select(func.count()).select_from(Group).where(Group.organization_id == org_id)) or 0
         reports = self.db.scalar(select(func.count()).select_from(Report).where(Report.organization_id == org_id)) or 0
         return {"organization": org, "members_count": members, "students_count": students, "teachers_count": teachers, "groups_count": groups, "active_reports_count": reports}
+
+    def director_dashboard(self, org_id: uuid.UUID) -> DirectorDashboard:
+        """Build a tenant-scoped, document-free operational dashboard.
+
+        The dashboard intentionally uses only workflow counters and public
+        operational fields.  In particular, it never selects Report.document_data,
+        ReportVersion, comments, or a link to the Teacher review workflow.
+        """
+        organization = self.db.get(Organization, org_id)
+        if organization is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+
+        today = datetime.now(timezone.utc).date()
+        completed_statuses = (ReportStatus.APPROVED, ReportStatus.LOCKED)
+        overdue_condition = and_(
+            Internship.deadline < today,
+            Report.status.not_in(completed_statuses),
+        )
+
+        report_status_rows = self.db.execute(
+            select(Report.status, func.count(Report.id).label("count"))
+            .where(Report.organization_id == org_id)
+            .group_by(Report.status)
+            .order_by(Report.status)
+        ).all()
+        report_statuses = [
+            DirectorReportStatusCount(status=row.status, count=int(row.count))
+            for row in report_status_rows
+        ]
+        reports_count = sum(item.count for item in report_statuses)
+        overdue_reports_count = int(
+            self.db.scalar(
+                select(func.count(Report.id))
+                .join(Internship, Internship.id == Report.internship_id)
+                .where(
+                    Report.organization_id == org_id,
+                    Internship.organization_id == org_id,
+                    overdue_condition,
+                )
+            )
+            or 0
+        )
+
+        student_counts = (
+            select(
+                GroupMember.group_id.label("group_id"),
+                func.count(GroupMember.student_id).label("student_count"),
+            )
+            .join(Group, Group.id == GroupMember.group_id)
+            .where(Group.organization_id == org_id)
+            .group_by(GroupMember.group_id)
+            .subquery()
+        )
+        internship_counts = (
+            select(
+                Internship.group_id.label("group_id"),
+                func.count(Internship.id).label("internships_count"),
+            )
+            .where(Internship.organization_id == org_id)
+            .group_by(Internship.group_id)
+            .subquery()
+        )
+        group_report_counts = (
+            select(
+                Internship.group_id.label("group_id"),
+                func.count(Report.id).label("reports_count"),
+                func.coalesce(
+                    func.sum(case((overdue_condition, 1), else_=0)),
+                    0,
+                ).label("overdue_reports_count"),
+            )
+            .join(Internship, Internship.id == Report.internship_id)
+            .where(
+                Report.organization_id == org_id,
+                Internship.organization_id == org_id,
+            )
+            .group_by(Internship.group_id)
+            .subquery()
+        )
+        group_rows = self.db.execute(
+            select(
+                Group.id,
+                Group.name,
+                Group.academic_year,
+                func.coalesce(student_counts.c.student_count, 0).label("student_count"),
+                func.coalesce(internship_counts.c.internships_count, 0).label("internships_count"),
+                func.coalesce(group_report_counts.c.reports_count, 0).label("reports_count"),
+                func.coalesce(group_report_counts.c.overdue_reports_count, 0).label("overdue_reports_count"),
+            )
+            .outerjoin(student_counts, student_counts.c.group_id == Group.id)
+            .outerjoin(internship_counts, internship_counts.c.group_id == Group.id)
+            .outerjoin(group_report_counts, group_report_counts.c.group_id == Group.id)
+            .where(Group.organization_id == org_id)
+            .order_by(Group.name, Group.id)
+        ).all()
+        groups = [
+            DirectorGroupSummary(
+                id=row.id,
+                name=row.name,
+                academic_year=row.academic_year,
+                student_count=int(row.student_count),
+                internships_count=int(row.internships_count),
+                reports_count=int(row.reports_count),
+                overdue_reports_count=int(row.overdue_reports_count),
+            )
+            for row in group_rows
+        ]
+
+        internship_rows = self.db.execute(
+            select(
+                Internship.id,
+                Internship.title,
+                Internship.group_id,
+                Group.name.label("group_name"),
+                Internship.status,
+                Internship.start_date,
+                Internship.end_date,
+                Internship.deadline,
+                func.count(Report.id).label("reports_count"),
+                func.coalesce(
+                    func.sum(case((overdue_condition, 1), else_=0)),
+                    0,
+                ).label("overdue_reports_count"),
+            )
+            .join(Group, Group.id == Internship.group_id)
+            .outerjoin(
+                Report,
+                and_(
+                    Report.internship_id == Internship.id,
+                    Report.organization_id == org_id,
+                ),
+            )
+            .where(
+                Internship.organization_id == org_id,
+                Group.organization_id == org_id,
+            )
+            .group_by(
+                Internship.id,
+                Internship.title,
+                Internship.group_id,
+                Group.name,
+                Internship.status,
+                Internship.start_date,
+                Internship.end_date,
+                Internship.deadline,
+            )
+            .order_by(Internship.deadline, Internship.id)
+        ).all()
+        internships = [
+            DirectorInternshipSummary(
+                id=row.id,
+                title=row.title,
+                group_id=row.group_id,
+                group_name=row.group_name,
+                status=row.status,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                deadline=row.deadline,
+                reports_count=int(row.reports_count),
+                overdue_reports_count=int(row.overdue_reports_count),
+            )
+            for row in internship_rows
+        ]
+
+        teacher_rows = self.db.execute(
+            select(
+                Teacher.id,
+                User.full_name,
+                func.count(func.distinct(Group.id)).label("groups_count"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (Internship.status == InternshipStatus.PUBLISHED, Internship.id),
+                            else_=None,
+                        )
+                    )
+                ).label("active_internships_count"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (Report.status.in_((ReportStatus.SUBMITTED, ReportStatus.UNDER_REVIEW)), Report.id),
+                            else_=None,
+                        )
+                    )
+                ).label("reports_to_review_count"),
+            )
+            .join(OrganizationMembership, OrganizationMembership.id == Teacher.membership_id)
+            .join(User, User.id == OrganizationMembership.user_id)
+            .outerjoin(TeacherGroup, TeacherGroup.teacher_id == Teacher.id)
+            .outerjoin(
+                Group,
+                and_(
+                    Group.id == TeacherGroup.group_id,
+                    Group.organization_id == org_id,
+                ),
+            )
+            .outerjoin(
+                Internship,
+                and_(
+                    Internship.group_id == Group.id,
+                    Internship.organization_id == org_id,
+                ),
+            )
+            .outerjoin(
+                Report,
+                and_(
+                    Report.internship_id == Internship.id,
+                    Report.organization_id == org_id,
+                ),
+            )
+            .where(
+                OrganizationMembership.organization_id == org_id,
+                OrganizationMembership.is_active.is_(True),
+                OrganizationMembership.role.has(Role.name == RoleName.TEACHER.value),
+            )
+            .group_by(Teacher.id, User.full_name)
+            .order_by(User.full_name, Teacher.id)
+        ).all()
+        teacher_loads = [
+            DirectorTeacherLoad(
+                id=row.id,
+                full_name=row.full_name,
+                groups_count=int(row.groups_count),
+                active_internships_count=int(row.active_internships_count),
+                reports_to_review_count=int(row.reports_to_review_count),
+            )
+            for row in teacher_rows
+        ]
+
+        internships_count = len(internships)
+        return DirectorDashboard(
+            organization=organization,
+            groups_count=len(groups),
+            internships_count=internships_count,
+            active_internships_count=sum(
+                internship.status == InternshipStatus.PUBLISHED
+                for internship in internships
+            ),
+            reports_count=reports_count,
+            overdue_reports_count=overdue_reports_count,
+            report_statuses=report_statuses,
+            groups=groups,
+            internships=internships,
+            teacher_loads=teacher_loads,
+        )
 
     def list_members(
         self, org_id: uuid.UUID, offset: int = 0, limit: int | None = None, q: str | None = None

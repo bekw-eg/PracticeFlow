@@ -3,9 +3,16 @@ from app.models.audit_chain_head import AuditChainHead
 from app.models.access_link import AccessLink
 from app.models.comment import Comment
 from app.models.department import Department
+from app.models.document_check import (
+    AssignmentStudent, CheckProfile, CheckProfileVersion, CheckRule, DocumentCheckAssignment,
+    DocumentCheckFinding, DocumentCheckJob, StudentDocumentSubmission, TeacherDocumentSubmission,
+    DocumentCheckSettings, DocumentCheckRunRule, LocalPlagiarismIndex, LocalPlagiarismParagraph,
+    LocalPlagiarismRun, LocalPlagiarismMatch, TeacherDocumentLifecycle,
+)
 from app.models.file import File
 from app.models.export_job import ExportJob
 from app.models.group import Group
+from app.models.review_group import ReviewGroup, TeacherDocumentReview
 from app.models.group_member import GroupMember
 from app.models.internship import Internship
 from app.models.notification import Notification
@@ -27,14 +34,37 @@ from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 __all__ = [
+    "Discipline",
+    "DisciplineGroup",
+    "DisciplineTopic",
+    "TeachingMaterial",
     "AuditLog",
     "AuditChainHead",
     "AccessLink",
     "Comment",
     "Department",
+    "CheckProfile",
+    "CheckProfileVersion",
+    "CheckRule",
+    "DocumentCheckAssignment",
+    "AssignmentStudent",
+    "StudentDocumentSubmission",
+    "TeacherDocumentSubmission",
+    "TeacherDocumentLifecycle",
+    "DocumentCheckJob",
+    "DocumentCheckFinding",
+    "DocumentCheckSettings",
+    "DocumentCheckRunRule",
+    "LocalPlagiarismIndex",
+    "LocalPlagiarismParagraph",
+    "LocalPlagiarismRun",
+    "LocalPlagiarismMatch",
     "File",
     "ExportJob",
     "Group",
+    "GroupReviewReport",
+    "ReviewGroup",
+    "TeacherDocumentReview",
     "GroupMember",
     "Internship",
     "Notification",
@@ -55,3 +85,6 @@ __all__ = [
     "TemplateVersion",
     "User",
 ]
+
+from app.models.group_review_report import GroupReviewReport
+from app.models.discipline import Discipline, DisciplineGroup, DisciplineTopic, TeachingMaterial

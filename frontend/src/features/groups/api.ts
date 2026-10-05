@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { DEFAULT_PAGE_SIZE, fetchPage, fetchPaginatedResource } from "../../lib/pagination";
-import type { GroupDetail, GroupMemberOut, GroupReportProgress, GroupSummary, InternshipOut, ReportOut, StudentOptionOut, TemplateOut } from "../../types/api";
+import type { BulkStudentOperationResult, GroupDetail, GroupMemberOut, GroupReportProgress, GroupSummary, InternshipOut, ReportOut, ReviewQueueDeadlineFilter, StudentOptionOut, TeacherReviewQueueItem, TemplateOut } from "../../types/api";
 
 export function useMyGroups(offset = 0) {
   return useQuery({
@@ -18,10 +18,10 @@ export function useGroupDetail(groupId: string | undefined, offset = 0) {
   });
 }
 
-export function useGroupInternships(groupId: string | undefined, offset = 0) {
+export function useGroupInternships(groupId: string | undefined, offset = 0, limit = DEFAULT_PAGE_SIZE) {
   return useQuery({
-    queryKey: ["groups", groupId, "internships", { offset }],
-    queryFn: () => fetchPage<InternshipOut>(`/groups/${groupId}/internships`, { offset, limit: DEFAULT_PAGE_SIZE }),
+    queryKey: ["groups", groupId, "internships", { offset, limit }],
+    queryFn: () => fetchPage<InternshipOut>(`/groups/${groupId}/internships`, { offset, limit }),
     enabled: !!groupId,
   });
 }
@@ -30,6 +30,31 @@ export function useGroupReports(groupId: string | undefined, offset = 0) {
   return useQuery({
     queryKey: ["groups", groupId, "reports", { offset }],
     queryFn: () => fetchPage<ReportOut>(`/groups/${groupId}/reports`, { offset, limit: DEFAULT_PAGE_SIZE }),
+    enabled: !!groupId,
+  });
+}
+
+export interface ReviewQueueFilters {
+  status?: string;
+  internshipId?: string;
+  deadline?: ReviewQueueDeadlineFilter;
+  student?: string;
+}
+
+function reviewQueuePath(groupId: string, filters: ReviewQueueFilters): string {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.internshipId) params.set("internship_id", filters.internshipId);
+  if (filters.deadline) params.set("deadline", filters.deadline);
+  if (filters.student?.trim()) params.set("student", filters.student.trim());
+  const query = params.toString();
+  return `/groups/${groupId}/reports/queue${query ? `?${query}` : ""}`;
+}
+
+export function useGroupReviewQueue(groupId: string | undefined, filters: ReviewQueueFilters, offset = 0) {
+  return useQuery({
+    queryKey: ["groups", groupId, "review-queue", { ...filters, offset }],
+    queryFn: () => fetchPage<TeacherReviewQueueItem>(reviewQueuePath(groupId!, filters), { offset, limit: DEFAULT_PAGE_SIZE }),
     enabled: !!groupId,
   });
 }
@@ -100,6 +125,34 @@ export function useRemoveStudent(groupId: string) {
 export function useTransferStudent(groupId: string) {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: async ({ studentId, targetGroupId }: { studentId: string; targetGroupId: string }) => api.post(`/groups/${groupId}/students/${studentId}/transfer/${targetGroupId}`), onSuccess: (_data, values) => { void queryClient.invalidateQueries({ queryKey: ["groups", groupId] }); void queryClient.invalidateQueries({ queryKey: ["groups", values.targetGroupId] }); void queryClient.invalidateQueries({ queryKey: ["groups"] }); } });
+}
+
+export function useBulkRemoveStudents(groupId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (studentIds: string[]) =>
+      (await api.post<BulkStudentOperationResult>(`/groups/${groupId}/students/bulk-remove`, { student_ids: studentIds })).data,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["groups", groupId] });
+      void queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+}
+
+export function useBulkTransferStudents(groupId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentIds, targetGroupId }: { studentIds: string[]; targetGroupId: string }) =>
+      (await api.post<BulkStudentOperationResult>(`/groups/${groupId}/students/bulk-transfer`, {
+        student_ids: studentIds,
+        target_group_id: targetGroupId,
+      })).data,
+    onSuccess: (_data, values) => {
+      void queryClient.invalidateQueries({ queryKey: ["groups", groupId] });
+      void queryClient.invalidateQueries({ queryKey: ["groups", values.targetGroupId] });
+      void queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
 }
 
 export function useGroupProgress(groupId: string | undefined) {

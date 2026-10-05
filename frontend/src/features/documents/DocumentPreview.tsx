@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { DocumentModel, Section } from "../../types/document";
 import { A4Page } from "./A4Page";
 import { BlockView } from "./BlockView";
+import { useTranslation } from "react-i18next";
 
 const PAGE_GAP_PX = 24;
 
@@ -17,6 +18,7 @@ function pagePosition(index: number, pageWidthMm: number) {
  * words, or inline nodes into independent layout blocks.
  */
 export function DocumentPreview({ document, numbering }: { document: DocumentModel; numbering: Record<string, string> }) {
+  const { t } = useTranslation("editor");
   const flowRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
   const { margins } = document.meta;
@@ -50,7 +52,7 @@ export function DocumentPreview({ document, numbering }: { document: DocumentMod
   const previewWidth = `calc(${pageCount * pageWidthMm}mm + ${Math.max(0, pageCount - 1) * PAGE_GAP_PX}px)`;
 
   return (
-    <div className="overflow-x-auto pb-6" aria-label="Предпросмотр документа формата A4">
+    <div role="region" className="overflow-x-auto pb-6" aria-label={t("documentPreview")}>
       <div className="relative" style={{ width: previewWidth, minHeight: `${pageHeightMm}mm` }}>
         {Array.from({ length: pageCount }, (_, pageIndex) => (
           <A4Page
@@ -86,7 +88,7 @@ export function DocumentPreview({ document, numbering }: { document: DocumentMod
         >
           {document.title_page && (
             <section
-              aria-label="Титульный лист"
+              aria-label={t("coverPage")}
               style={{ minHeight: `${contentHeightMm}mm`, display: "flex", flexDirection: "column", justifyContent: "center", breakAfter: "column" }}
             >
               {document.title_page.blocks.map((block) => (
@@ -132,6 +134,7 @@ function PreviewSection({
   meta: DocumentModel["meta"];
   numbering: Record<string, string>;
 }) {
+  const { t } = useTranslation("editor");
   return (
     <section style={sectionIndex > 0 && section.page_break_before ? { breakBefore: "column" } : undefined}>
       <h2 className="mb-3" style={{ fontFamily: meta.default_font, fontWeight: 700, fontSize: "16pt" }}>
@@ -140,7 +143,7 @@ function PreviewSection({
       </h2>
       {section.blocks.map((block) =>
         block.type === "pageBreak" ? (
-          <div key={block.id} aria-label="Разрыв страницы" style={{ breakBefore: "column" }} />
+          <div key={block.id} role="separator" aria-label={t("pageBreak")} style={{ breakBefore: "column" }} />
         ) : (
           <BlockView key={block.id} block={block} meta={meta} numberPrefix={numbering[block.id]} />
         )

@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Enforce container and workflow hardening policy
         run: python3 scripts/verify_container_security.py
@@ -37,7 +37,7 @@ jobs:
         run: mkdir -p artifacts/sbom artifacts/trivy
 
       - name: Generate backend SPDX SBOM
-        uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: practiceflow-backend:${{ github.sha }}
           format: spdx-json
@@ -46,7 +46,7 @@ jobs:
           upload-artifact: "false"
 
       - name: Generate frontend SPDX SBOM
-        uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: practiceflow-frontend:${{ github.sha }}
           format: spdx-json
@@ -54,41 +54,39 @@ jobs:
           output-file: artifacts/sbom/practiceflow-frontend.spdx.json
           upload-artifact: "false"
 
+      - name: Install checksum-pinned Trivy release
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz \
+            --output "$RUNNER_TEMP/trivy.tar.gz"
+          echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  $RUNNER_TEMP/trivy.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/trivy"
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP/trivy" trivy
+          "$RUNNER_TEMP/trivy/trivy" --version
+
       - name: Scan backend image for High and Critical CVEs
         id: trivy_backend
         continue-on-error: true
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: practiceflow-backend:${{ github.sha }}
-          format: json
-          output: artifacts/trivy/practiceflow-backend.json
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          version: v0.65.0
-          scanners: vuln
-          ignore-unfixed: "false"
-          trivyignores: .trivyignore
-          hide-progress: "true"
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --format json --output artifacts/trivy/practiceflow-backend.json
+          --severity HIGH,CRITICAL --exit-code 1 --scanners vuln
+          --ignore-unfixed=false --ignorefile .trivyignore --no-progress
+          practiceflow-backend:${{ github.sha }}
 
       - name: Scan frontend image for High and Critical CVEs
         id: trivy_frontend
         continue-on-error: true
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: practiceflow-frontend:${{ github.sha }}
-          format: json
-          output: artifacts/trivy/practiceflow-frontend.json
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          version: v0.65.0
-          scanners: vuln
-          ignore-unfixed: "false"
-          trivyignores: .trivyignore
-          hide-progress: "true"
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --format json --output artifacts/trivy/practiceflow-frontend.json
+          --severity HIGH,CRITICAL --exit-code 1 --scanners vuln
+          --ignore-unfixed=false --ignorefile .trivyignore --no-progress
+          practiceflow-frontend:${{ github.sha }}
 
       - name: Upload SBOM and vulnerability scan reports
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: production-image-supply-chain-artifacts
           if-no-files-found: warn
@@ -103,7 +101,9 @@ jobs:
           BACKEND_SCAN: ${{ steps.trivy_backend.outcome }}
           FRONTEND_SCAN: ${{ steps.trivy_frontend.outcome }}
         run: |
-          if [ "$BACKEND_SCAN" = "failure" ] || [ "$FRONTEND_SCAN" = "failure" ]; then
-            echo "High or Critical CVEs found outside .trivyignore; see the uploaded Trivy report."
+          if [ "$BACKEND_SCAN" != "success" ] || [ "$FRONTEND_SCAN" != "success" ]; then
+            echo "Both vulnerability scans must succeed; see the uploaded Trivy reports."
             exit 1
           fi
+          test -s artifacts/trivy/practiceflow-backend.json
+          test -s artifacts/trivy/practiceflow-frontend.json

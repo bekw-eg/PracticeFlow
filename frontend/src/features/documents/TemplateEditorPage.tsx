@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { PlusIcon, EyeIcon, LockClosedIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  LockClosedIcon,
+  ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
 import { ErrorState, LoadingState } from "../../components/ui/StateViews";
-import { useSaveTemplateVersionDocument, useTemplateVersionDocument, useVariableCatalog } from "./api";
+import {
+  useSaveTemplateVersionDocument,
+  useTemplateVersionDocument,
+  useVariableCatalog,
+} from "./api";
 import { PageSettingsPanel } from "./PageSettingsPanel";
 import { SectionEditor } from "./SectionEditor";
 import { DocumentPreview } from "./DocumentPreview";
@@ -12,16 +21,33 @@ import { newNodeId } from "./nodeIds";
 import type { Block, DocumentMeta, DocumentModel } from "../../types/document";
 import { DocumentConflictNotice } from "./documentConflict";
 import { copyUnsavedDocument, useDocumentAutosave } from "./documentAutosave";
+import { useTranslation } from "react-i18next";
+import { useLocaleFormatters } from "../../i18n/formatters";
+import { useProductFeatures } from "../auth/useProductFeatures";
 
 export function TemplateEditorPage() {
-  const { templateId, versionId } = useParams<{ templateId: string; versionId: string }>();
-  const { data, isLoading, isError, error, refetch } = useTemplateVersionDocument(templateId, versionId);
+  const { t } = useTranslation(["editor", "templates"]);
+  const { formatNumber } = useLocaleFormatters();
+  const { legacy_document_editor_enabled: legacyDocumentEditorEnabled } = useProductFeatures();
+  const { templateId, versionId } = useParams<{
+    templateId: string;
+    versionId: string;
+  }>();
+  const { data, isLoading, isError, error, refetch } =
+    useTemplateVersionDocument(templateId, versionId);
   const saveMutation = useSaveTemplateVersionDocument(templateId!, versionId!);
-  const { data: variableCatalog = [], isError: variableCatalogError, error: variableCatalogErrorValue, refetch: refetchVariableCatalog } = useVariableCatalog();
+  const {
+    data: variableCatalog = [],
+    isError: variableCatalogError,
+    error: variableCatalogErrorValue,
+    refetch: refetchVariableCatalog,
+  } = useVariableCatalog();
 
   const [document, setDocument] = useState<DocumentModel | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
   // Numbering is ALWAYS server-computed (app/documents/numbering.py) — there
   // is no client-side reimplementation (Phase 2 had one; it was a drift
   // risk and has been removed). Between saves the UI shows the last known
@@ -32,7 +58,11 @@ export function TemplateEditorPage() {
   const [showPreview, setShowPreview] = useState(false);
   const loadedRef = useRef(false);
 
-  const { queueSave, reset: resetAutosave, state: saveState } = useDocumentAutosave({
+  const {
+    queueSave,
+    reset: resetAutosave,
+    state: saveState,
+  } = useDocumentAutosave({
     delayMs: 1200,
     save: (nextDocument: DocumentModel, expectedRevision: number) =>
       saveMutation.mutateAsync({ document: nextDocument, expectedRevision }),
@@ -69,56 +99,85 @@ export function TemplateEditorPage() {
     if (!document) return;
     void copyUnsavedDocument(document).then(
       () => setCopyState("copied"),
-      () => setCopyState("error")
+      () => setCopyState("error"),
     );
   };
 
   if (isLoading || (!document && !isError && !data)) {
-    return <LoadingState label="Загрузка редактора…" />;
+    return <LoadingState label={t("loadingEditor")} />;
   }
-  if (isError && !document) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (!document) return <LoadingState label="Подготовка редактора…" />;
+  if (isError && !document)
+    return <ErrorState error={error} onRetry={() => void refetch()} />;
+  if (!document) return <LoadingState label={t("preparingEditor")} />;
 
   const isLocked = data?.is_locked ?? false;
-  const canEdit = !isLocked && !hasConflict;
+  const isReadOnly = isLocked || !legacyDocumentEditorEnabled;
+  const canEdit = !isReadOnly && !hasConflict;
 
   return (
     <div>
-      <Link to="/templates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-muted)] hover:text-[var(--color-brand-600)]">
-        <ArrowLeftIcon className="size-4" />Шаблоны
+      <Link
+        to="/templates"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-muted)] hover:text-[var(--color-brand-600)]"
+      >
+        <ArrowLeftIcon className="size-4" />
+        {t("templates:templates")}
       </Link>
 
-      <header className="mt-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+      <header className="mt-4 mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-5">
         <div>
           <h1 className="page-title">
-            Версия {data?.version_number}
-            {isLocked && (
+            {t("templateVersion", { version: data ? formatNumber(data.version_number) : "" })}
+            {isReadOnly && (
               <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-[var(--color-amber-50)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-amber-500)]">
-                <LockClosedIcon className="size-3.5" /> используется в практике — только чтение
+                <LockClosedIcon className="size-3.5" />{" "}
+                {t("templateUsedReadOnly")}
               </span>
             )}
           </h1>
           <div className="mt-1">
-            <SaveStatus state={isLocked || hasConflict ? "idle" : saveState} />
+            <SaveStatus state={isReadOnly || hasConflict ? "idle" : saveState} />
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowPreview((v) => !v)}
           className="btn btn-secondary"
+          aria-label={showPreview ? t("returnToEditor") : t("showPreview")}
+          title={showPreview ? t("returnToEditor") : t("showPreview")}
         >
-          <EyeIcon className="size-4" />
-          {showPreview ? "Редактор" : "Предпросмотр"}
+          <EyeIcon className="size-4" aria-hidden="true" />
+          {showPreview ? t("editor") : t("preview")}
         </button>
       </header>
 
-      {isError && <div className="mb-5"><ErrorState compact error={error} onRetry={() => void refetch()} /></div>}
-      {variableCatalogError && <div className="mb-5"><ErrorState compact error={variableCatalogErrorValue} message="Список переменных недоступен. Редактирование документа продолжит работать, но вставка переменных временно отключена." onRetry={() => void refetchVariableCatalog()} /></div>}
-      {hasConflict && <DocumentConflictNotice onRefresh={() => void refreshAfterConflict()} onCopy={copyLocalChanges} copyState={copyState} />}
+      {isError && (
+        <div className="mb-5">
+          <ErrorState compact error={error} onRetry={() => void refetch()} />
+        </div>
+      )}
+      {variableCatalogError && (
+        <div className="mb-5">
+          <ErrorState
+            compact
+            error={variableCatalogErrorValue}
+            message={t("variablesUnavailable")}
+            onRetry={() => void refetchVariableCatalog()}
+          />
+        </div>
+      )}
+      {hasConflict && (
+        <DocumentConflictNotice
+          onRefresh={() => void refreshAfterConflict()}
+          onCopy={copyLocalChanges}
+          copyState={copyState}
+        />
+      )}
 
       {showPreview ? (
         <DocumentPreview document={document} numbering={numbering} />
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div>
             {document.sections.map((section) => (
               <SectionEditor
@@ -130,10 +189,20 @@ export function TemplateEditorPage() {
                 canEdit={canEdit}
                 canEditTitle={canEdit}
                 onTitleChange={(title) =>
-                  updateDocument({ ...document, sections: document.sections.map((s) => (s.id === section.id ? { ...s, title } : s)) })
+                  updateDocument({
+                    ...document,
+                    sections: document.sections.map((s) =>
+                      s.id === section.id ? { ...s, title } : s,
+                    ),
+                  })
                 }
                 onBlocksChange={(blocks: Block[]) =>
-                  updateDocument({ ...document, sections: document.sections.map((s) => (s.id === section.id ? { ...s, blocks } : s)) })
+                  updateDocument({
+                    ...document,
+                    sections: document.sections.map((s) =>
+                      s.id === section.id ? { ...s, blocks } : s,
+                    ),
+                  })
                 }
               />
             ))}
@@ -160,29 +229,64 @@ export function TemplateEditorPage() {
                 }
                 className="btn border border-dashed border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-brand-500)] hover:text-[var(--color-brand-600)]"
               >
-                <PlusIcon className="size-4" />Добавить раздел
+                <PlusIcon className="size-4" />
+                {t("addSection")}
               </button>
             )}
           </div>
-          <div className="space-y-4">
+          <aside className="space-y-4 xl:sticky xl:top-20">
             <DocumentOutline document={document} numbering={numbering} />
-            {canEdit && <PageSettingsPanel meta={document.meta} onChange={(meta: DocumentMeta) => updateDocument({ ...document, meta })} />}
+            {canEdit && (
+              <PageSettingsPanel
+                meta={document.meta}
+                onChange={(meta: DocumentMeta) =>
+                  updateDocument({ ...document, meta })
+                }
+              />
+            )}
             <SectionListSummary
               document={document}
-              onToggleEditable={canEdit ? (id) => toggleSectionFlag(document, id, "editable", updateDocument) : undefined}
-              onToggleRequired={canEdit ? (id) => toggleSectionFlag(document, id, "required", updateDocument) : undefined}
+              onToggleEditable={
+                canEdit
+                  ? (id) =>
+                      toggleSectionFlag(
+                        document,
+                        id,
+                        "editable",
+                        updateDocument,
+                      )
+                  : undefined
+              }
+              onToggleRequired={
+                canEdit
+                  ? (id) =>
+                      toggleSectionFlag(
+                        document,
+                        id,
+                        "required",
+                        updateDocument,
+                      )
+                  : undefined
+              }
             />
-          </div>
+          </aside>
         </div>
       )}
     </div>
   );
 }
 
-function toggleSectionFlag(document: DocumentModel, sectionId: string, flag: "editable" | "required", update: (d: DocumentModel) => void) {
+function toggleSectionFlag(
+  document: DocumentModel,
+  sectionId: string,
+  flag: "editable" | "required",
+  update: (d: DocumentModel) => void,
+) {
   update({
     ...document,
-    sections: document.sections.map((s) => (s.id === sectionId ? { ...s, [flag]: !s[flag] } : s)),
+    sections: document.sections.map((s) =>
+      s.id === sectionId ? { ...s, [flag]: !s[flag] } : s,
+    ),
   });
 }
 
@@ -195,20 +299,38 @@ function SectionListSummary({
   onToggleEditable?: (id: string) => void;
   onToggleRequired?: (id: string) => void;
 }) {
+  const { t } = useTranslation("editor");
   return (
-    <div className="card p-5">
-      <h3 className="font-display mb-3 font-bold text-[var(--color-ink)]">Структура документа</h3>
+    <div className="section-panel p-5">
+      <h3 className="font-display mb-3 font-bold text-[var(--color-ink)]">
+        {t("documentStructure")}
+      </h3>
       <div className="space-y-2">
         {document.sections.map((section) => (
-          <div key={section.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 text-xs">
-            <p className="mb-1 font-medium text-[var(--color-ink)]">{section.title || "Без названия"}</p>
+          <div
+            key={section.id}
+            className="rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 text-xs"
+          >
+            <p className="mb-1 font-medium text-[var(--color-ink)]">
+              {section.title || t("untitled")}
+            </p>
             <label className="mr-3 inline-flex items-center gap-1 text-[var(--color-muted)]">
-              <input type="checkbox" checked={section.required} disabled={!onToggleRequired} onChange={() => onToggleRequired?.(section.id)} />
-              Обязательный
+              <input
+                type="checkbox"
+                checked={section.required}
+                disabled={!onToggleRequired}
+                onChange={() => onToggleRequired?.(section.id)}
+              />
+              {t("required")}
             </label>
             <label className="inline-flex items-center gap-1 text-[var(--color-muted)]">
-              <input type="checkbox" checked={section.editable} disabled={!onToggleEditable} onChange={() => onToggleEditable?.(section.id)} />
-              Редактируется студентом
+              <input
+                type="checkbox"
+                checked={section.editable}
+                disabled={!onToggleEditable}
+                onChange={() => onToggleEditable?.(section.id)}
+              />
+              {t("editableByStudent")}
             </label>
           </div>
         ))}

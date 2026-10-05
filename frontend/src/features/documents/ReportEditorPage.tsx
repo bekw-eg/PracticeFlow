@@ -13,8 +13,10 @@ import { ReportCollaborationPanel } from "../reports/ReportCollaborationPanel";
 import type { Block, DocumentModel } from "../../types/document";
 import { DocumentConflictNotice } from "./documentConflict";
 import { copyUnsavedDocument, useDocumentAutosave } from "./documentAutosave";
+import { useTranslation } from "react-i18next";
 
 export function ReportEditorPage() {
+  const { t } = useTranslation(["editor", "reports"]);
   const { reportId } = useParams<{ reportId: string }>();
   const { data, isLoading, isError, error, refetch } = useReportDocument(reportId);
   const saveMutation = useSaveReportDocument(reportId!);
@@ -85,24 +87,24 @@ export function ReportEditorPage() {
   const previewNumbering = useMemo(() => numbering, [numbering]);
 
   if (isLoading || (!document && !isError && !data)) {
-    return <LoadingState label="Загрузка отчёта…" />;
+    return <LoadingState label={t("reports:loadingReport")} />;
   }
   if (isError && !document) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (!document) return <LoadingState label="Подготовка редактора…" />;
+  if (!document) return <LoadingState label={t("preparingEditor")} />;
 
   return (
     <div>
       <Link to="/reports" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-muted)] hover:text-[var(--color-brand-600)]">
-        <ArrowLeftIcon className="size-4" />Мои отчёты
+        <ArrowLeftIcon className="size-4" />{t("reports:myReports")}
       </Link>
 
-      <header className="mt-3 mb-6 flex flex-wrap items-center justify-between gap-3">
+      <header className="mt-3 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-5">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-ink)]">
-            Отчёт по практике
+            {t("reportByInternship")}
             {!editable && (
               <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-[var(--color-amber-50)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-amber-500)]">
-                <LockClosedIcon className="size-3.5" /> только чтение
+                <LockClosedIcon className="size-3.5" /> {t("readOnly")}
               </span>
             )}
           </h1>
@@ -111,11 +113,14 @@ export function ReportEditorPage() {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowPreview((v) => !v)}
           className="btn btn-secondary"
+          aria-label={showPreview ? t("returnToEditor") : t("showPreview")}
+          title={showPreview ? t("returnToEditor") : t("showPreview")}
         >
-          <EyeIcon className="size-4" />
-          {showPreview ? "Редактор" : "Предпросмотр как A4"}
+          <EyeIcon className="size-4" aria-hidden="true" />
+          {showPreview ? t("editor") : t("previewAsA4")}
         </button>
         <ExportButtons reportId={reportId!} />
       </header>
@@ -126,11 +131,11 @@ export function ReportEditorPage() {
       {showPreview ? (
         <DocumentPreview document={document} numbering={previewNumbering} />
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div>
             {document.title_page && (
-              <div className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">Титульный лист (задан преподавателем)</p>
+              <div className="mb-5 rounded-lg border border-[var(--color-border)] bg-[#faf9f6] p-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">{t("teacherCoverPage")}</p>
                 {document.title_page.blocks.map((b) => (
                   <BlockView key={b.id} block={b} meta={document.meta} />
                 ))}
@@ -149,12 +154,13 @@ export function ReportEditorPage() {
               />
             ))}
           </div>
-          <div>
+          <aside className="space-y-4 xl:sticky xl:top-20">
             <DocumentOutline document={document} numbering={previewNumbering} />
-          </div>
+            <ReportCollaborationPanel reportId={reportId!} />
+          </aside>
         </div>
       )}
-      <div className="mt-6 max-w-xl"><ReportCollaborationPanel reportId={reportId!} /></div>
+      {showPreview && <div className="mt-5 max-w-xl"><ReportCollaborationPanel reportId={reportId!} /></div>}
     </div>
   );
 }

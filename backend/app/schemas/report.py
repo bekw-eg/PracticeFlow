@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
@@ -27,9 +28,51 @@ class ReportOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ReportDeadlineState(str, Enum):
+    UPCOMING = "UPCOMING"
+    DUE_SOON = "DUE_SOON"
+    DUE_TODAY = "DUE_TODAY"
+    OVERDUE = "OVERDUE"
+    SUBMITTED_ON_TIME = "SUBMITTED_ON_TIME"
+    SUBMITTED_LATE = "SUBMITTED_LATE"
+
+
+class ReviewQueueDeadlineFilter(str, Enum):
+    OVERDUE = "overdue"
+    DUE_TODAY = "due_today"
+    DUE_SOON = "due_soon"
+    UPCOMING = "upcoming"
+
+
+class StudentReportOut(ReportOut):
+    """Compact student-only list item. It intentionally excludes the report
+    document and exposes only the internship context needed by the list UI."""
+
+    internship_title: str
+    internship_description: str | None
+    group_name: str
+    start_date: date
+    end_date: date
+    deadline: date
+    deadline_state: ReportDeadlineState
+
+
+class TeacherReviewQueueItem(ReportOut):
+    """Teacher-facing queue metadata. The report document stays out of this
+    list endpoint and remains available only through the existing review API."""
+
+    student_name: str
+    internship_title: str
+    deadline: date
+    is_overdue: bool
+    submitted_late: bool
+    open_comments_count: int
+
+
 class ReportDetail(ReportOut):
     versions: list[ReportVersionOut]
     deadline: str
+    internship_title: str
 
 
 class ReportDocumentResponse(BaseModel):

@@ -10,6 +10,6 @@ describe("resource protection error messages", () => {
 
   it("explains export throttling without exposing implementation details", () => {
     expect(exportErrorMessage({ response: { status: 429 } })).toBe("Слишком много запросов на экспорт. Подождите немного и повторите попытку.");
-    expect(exportErrorMessage({ response: { status: 504 } })).toBe("Не удалось сформировать файл. Повторите попытку позже.");
+    expect(exportErrorMessage({ response: { status: 504 } })).toBe("Экспорт временно недоступен. Повторите попытку позже.");
   });
 });

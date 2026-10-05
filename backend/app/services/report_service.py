@@ -1,21 +1,26 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.documents.numbering import compute_numbering
 from app.documents.schemas import Block, DocumentModel
 from app.documents.validators import validate_document
 from app.documents.variables import resolve_document
 from app.models.audit_log import AuditLog
-from app.models.enums import AuditEventType, ReportStatus
+from app.models.comment import Comment
+from app.models.enums import AuditEventType, CommentStatus, ReportStatus
+from app.models.internship import Internship
+from app.models.membership import OrganizationMembership
 from app.models.report import Report
 from app.models.report_version import ReportVersion
+from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.teacher_group import TeacherGroup
-from app.models.membership import OrganizationMembership
-from sqlalchemy import select, update
+from app.models.user import User
+from sqlalchemy import and_, case, func, or_, select, update
 from app.permissions.rbac import require_student_owns_report, require_teacher_owns_group
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.group_repository import GroupRepository
@@ -28,6 +33,7 @@ from app.services.report_document_context import build_context_for_report
 from app.services.notification_service import NotificationService
 
 EDITABLE_STATUSES = (ReportStatus.DRAFT, ReportStatus.REVISION_REQUIRED)
+REVIEW_QUEUE_COMPLETED_STATUSES = (ReportStatus.APPROVED, ReportStatus.LOCKED)
 
 STALE_DOCUMENT_REVISION = "STALE_DOCUMENT_REVISION"
 
@@ -75,6 +81,165 @@ class ReportService:
     def count_for_group(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID) -> int:
         require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
         return self.report_repo.count_for_group(org_id, group_id)
+
+    def _review_queue_base(
+        self,
+        org_id: uuid.UUID,
+        teacher_id: uuid.UUID,
+        group_id: uuid.UUID,
+        *,
+        status_filter: ReportStatus | None,
+        internship_id: uuid.UUID | None,
+        deadline_filter: str | None,
+        student_query: str | None,
+        today: date,
+    ):
+        """Build the teacher-owned review queue without exposing documents."""
+        require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
+
+        open_comments = (
+            select(
+                Comment.report_id.label("report_id"),
+                func.count(Comment.id).label("open_comments_count"),
+            )
+            .where(
+                Comment.organization_id == org_id,
+                Comment.status == CommentStatus.OPEN,
+                Comment.parent_comment_id.is_(None),
+            )
+            .group_by(Comment.report_id)
+            .subquery()
+        )
+        overdue_condition = and_(
+            Internship.deadline < today,
+            Report.status.not_in(REVIEW_QUEUE_COMPLETED_STATUSES),
+        )
+        submitted_late_condition = and_(
+            ReportVersion.submitted_at.is_not(None),
+            func.date(ReportVersion.submitted_at) > Internship.deadline,
+        )
+        statement = (
+            select(
+                Report.id,
+                Report.internship_id,
+                Report.student_id,
+                Report.status,
+                Report.current_version_id,
+                Report.created_at,
+                User.full_name.label("student_name"),
+                Internship.title.label("internship_title"),
+                Internship.deadline,
+                case((overdue_condition, True), else_=False).label("is_overdue"),
+                case((submitted_late_condition, True), else_=False).label("submitted_late"),
+                func.coalesce(open_comments.c.open_comments_count, 0).label("open_comments_count"),
+                case((overdue_condition, 1), else_=0).label("_overdue_priority"),
+                case((Report.status == ReportStatus.SUBMITTED, 1), else_=0).label("_awaiting_review_priority"),
+            )
+            .join(Internship, Internship.id == Report.internship_id)
+            .join(Student, Student.id == Report.student_id)
+            .join(OrganizationMembership, OrganizationMembership.id == Student.membership_id)
+            .join(User, User.id == OrganizationMembership.user_id)
+            .outerjoin(ReportVersion, ReportVersion.id == Report.current_version_id)
+            .outerjoin(open_comments, open_comments.c.report_id == Report.id)
+            .where(
+                Report.organization_id == org_id,
+                Internship.organization_id == org_id,
+                Internship.group_id == group_id,
+                OrganizationMembership.organization_id == org_id,
+            )
+        )
+        if status_filter is not None:
+            statement = statement.where(Report.status == status_filter)
+        if internship_id is not None:
+            statement = statement.where(Internship.id == internship_id)
+        if student_query and student_query.strip():
+            pattern = f"%{student_query.strip()}%"
+            statement = statement.where(or_(User.full_name.ilike(pattern), User.email.ilike(pattern)))
+        if deadline_filter == "overdue":
+            statement = statement.where(overdue_condition)
+        elif deadline_filter == "due_today":
+            statement = statement.where(Internship.deadline == today)
+        elif deadline_filter == "due_soon":
+            statement = statement.where(
+                Internship.deadline > today,
+                Internship.deadline <= today + timedelta(days=3),
+            )
+        elif deadline_filter == "upcoming":
+            statement = statement.where(Internship.deadline > today + timedelta(days=3))
+        return statement
+
+    @staticmethod
+    def _review_queue_order(queue):
+        return (
+            queue.c._overdue_priority.desc(),
+            queue.c._awaiting_review_priority.desc(),
+            queue.c.deadline.asc(),
+            queue.c.created_at.desc(),
+            queue.c.id.desc(),
+        )
+
+    def list_review_queue(
+        self,
+        org_id: uuid.UUID,
+        teacher_id: uuid.UUID,
+        group_id: uuid.UUID,
+        *,
+        status_filter: ReportStatus | None = None,
+        internship_id: uuid.UUID | None = None,
+        deadline_filter: str | None = None,
+        student_query: str | None = None,
+        offset: int = 0,
+        limit: int | None = None,
+        today: date | None = None,
+    ) -> tuple[list[dict], int]:
+        queue = self._review_queue_base(
+            org_id,
+            teacher_id,
+            group_id,
+            status_filter=status_filter,
+            internship_id=internship_id,
+            deadline_filter=deadline_filter,
+            student_query=student_query,
+            today=today or datetime.now(timezone.utc).date(),
+        ).subquery()
+        total = int(self.db.scalar(select(func.count()).select_from(queue)) or 0)
+        statement = select(queue).order_by(*self._review_queue_order(queue)).offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
+        return [dict(row) for row in self.db.execute(statement).mappings().all()], total
+
+    def next_review_queue_item(
+        self,
+        org_id: uuid.UUID,
+        teacher_id: uuid.UUID,
+        group_id: uuid.UUID,
+        report_id: uuid.UUID,
+        *,
+        status_filter: ReportStatus | None = None,
+        internship_id: uuid.UUID | None = None,
+        deadline_filter: str | None = None,
+        student_query: str | None = None,
+        today: date | None = None,
+    ) -> dict | None:
+        queue = self._review_queue_base(
+            org_id,
+            teacher_id,
+            group_id,
+            status_filter=status_filter,
+            internship_id=internship_id,
+            deadline_filter=deadline_filter,
+            student_query=student_query,
+            today=today or datetime.now(timezone.utc).date(),
+        ).subquery()
+        ranked = select(
+            queue,
+            func.row_number().over(order_by=self._review_queue_order(queue)).label("queue_position"),
+        ).subquery()
+        current_position = select(ranked.c.queue_position).where(ranked.c.id == report_id).scalar_subquery()
+        item = self.db.execute(
+            select(ranked).where(ranked.c.queue_position == current_position + 1)
+        ).mappings().one_or_none()
+        return dict(item) if item is not None else None
 
     def get_for_student(self, org_id: uuid.UUID, student_id: uuid.UUID, report_id: uuid.UUID) -> Report:
         report = self.report_repo.get(org_id, report_id)
@@ -144,7 +309,7 @@ class ReportService:
         return {
             "document": document,
             "numbering": numbering,
-            "editable": report.status in EDITABLE_STATUSES,
+            "editable": settings.LEGACY_DOCUMENT_EDITOR_ENABLED and report.status in EDITABLE_STATUSES,
             "revision": report.revision,
         }
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.pagination import PaginationParams, set_pagination_headers
 from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
+from app.dependencies.features import require_legacy_document_editor_enabled
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
 from app.schemas.internship import CreateInternshipRequest, GroupReportProgress, InternshipOut, UpdateInternshipRequest
@@ -31,6 +32,7 @@ def create_internship(
     payload: CreateInternshipRequest,
     ctx: RequestContext = Depends(get_current_context),
     db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> InternshipOut:
     require_role(ctx.role, RoleName.TEACHER)
     internship = InternshipService(db).create(ctx.organization_id, ctx.teacher_id, group_id, ctx.user_id, payload)
@@ -39,7 +41,10 @@ def create_internship(
 
 @router.post("/internships/{internship_id}/publish", response_model=InternshipOut)
 def publish_internship(
-    internship_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)
+    internship_id: uuid.UUID,
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
 ) -> InternshipOut:
     require_role(ctx.role, RoleName.TEACHER)
     internship = InternshipService(db).publish(ctx.organization_id, ctx.teacher_id, ctx.user_id, internship_id)
@@ -47,7 +52,13 @@ def publish_internship(
 
 
 @router.patch("/internships/{internship_id}", response_model=InternshipOut)
-def update_internship(internship_id: uuid.UUID, payload: UpdateInternshipRequest, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)) -> InternshipOut:
+def update_internship(
+    internship_id: uuid.UUID,
+    payload: UpdateInternshipRequest,
+    ctx: RequestContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_legacy_document_editor_enabled),
+) -> InternshipOut:
     require_role(ctx.role, RoleName.TEACHER)
     return InternshipOut.model_validate(InternshipService(db).update(ctx.organization_id, ctx.teacher_id, ctx.user_id, internship_id, payload))
 

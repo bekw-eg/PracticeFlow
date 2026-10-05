@@ -8,22 +8,37 @@ sees in the browser is what ends up in both exports.
 Font substitution (rule 31, documented not silent): "Times New Roman" is
 declared in DocumentMeta as the default academic font, matching Word
 convention, but Windows-licensed Times New Roman font files aren't legally
-redistributable on Linux. Substituted with "DejaVu Serif" -- visually
-verified (not assumed) to render all 9 Kazakh-specific Cyrillic letters
-correctly, metrically a reasonable serif match.
+redistributable on Linux. The production image provides "Noto Serif" and
+"DejaVu Serif" as Unicode-capable serif fallbacks for all Kazakh Cyrillic
+letters.
 """
 import base64
 import html as html_escape
+import re
 
 from app.documents.schemas import Block, DocumentModel, HeadingBlock, ImageBlock, ListBlock, PageBreakBlock, ParagraphBlock, Run, TableBlock
 
 _FONT_SUBSTITUTIONS = {
-    "times new roman": "DejaVu Serif",
+    "times new roman": "Noto Serif",
 }
+_DOCUMENT_LANGUAGE_FALLBACK = "und"
+_LANGUAGE_TAG = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
 
 
 def resolve_font_family(requested: str) -> str:
     return _FONT_SUBSTITUTIONS.get(requested.strip().lower(), requested)
+
+
+def resolve_document_language(document_language: str | None) -> str:
+    """Return document-level language metadata suitable for HTML.
+
+    This deliberately does not consult the React/UI locale or inspect authored
+    text. Exported documents may be written in any language, and without an
+    explicit document-language value ``und`` is the standards-compliant,
+    neutral fallback for language-undetermined content.
+    """
+    candidate = document_language.strip() if document_language else ""
+    return candidate if _LANGUAGE_TAG.fullmatch(candidate) else _DOCUMENT_LANGUAGE_FALLBACK
 
 
 def _esc(text: str) -> str:
@@ -112,8 +127,9 @@ def _first_paragraph_content(blocks: list[Block]) -> str:
     return '""'
 
 
-def build_html(document: DocumentModel, numbering: dict, load_image) -> str:
+def build_html(document: DocumentModel, numbering: dict, load_image, *, document_language: str | None = None) -> str:
     font_family = resolve_font_family(document.meta.default_font)
+    language = resolve_document_language(document_language)
 
     style_rules = []
     for name, style in document.meta.styles.items():
@@ -156,7 +172,7 @@ def build_html(document: DocumentModel, numbering: dict, load_image) -> str:
     top_center_rule = f"content: {header_content}; font-size: 10pt;" if header_content else ""
 
     return f"""<!DOCTYPE html>
-<html lang="kk">
+<html lang="{language}">
 <head>
 <meta charset="utf-8" />
 <style>
@@ -170,7 +186,7 @@ def build_html(document: DocumentModel, numbering: dict, load_image) -> str:
     {f"@top-center {{ {top_center_rule} }}" if top_center_rule else ""}
   }}
   body {{
-    font-family: "{font_family}", "DejaVu Serif", serif;
+    font-family: "{font_family}", "Noto Serif", "DejaVu Serif", serif;
     font-size: {document.meta.default_font_size}pt;
     line-height: {document.meta.line_spacing};
     color: #000;

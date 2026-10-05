@@ -1,12 +1,16 @@
 import uuid
 from copy import deepcopy
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.enums import AuditEventType, InternshipStatus, ReportStatus
 from app.models.internship import Internship
+from app.models.membership import OrganizationMembership
 from app.models.report import Report
+from app.models.student import Student
 from app.permissions.rbac import require_teacher_owns_group
 from app.repositories.group_member_repository import GroupMemberRepository
 from app.repositories.group_repository import GroupRepository
@@ -16,6 +20,14 @@ from app.repositories.template_version_repository import TemplateVersionReposito
 from app.schemas.internship import CreateInternshipRequest, UpdateInternshipRequest
 from app.services.notification_service import NotificationService
 from app.services.audit_service import AuditService
+
+
+_DEADLINE_REMINDER_DAYS = 3
+_DEADLINE_REMINDER_TITLES = {
+    "REPORT_DEADLINE_SOON": "Скоро срок сдачи отчёта",
+    "REPORT_DEADLINE_TODAY": "Срок сдачи отчёта — сегодня",
+    "REPORT_DEADLINE_OVERDUE": "Срок сдачи отчёта истёк",
+}
 
 
 class InternshipService:
@@ -149,6 +161,72 @@ class InternshipService:
         self.db.commit()
         self.db.refresh(internship)
         return internship
+
+    @staticmethod
+    def deadline_reminder_type(deadline: date, *, today: date) -> str | None:
+        """Return the one reminder stage applicable to a report today.
+
+        A student who first opens the app during the three-day window still
+        gets the early reminder, while a later visit gets only the currently
+        relevant deadline or overdue stage rather than stale notifications.
+        """
+        if deadline - timedelta(days=_DEADLINE_REMINDER_DAYS) <= today < deadline:
+            return "REPORT_DEADLINE_SOON"
+        if today == deadline:
+            return "REPORT_DEADLINE_TODAY"
+        if today > deadline:
+            return "REPORT_DEADLINE_OVERDUE"
+        return None
+
+    def create_deadline_reminders_for_student(
+        self, org_id: uuid.UUID, user_id: uuid.UUID, *, now: datetime | None = None
+    ) -> int:
+        """Materialize current deadline reminders for one authenticated student.
+
+        NotificationBell polls the scoped notifications endpoint, so reminders
+        remain in-app only and do not require an email provider or a global
+        scheduler. Deadline dates are evaluated in UTC, matching the rest of
+        the API's date-based deadline handling.
+        """
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise ValueError("deadline reminder time must be timezone-aware")
+        today = instant.astimezone(timezone.utc).date()
+        rows = self.db.execute(
+            select(Report.id, Internship.title, Internship.deadline)
+            .join(Internship, Internship.id == Report.internship_id)
+            .join(Student, Student.id == Report.student_id)
+            .join(OrganizationMembership, OrganizationMembership.id == Student.membership_id)
+            .where(
+                Report.organization_id == org_id,
+                Internship.organization_id == org_id,
+                OrganizationMembership.organization_id == org_id,
+                OrganizationMembership.user_id == user_id,
+                OrganizationMembership.is_active.is_(True),
+                Internship.status == InternshipStatus.PUBLISHED,
+                Report.status.in_((ReportStatus.DRAFT, ReportStatus.REVISION_REQUIRED)),
+            )
+        ).all()
+
+        created = 0
+        for report_id, internship_title, deadline in rows:
+            reminder_type = self.deadline_reminder_type(deadline, today=today)
+            if reminder_type is None:
+                continue
+            _, was_created = self.notifications.create_once(
+                org_id,
+                user_id,
+                reminder_type,
+                _DEADLINE_REMINDER_TITLES[reminder_type],
+                body=internship_title,
+                link=f"/reports/{report_id}/edit",
+                dedupe_key=f"report-deadline:{report_id}:{reminder_type}",
+            )
+            created += int(was_created)
+
+        if created:
+            self.db.commit()
+        return created
 
     def report_progress(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID) -> dict:
         require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
