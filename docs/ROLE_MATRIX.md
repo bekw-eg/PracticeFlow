@@ -7,6 +7,7 @@ client cannot supply another `organization_id` to redirect tenant-scoped work.
 
 | Capability | Super Admin | Director | Teacher | Student |
 | --- | --- | --- | --- | --- |
+| Disciplines, topics and teaching materials | No direct Teacher workflow endpoint | No direct Teacher workflow endpoint | Own curriculum in the active organization; link assigned existing groups; authorized private file download/deletion | No access |
 | MFA required | Yes | Yes | No by current policy | No by current policy |
 | View/manage organization members | Yes, within current organization; global organization management endpoints are Super Admin-only | View/manage permitted Teacher/Student members in current organization | No | No |
 | Change/invite/reset privileged membership | Yes | No — cannot change, deactivate, invite or reset Director/Super Admin | No | No |

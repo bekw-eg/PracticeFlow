@@ -35,7 +35,6 @@ _DOCUMENT_RELATIONSHIPS = {
     "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument",
 }
 _MAIN_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
-_REQUIRED_PARTS = {"[Content_Types].xml", "_rels/.rels", "word/document.xml"}
 _OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 
@@ -96,7 +95,17 @@ def _parse_xml(data: bytes) -> etree._Element:
         raise _reject("DOCX_INVALID", "The DOCX file is invalid or corrupt.") from None
 
 
-def _validate_package(stream: BinaryIO, limits: Settings) -> None:
+def validate_office_package(stream: BinaryIO, limits: Settings, *, package_type: str = "docx") -> None:
+    # Teaching materials reuse these bounded ZIP/XML checks for PPTX. The
+    # default retains the original DOCX acceptance policy without analysis.
+    presentation = package_type == "pptx"
+    main_part = "ppt/presentation.xml" if presentation else "word/document.xml"
+    main_type = ("application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
+                 if presentation else _MAIN_TYPE)
+    namespaces = {"http://schemas.openxmlformats.org/presentationml/2006/main",
+                  "http://purl.oclc.org/ooxml/presentationml/main"} if presentation else _WORD_NAMESPACES
+    root_name = "presentation" if presentation else "document"
+    required_parts = {"[Content_Types].xml", "_rels/.rels", main_part}
     stream.seek(0)
     signature = stream.read(8)
     if signature == _OLE_SIGNATURE:
@@ -136,7 +145,7 @@ def _validate_package(stream: BinaryIO, limits: Settings) -> None:
                     raise _reject("DOCX_ARCHIVE_LIMIT", "The unpacked document exceeds the safety limit.", 413)
                 if info.file_size / max(1, info.compress_size) > limits.DOCX_MAX_COMPRESSION_RATIO:
                     raise _reject("DOCX_COMPRESSION_RATIO", "The document compression exceeds the safety limit.", 413)
-            if not _REQUIRED_PARTS.issubset(names):
+            if not required_parts.issubset(names):
                 raise _reject("DOCX_INVALID", "The file is missing required DOCX parts.")
 
             parsed: dict[str, etree._Element] = {}
@@ -162,7 +171,7 @@ def _validate_package(stream: BinaryIO, limits: Settings) -> None:
                     raise _reject("DOCX_INVALID", "The DOCX file is invalid or corrupt.")
                 if xml_data is not None:
                     root = _parse_xml(bytes(xml_data))
-                    if info.filename in _REQUIRED_PARTS:
+                    if info.filename in required_parts:
                         parsed[info.filename] = root
 
             content = parsed["[Content_Types].xml"]
@@ -173,20 +182,20 @@ def _validate_package(stream: BinaryIO, limits: Settings) -> None:
                 declared_type = node.get("ContentType", "").lower()
                 if "macroenabled" in declared_type or "vbaproject" in declared_type or "vbadata" in declared_type:
                     raise _reject("DOCX_MACROS", "Documents containing macros are not supported. Upload a macro-free DOCX.")
-                if node.tag == f"{{{_CONTENT_NS}}}Override" and node.get("PartName") == "/word/document.xml":
+                if node.tag == f"{{{_CONTENT_NS}}}Override" and node.get("PartName") == "/" + main_part:
                     main_parts.append(declared_type)
-            if main_parts != [_MAIN_TYPE]:
+            if main_parts != [main_type]:
                 raise _reject("DOCX_INVALID", "The file does not contain a DOCX main document.")
             relationships = parsed["_rels/.rels"]
             if relationships.tag != f"{{{_RELS_NS}}}Relationships":
                 raise _reject("DOCX_INVALID", "The DOCX relationships are invalid.")
             main_relationships = [node for node in relationships if node.get("Type") in _DOCUMENT_RELATIONSHIPS]
             if len(main_relationships) != 1 or (
-                main_relationships[0].get("Target") not in {"word/document.xml", "/word/document.xml"}
+                main_relationships[0].get("Target") not in {main_part, "/" + main_part}
                 or main_relationships[0].get("TargetMode", "Internal") != "Internal"
             ):
                 raise _reject("DOCX_INVALID", "The DOCX main document relationship is invalid.")
-            if parsed["word/document.xml"].tag not in {f"{{{ns}}}document" for ns in _WORD_NAMESPACES}:
+            if parsed[main_part].tag not in {f"{{{ns}}}{root_name}" for ns in namespaces}:
                 raise _reject("DOCX_INVALID", "The DOCX main document XML is invalid.")
     except (zipfile.BadZipFile, zipfile.LargeZipFile, zlib.error, EOFError, NotImplementedError, KeyError, ValueError):
         raise _reject("DOCX_INVALID", "The DOCX file is invalid or corrupt.") from None
@@ -215,7 +224,7 @@ def stage_docx_upload(upload: UploadFile, limits: Settings | None = None) -> Ite
             digest.update(chunk)
         if not size:
             raise _reject("DOCX_INVALID", "The DOCX file is empty.")
-        _validate_package(staged, limits)
+        validate_office_package(staged, limits)
         yield ValidatedDocx(
             stream=staged, size_bytes=size, sha256=digest.hexdigest(),
             original_filename=normalize_original_filename(filename),

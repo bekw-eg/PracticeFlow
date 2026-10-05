@@ -5,7 +5,7 @@ export type Locale = (typeof supportedLocales)[number];
 export const DEFAULT_LOCALE: Locale = "ru";
 export const LOCALE_STORAGE_KEY = "practiceflow.locale";
 
-export const namespaces = ["common", "auth", "groups", "templates", "reports", "editor", "documentChecks", "admin", "audit", "export", "errors"] as const;
+export const namespaces = ["common", "auth", "groups", "templates", "reports", "editor", "documentChecks", "admin", "audit", "export", "errors", "disciplines"] as const;
 
 export type TranslationNamespace = (typeof namespaces)[number];
 

@@ -34,6 +34,10 @@ from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 __all__ = [
+    "Discipline",
+    "DisciplineGroup",
+    "DisciplineTopic",
+    "TeachingMaterial",
     "AuditLog",
     "AuditChainHead",
     "AccessLink",
@@ -83,3 +87,4 @@ __all__ = [
 ]
 
 from app.models.group_review_report import GroupReviewReport
+from app.models.discipline import Discipline, DisciplineGroup, DisciplineTopic, TeachingMaterial

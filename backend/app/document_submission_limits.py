@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.config import settings
+from app.services.teaching_material_preflight import MAX_MATERIAL_BYTES
 
 
 class DocumentSubmissionBodyLimitMiddleware:
@@ -19,15 +20,17 @@ class DocumentSubmissionBodyLimitMiddleware:
             prefix + r"/document-checks/(?:teacher/submissions|student/assignments/[^/]+/submissions)/?",
             path,
         )
-        if scope["type"] != "http" or scope.get("method") != "POST" or not upload_path:
+        material_path = re.fullmatch(prefix + r"/topics/[^/]+/materials/?", path)
+        if scope["type"] != "http" or scope.get("method") != "POST" or not (upload_path or material_path):
             await self.app(scope, receive, send)
             return
 
         # Allow multipart framing while keeping all files/fields combined bounded.
         # The domain service independently enforces the exact original byte limit.
-        limit = settings.DOCX_MAX_UPLOAD_BYTES + 64 * 1024
+        limit = (MAX_MATERIAL_BYTES if material_path else settings.DOCX_MAX_UPLOAD_BYTES) + 64 * 1024
         rejection = JSONResponse(status_code=413, content={"detail": {
-            "code": "DOCX_UPLOAD_TOO_LARGE", "message": "The DOCX exceeds the upload size limit.",
+            "code": "MATERIAL_TOO_LARGE" if material_path else "DOCX_UPLOAD_TOO_LARGE",
+            "message": "The material exceeds the upload size limit." if material_path else "The DOCX exceeds the upload size limit.",
         }})
         for name, value in scope.get("headers", []):
             if name.lower() == b"content-length":

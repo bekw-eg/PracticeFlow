@@ -1,5 +1,10 @@
 # Data retention, backup and recovery boundaries
 
+Curriculum archive retains discipline/topic metadata and materials. Explicit
+material deletion revokes access before removing the private file; tombstones
+remain in PostgreSQL, and failed removal retains the storage quota until retry.
+See [curriculum storage and rollback](DISCIPLINES.md#upload-and-deletion).
+
 Retention is a deployment and legal-policy decision. The values below describe
 current application defaults only; they are not a legal retention schedule,
 automatic backup policy or promise of recovery objective.

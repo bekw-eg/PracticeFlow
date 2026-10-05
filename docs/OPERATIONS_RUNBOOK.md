@@ -47,6 +47,13 @@ evicting security-critical state.
 
 ## S3-compatible storage error
 
+Teaching material deletion can return MATERIAL_DELETE_PENDING after access
+has been revoked. Once storage recovers, retry DELETE for that material as its
+Teacher owner; preserve the tombstone. Pending bytes remain in the tenant
+storage budget until removal is confirmed.
+See [curriculum operations](DISCIPLINES.md#rollout-rollback-and-remaining-boundaries)
+for lost-acknowledgement orphan handling and migration rollback.
+
 - Validate the storage dependency gauge, endpoint DNS/TLS, private bucket
   policy, credential rotation status, provider status and object-storage quota.
 - Keep affected upload/download/export behavior unavailable (`503`); do not

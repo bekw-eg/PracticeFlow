@@ -21,6 +21,7 @@ import { ReviewGroupsPage, ReviewGroupPage } from "./features/documentChecks/Rev
 import { TeacherDocumentReviewPage } from "./features/documentChecks/TeacherDocumentReviewPage";
 import { ToastViewport } from "./components/ToastViewport";
 import { LoadingState } from "./components/ui/StateViews";
+import { DisciplinePage, DisciplinesPage, TopicPage } from "./features/disciplines/DisciplinePages";
 import { useTranslation } from "react-i18next";
 
 // The document editor pulls in Tiptap/ProseMirror, by far the heaviest
@@ -60,6 +61,9 @@ export function App() {
         }
       >
         <Route path="/" element={<RoleLandingRedirect />} />
+        <Route path="/disciplines" element={<ProtectedRoute allowedRoles={["TEACHER"]}><DisciplinesPage /></ProtectedRoute>} />
+        <Route path="/disciplines/:disciplineId" element={<ProtectedRoute allowedRoles={["TEACHER"]}><DisciplinePage /></ProtectedRoute>} />
+        <Route path="/disciplines/:disciplineId/topics/:topicId" element={<ProtectedRoute allowedRoles={["TEACHER"]}><TopicPage /></ProtectedRoute>} />
         <Route
           path="/groups"
           element={

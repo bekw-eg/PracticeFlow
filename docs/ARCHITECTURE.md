@@ -1,5 +1,10 @@
 # Архитектура PracticeFlow
 
+The additive [curriculum module](DISCIPLINES.md) uses the same validated
+membership context, Teacher ownership, private storage and resource quotas.
+Disciplines, topics and teaching materials remain independent of legacy
+internships/reports and direct document checks.
+
 PracticeFlow — multi-tenant приложение для учебной практики. Этот документ
 описывает текущую архитектуру repository и её security boundaries; он не
 описывает будущий HA-кластер или managed cloud-инфраструктуру.
