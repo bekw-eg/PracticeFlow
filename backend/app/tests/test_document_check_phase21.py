@@ -211,6 +211,36 @@ def test_rechecks_keep_snapshots_history_and_order_when_finishing_late(client, d
         db.rollback()
 
 
+def test_page_exclusions_work_with_forward_only_storage_and_reject_changed_originals(client, published, private_storage, monkeypatch):
+    assignment, _, headers = published
+    uploaded = _teacher_upload_for_rules(client, assignment["profile_version_id"], headers)
+    path = f"{PREFIX}/teacher/submissions/{uploaded['id']}"
+    # Production S3 streams support read/close, but not seek or context managers.
+    from app.storage.s3 import _S3ObjectStream
+    original_open = private_storage.open
+    opened = []
+
+    def streaming_open(key):
+        stream = _S3ObjectStream(original_open(key))
+        opened.append(stream)
+        return stream
+
+    monkeypatch.setattr(private_storage, "open", streaming_open)
+    assert client.get(f"{path}/preview", headers=headers).status_code == 200
+    assert client.get(f"{path}/paragraphs", headers=headers).status_code == 200
+    draft = client.get(f"{path}/settings", headers=headers).json()
+    draft["page_exclusions"] = {"pages": [2], "layout": [
+        {"number": 1, "section_index": 1, "paragraphs": {"1": []}},
+        {"number": 2, "section_index": 1, "paragraphs": {"2": [1]}},
+    ]}
+    assert _saved_document_settings(client, path, headers, draft)["page_exclusions"]["pages"] == [2]
+    assert opened and all(stream._closed for stream in opened)
+    corrupted = _S3ObjectStream(io.BytesIO(b"x" * uploaded["size_bytes"]))
+    monkeypatch.setattr(private_storage, "open", lambda key: corrupted)
+    assert client.get(f"{path}/preview", headers=headers).status_code == 422
+    assert corrupted._closed
+
+
 def test_page_exclusions_persist_in_worker_snapshot_and_can_be_removed(client, db, published, private_storage):
     assignment, _, headers = published
     uploaded = _teacher_upload_for_rules(client, assignment["profile_version_id"], headers)

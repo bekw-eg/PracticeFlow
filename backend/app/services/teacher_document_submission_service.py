@@ -1,15 +1,18 @@
 """Teacher-only acceptance and access for immutable DOCX checks."""
 from __future__ import annotations
 
+import hashlib
 import re
 import uuid
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
+from tempfile import SpooledTemporaryFile
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.dependencies.auth import RequestContext
 from app.models.document_check import (
     CheckProfileVersion,
@@ -305,16 +308,35 @@ class TeacherDocumentSubmissionService:
             self.db.rollback()
             raise
 
+    @contextmanager
+    def _seekable_original(self, submission):
+        # S3 exposes a read-only network stream; ZIP readers require seek/tell.
+        # Bound the copy and verify the immutable original before parsing it.
+        with SpooledTemporaryFile(max_size=2 * 1024 * 1024, mode="w+b") as staged:
+            digest = hashlib.sha256()
+            size = 0
+            stream = self.storage.open(submission.storage_key)
+            try:
+                while chunk := stream.read(64 * 1024):
+                    size += len(chunk)
+                    if size > submission.size_bytes or size > settings.DOCX_MAX_UPLOAD_BYTES:
+                        raise ValueError("Original exceeds the accepted size")
+                    digest.update(chunk)
+                    staged.write(chunk)
+            finally:
+                stream.close()
+            if size != submission.size_bytes or digest.hexdigest() != submission.sha256:
+                raise ValueError("Original integrity check failed")
+            staged.seek(0)
+            yield staged
+
     def preview(self, ctx: RequestContext, submission_id: uuid.UUID):
         submission = self.get(ctx, submission_id)
         from app.services.document_lifecycle_service import require_original
         require_original(submission)
         try:
-            stream = self.storage.open(submission.storage_key)
-            try:
+            with self._seekable_original(submission) as stream:
                 return render_docx_html(stream)
-            finally:
-                stream.close()
         except (StorageUnavailableError, FileNotFoundError, OSError):
             raise _error(
                 "PREVIEW_UNAVAILABLE",
@@ -329,11 +351,8 @@ class TeacherDocumentSubmissionService:
         from app.services.document_lifecycle_service import require_original
         require_original(submission)
         try:
-            stream = self.storage.open(submission.storage_key)
-            try:
+            with self._seekable_original(submission) as stream:
                 return inspect_paragraphs(stream, overrides)
-            finally:
-                stream.close()
         except (StorageUnavailableError, FileNotFoundError, OSError):
             raise _error("PREVIEW_UNAVAILABLE", "The original document is temporarily unavailable.", 503) from None
         except Exception:

@@ -46,6 +46,9 @@ test("teacher excludes a preview page, reopens saved settings, and restores its 
     file: { name: "synthetic-page-exceptions.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer: syntheticDocx() },
   } }));
   const path = `${base}/${uploaded.id}`;
+  // Fail at the API boundary if production object streams cannot be previewed.
+  await body(await request.get(`${path}/preview`, { headers }));
+  await body(await request.get(`${path}/paragraphs`, { headers }));
   await expect.poll(async () => (await body(await request.get(path, { headers }))).job.status, { timeout: 40_000 }).toBe("COMPLETED");
   const original = await body(await request.get(`${path}/findings`, { headers }));
   expect(original.map((finding: { location: { paragraph_index: number } }) => finding.location.paragraph_index)).toEqual([2, 3]);
