@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { PaginationControls } from "../../components/ui/PaginationControls";
 import { ErrorState, LoadingState } from "../../components/ui/StateViews";
 import { useLocaleFormatters } from "../../i18n/formatters";
-import type { DocumentCheckFinding, DocumentCheckJob, DocumentSettings, LocalPlagiarismMatch, ParagraphType } from "../../types/api";
+import type { DocumentCheckFinding, DocumentCheckJob, DocumentPageLayout, DocumentSettings, LocalPlagiarismMatch, ParagraphType } from "../../types/api";
 import {
   downloadTeacherSubmissionOriginal,
   useAllSubmissionFindings,
@@ -22,6 +22,7 @@ import { CheckScopeNotice } from "./CheckScopeNotice";
 import { DocumentRulesPanel } from "./DocumentRulesPanel";
 import { TeacherReviewPanel } from "./TeacherReviewPanel";
 import { RuleConfigFields } from "./RuleConfigFields";
+import { PageExclusionsPanel } from "./PageExclusionsPanel";
 
 const EMPTY_FINDINGS: DocumentCheckFinding[] = [];
 const EMPTY_SIMILARITY_MATCHES: LocalPlagiarismMatch[] = [];
@@ -61,6 +62,7 @@ function TeacherDocumentReview({ submissionId }: { submissionId: string | undefi
   const runs = useDocumentRuns(submissionId, submission.data?.job.id, submission.data?.job.status);
   const similarityRuns = useLocalPlagiarismRuns(submissionId, submission.data?.job.id, submission.data?.job.status);
   const [draft, setDraft] = useState<DocumentSettings | null>(null);
+  const [pageLayout, setPageLayout] = useState<DocumentPageLayout[]>([]);
   const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState<"remarks" | "similarity" | "rules">("remarks");
   const [selectedRunId, setSelectedRunId] = useState("");
@@ -254,6 +256,8 @@ function TeacherDocumentReview({ submissionId }: { submissionId: string | undefi
           {settings.isError && <ErrorState compact error={settings.error} onRetry={() => void settings.refetch()} />}
           {paragraphs.isError && <ErrorState compact error={paragraphs.error} onRetry={() => void paragraphs.refetch()} />}
           {draft && <DocumentRulesPanel draft={draft} disabled={busy} onChange={next => { setDraft(next); setDirty(true); }} paragraphs={paragraphs.data ?? []} selectedParagraph={selectedParagraph} />}
+          {draft && <PageExclusionsPanel value={draft.page_exclusions} layout={pageLayout} disabled={busy || originalUnavailable}
+            onChange={page_exclusions => { setDraft({ ...draft, page_exclusions }); setDirty(true); }} />}
         </div>
         <div hidden={tab !== "similarity"} role="tabpanel" id="document-panel-similarity" aria-labelledby="document-tab-similarity" className="min-h-0 max-h-[55vh] space-y-3 overflow-y-auto p-3 lg:max-h-[calc(100vh-27rem)]">
           <p className="text-xs text-[var(--color-muted)]">{t("localSimilarityDescription")}</p>
@@ -291,6 +295,7 @@ function TeacherDocumentReview({ submissionId }: { submissionId: string | undefi
           {visibleResult && <button type="button" className="text-xs font-semibold underline" aria-expanded={showRunRules} onClick={() => setShowRunRules(value => !value)}>{t("usedRules")}</button>}
           {showRunRules && <section className="rounded-xl border border-[var(--color-border)] p-3">
             <h3 className="text-sm font-bold">{t("usedRules")}</h3>
+            {!!runDetail.data?.page_exclusions?.pages.length && <p className="mt-2 text-xs">{t("pageExclusionsSelected", { pages: runDetail.data.page_exclusions.pages.join(", ") })}</p>}
             {runDetail.isLoading && <LoadingState label={t("settingsLoading")} />}
             {runDetail.isError && <ErrorState compact error={runDetail.error} onRetry={() => void runDetail.refetch()} />}
             {runDetail.data?.rules.map((rule, index) => <details key={index} className="mt-3"><summary className="text-xs font-semibold">{t(`ruleTypes.${rule.rule_type}`)} · {t(rule.enabled ? "enabled" : "ruleDisabled")}</summary>
@@ -301,6 +306,7 @@ function TeacherDocumentReview({ submissionId }: { submissionId: string | undefi
           {item.job.status === "FAILED" && <p className="rounded-xl bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-500)]">{t("teacherJobFailed")}</p>}
           {active && visibleResult && <p className="text-xs text-[var(--color-muted)]">{t("previousResultKept")}</p>}
           {summary?.rules_evaluated === 0 && summary.first_page_exclusion !== "BOUNDARY_UNKNOWN" && summary.first_page_exclusion !== "NO_CONTENT" && <p className="rounded-xl bg-[var(--color-danger-50)] p-3 text-sm font-semibold text-[var(--color-danger-500)]">{t("noRulesEvaluated")}</p>}
+          {!!summary?.excluded_pages?.length && <p className="rounded-xl bg-amber-50 p-3 text-xs">{t("pageExclusionsSelected", { pages: summary.excluded_pages.join(", ") })}</p>}
           {findings.isLoading && <LoadingState label={t("loadingFindings")} />}
           {findings.isError && <ErrorState compact error={findings.error} onRetry={() => void findings.refetch()} />}
           {summary && summary.rules_evaluated > 0 && summary.findings_count === 0 && <p className="rounded-xl bg-[var(--color-success-50)] p-3 text-sm font-semibold text-[var(--color-success-500)]">{t("noFindings")}</p>}
@@ -330,6 +336,7 @@ function TeacherDocumentReview({ submissionId }: { submissionId: string | undefi
         {preview.isError && <div className="p-5"><ErrorState error={preview.error} onRetry={() => void preview.refetch()} /></div>}
         {tab === "rules" && <p className="border-b border-[var(--color-border)] bg-[var(--color-brand-50)] px-5 py-3 text-sm">{t("paragraphSelectionHint")}</p>}
         {preview.data && !originalUnavailable && <PaginatedDocument preview={preview.data} findings={tab === "similarity" ? similarityMarkers : allFindings} selectedId={tab === "similarity" ? selectedSimilarityMatch : selectedFinding} onSelect={tab === "similarity" ? focusSimilarity : focusFinding} onPositions={setPositions} excludeFirstPage={summary?.first_page_exclusion === "APPLIED" || summary?.first_page_exclusion === "NO_CONTENT"}
+          onLayout={setPageLayout} excludedPages={tab === "similarity" ? undefined : tab === "rules" ? draft?.page_exclusions?.pages : summary?.excluded_pages}
           paragraphTypes={paragraphTypes} selectedParagraphIndex={selectedParagraph?.index} paragraphSelectionEnabled={tab === "rules"} onParagraphSelect={setSelectedParagraph} />}
       </section>
     </div>

@@ -249,6 +249,7 @@ export interface DocumentCheckResultSummary {
   findings_count: number;
   findings_truncated: boolean;
   first_page_exclusion?: "APPLIED" | "BOUNDARY_UNKNOWN" | "NO_CONTENT" | null;
+  excluded_pages?: number[];
 }
 
 export interface DocumentCheckFinding {
@@ -306,11 +307,23 @@ export interface DocumentLifecycle {
 
 export type ParagraphType = "BODY" | "HEADING_1" | "HEADING_2" | "HEADING_3" | "HEADING_4" | "HEADING_5" | "HEADING_6";
 
+export interface DocumentPageLayout {
+  number: number;
+  section_index: number;
+  paragraphs: Record<string, number[]>;
+}
+
+export interface DocumentPageExclusions {
+  pages: number[];
+  layout: DocumentPageLayout[];
+}
+
 export interface DocumentSettings {
   submission_id: string;
   revision: number;
   rules: CheckRule[];
   paragraph_overrides: Record<string, ParagraphType>;
+  page_exclusions?: DocumentPageExclusions;
   updated_at: string;
 }
 
@@ -325,6 +338,7 @@ export interface ParagraphClassification {
 export interface DocumentRunDetail extends DocumentCheckJob {
   rules: CheckRule[];
   paragraph_overrides: Record<string, ParagraphType>;
+  page_exclusions?: DocumentPageExclusions;
 }
 
 export interface LocalPlagiarismRun {

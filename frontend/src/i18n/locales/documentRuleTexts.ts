@@ -1,4 +1,9 @@
 export const documentRuleTextsRu = {
+  pageExclusionsTitle: "Исключения по страницам",
+  pageExclusionsHint: "Выберите страницы предпросмотра, которые не нужно проверять на оформление. Сохраните настройки и нажмите «Перепроверить». Поиск текстовых совпадений выполняется отдельно.",
+  pageExclusionsSelected: "Исключены страницы: {pages}", pageExclusionsNone: "нет",
+  pageExclusionsClear: "Убрать все исключения", pageExclusionsLoading: "Дождитесь загрузки страниц предпросмотра.",
+  pageExclusionsLimit: "Выбор исключений доступен для документов до 2000 страниц.", pageExcluded: "Страница исключена из проверки оформления",
   archiveDocument: "В архив", restoreDocument: "Вернуть из архива", archivedDocument: "В архиве", embeddedImage: "Встроенное изображение", imageUnavailable: "Изображение недоступно", unitMm: "мм", unitPt: "пт", unitMultiple: "кратно",
   allowSourceDisclosure: "Разрешить раскрытие источника", sourceDisclosureAllowed: "Источник доступен преподавателям",
   removeOriginal: "Удалить оригинал", originalRemoved: "Оригинал удалён", originalRemovalPending: "Удаление оригинала ожидает завершения",
@@ -44,6 +49,11 @@ export const documentRuleTextsRu = {
 };
 
 export const documentRuleTextsEn = {
+  pageExclusionsTitle: "Page exceptions",
+  pageExclusionsHint: "Select preview pages to exclude from formatting checks. Save settings and recheck the document. Text similarity is checked separately.",
+  pageExclusionsSelected: "Excluded pages: {pages}", pageExclusionsNone: "none",
+  pageExclusionsClear: "Clear all exceptions", pageExclusionsLoading: "Wait for the preview pages to load.",
+  pageExclusionsLimit: "Page exceptions are available for documents up to 2000 pages.", pageExcluded: "Page excluded from formatting checks",
   archiveDocument: "Archive", restoreDocument: "Restore from archive", archivedDocument: "Archived", embeddedImage: "Embedded image", imageUnavailable: "Image unavailable", unitMm: "mm", unitPt: "pt", unitMultiple: "multiple",
   allowSourceDisclosure: "Allow source disclosure", sourceDisclosureAllowed: "Source visible to teachers",
   removeOriginal: "Delete original", originalRemoved: "Original deleted", originalRemovalPending: "Original deletion is pending",
@@ -89,6 +99,11 @@ export const documentRuleTextsEn = {
 } satisfies Record<keyof typeof documentRuleTextsRu, unknown>;
 
 export const documentRuleTextsKk = {
+  pageExclusionsTitle: "Беттер бойынша ерекшеліктер",
+  pageExclusionsHint: "Пішімін тексермеу үшін алдын ала қараудағы беттерді таңдаңыз. Баптауларды сақтап, құжатты қайта тексеріңіз. Мәтіндік сәйкестіктер бөлек тексеріледі.",
+  pageExclusionsSelected: "Тексеруден шығарылған беттер: {pages}", pageExclusionsNone: "жоқ",
+  pageExclusionsClear: "Барлық ерекшеліктерді алып тастау", pageExclusionsLoading: "Алдын ала қарау беттерінің жүктелуін күтіңіз.",
+  pageExclusionsLimit: "Ерекшеліктерді таңдау 2000 бетке дейінгі құжаттар үшін қолжетімді.", pageExcluded: "Бет пішімді тексеруден шығарылған",
   archiveDocument: "Мұрағатқа жіберу", restoreDocument: "Мұрағаттан қайтару", archivedDocument: "Мұрағатта", embeddedImage: "Кірістірілген сурет", imageUnavailable: "Сурет қолжетімсіз", unitMm: "мм", unitPt: "пт", unitMultiple: "есе",
   allowSourceDisclosure: "Дереккөзді ашуға рұқсат беру", sourceDisclosureAllowed: "Дереккөз оқытушыларға көрінеді",
   removeOriginal: "Түпнұсқаны жою", originalRemoved: "Түпнұсқа жойылды", originalRemovalPending: "Түпнұсқаны жою аяқталуын күтуде",

@@ -28,6 +28,7 @@ export function useSaveDocumentSettings(submissionId: string) {
     retry: false,
     mutationFn: async (draft: DocumentSettings) => (await api.put<DocumentSettings>(`${base}/teacher/submissions/${submissionId}/settings`, {
       revision: draft.revision, rules: draft.rules, paragraph_overrides: draft.paragraph_overrides,
+      page_exclusions: draft.page_exclusions ?? { pages: [], layout: [] },
     })).data,
     onSuccess: async (saved) => {
       await client.cancelQueries({ queryKey: ["document-settings", submissionId] });

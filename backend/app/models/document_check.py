@@ -639,12 +639,14 @@ class DocumentCheckSettings(TimestampMixin, Base):
         CheckConstraint("revision > 0", name="ck_document_settings_revision"),
         CheckConstraint("jsonb_typeof(rules) = 'array'", name="ck_document_settings_rules"),
         CheckConstraint("jsonb_typeof(paragraph_overrides) = 'object'", name="ck_document_settings_overrides"),
+        CheckConstraint("jsonb_typeof(page_exclusions) = 'object'", name="ck_document_settings_page_exclusions"),
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     submission_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     rules: Mapped[list] = mapped_column(JSONB, nullable=False)
     paragraph_overrides: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    page_exclusions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default="{}")
 
 
 class DocumentCheckRunRule(UUIDPKMixin, TimestampMixin, Base):

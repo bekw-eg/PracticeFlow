@@ -78,15 +78,18 @@ class DocumentSettingsService:
     def save(self, submission, request: DocumentSettingsWrite):
         draft = self.locked(submission)
         rules = [rule.model_dump(mode="json") for rule in request.rules]
+        page_exclusions = request.page_exclusions.model_dump(mode="json")
+        same_exclusions = (draft.page_exclusions or {"pages": [], "layout": []}) == page_exclusions
         if draft.revision != request.revision:
             # An uncertain network retry of the very same save is idempotent.
-            if draft.rules == rules and draft.paragraph_overrides == request.paragraph_overrides:
+            if draft.rules == rules and draft.paragraph_overrides == request.paragraph_overrides and same_exclusions:
                 self.db.commit()
                 return draft
             raise _conflict("DOCUMENT_SETTINGS_CONFLICT", "Settings changed in another tab. Reload the saved settings or keep your edits.")
-        if draft.rules != rules or draft.paragraph_overrides != request.paragraph_overrides:
+        if draft.rules != rules or draft.paragraph_overrides != request.paragraph_overrides or not same_exclusions:
             draft.rules = deepcopy(rules)
             draft.paragraph_overrides = dict(request.paragraph_overrides)
+            draft.page_exclusions = deepcopy(page_exclusions)
             draft.revision += 1
         self.db.commit()
         self.db.refresh(draft)
@@ -100,7 +103,8 @@ class DocumentSettingsService:
             status=DocumentCheckJobStatus.QUEUED, queued_at=datetime.now(UTC), run_number=run_number,
             idempotency_key=idempotency_key,
             settings_snapshot={"schema_version": 1, "revision": draft.revision,
-                               "paragraph_overrides": deepcopy(draft.paragraph_overrides), "rules": snapshot_rules},
+                               "paragraph_overrides": deepcopy(draft.paragraph_overrides), "rules": snapshot_rules,
+                               "page_exclusions": deepcopy(draft.page_exclusions or {})},
         )
         self.db.add(job)
         self.db.flush()

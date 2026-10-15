@@ -12,7 +12,7 @@ from lxml import etree
 
 from app.models.enums import CheckRuleSeverity, CheckRuleType, EXECUTABLE_CHECK_RULE_TYPES
 
-ANALYZER_VERSION = "phase-2.4.0"
+ANALYZER_VERSION = "phase-2.5.0"
 FINDING_SCHEMA_VERSION = 1
 SUPPORTED_RULE_TYPES = EXECUTABLE_CHECK_RULE_TYPES
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -273,11 +273,18 @@ class DocumentAnalyzer:
         self.findings: list[AnalyzerFinding] = []
         self.truncated = False
         self.paragraph_types: dict[int, str] = {}
+        self.page_exclusions = None
 
     def _add(
         self, rule: AnalyzerRule, code: str, property_name: str, location: dict[str, Any],
         expected: dict[str, Any], actual: dict[str, Any],
     ) -> None:
+        if self.page_exclusions is not None:
+            pages = self.page_exclusions.included_pages(location)
+            if pages == []:
+                return
+            if pages is not None:
+                location = {**location, "pages": pages}
         if len(self.findings) >= self.max_findings:
             self.truncated = True
             return
@@ -289,8 +296,10 @@ class DocumentAnalyzer:
             location=location, expected=expected, actual=actual,
         ))
 
-    def analyze(self, source: str | Path | BinaryIO, rules: list[AnalyzerRule], paragraph_overrides=None) -> tuple[list[AnalyzerFinding], dict[str, Any]]:
+    def analyze(self, source: str | Path | BinaryIO, rules: list[AnalyzerRule], paragraph_overrides=None, page_exclusions=None) -> tuple[list[AnalyzerFinding], dict[str, Any]]:
         from app.services.document_paragraphs import classify_paragraphs
+        from app.services.document_page_exclusions import PageExclusionScope
+        self.page_exclusions = PageExclusionScope(page_exclusions)
         self.findings = []
         self.truncated = False
         with zipfile.ZipFile(source) as package:
@@ -325,6 +334,8 @@ class DocumentAnalyzer:
             "findings_count": len(self.findings), "findings_truncated": self.truncated,
             "first_page_exclusion": scope.status,
         }
+        if self.page_exclusions.excluded:
+            summary["excluded_pages"] = sorted(self.page_exclusions.excluded)
         return self.findings, summary
 
     def _type_scope(self, document, scope, kinds):
@@ -466,5 +477,5 @@ class DocumentAnalyzer:
                               {"value": expected, "unit": unit}, {"value": _round(actual), "unit": unit})
 
 
-def analyze_document(source: str | Path | BinaryIO, rules: list[AnalyzerRule], *, max_findings: int, paragraph_overrides=None):
-    return DocumentAnalyzer(max_findings=max_findings).analyze(source, rules, paragraph_overrides)
+def analyze_document(source: str | Path | BinaryIO, rules: list[AnalyzerRule], *, max_findings: int, paragraph_overrides=None, page_exclusions=None):
+    return DocumentAnalyzer(max_findings=max_findings).analyze(source, rules, paragraph_overrides, page_exclusions)
