@@ -140,7 +140,7 @@ class DocumentCheckJobService:
             "analyzer_version", "rules_total", "rules_evaluated", "rules_skipped",
             "findings_count", "findings_truncated",
         }
-        if not required_summary <= set(summary) or set(summary) - required_summary - {"first_page_exclusion"}:
+        if not required_summary <= set(summary) or set(summary) - required_summary - {"first_page_exclusion", "excluded_pages"}:
             raise ValueError("Invalid analyzer result summary")
         counts = [summary[key] for key in ("rules_total", "rules_evaluated", "rules_skipped", "findings_count")]
         if (
@@ -155,6 +155,8 @@ class DocumentCheckJobService:
                 and (summary["rules_evaluated"] != 0 or summary["findings_count"] != 0))
         ):
             raise ValueError("Inconsistent analyzer result summary")
+        from app.schemas.document_check import DocumentCheckResultSummaryOut
+        DocumentCheckResultSummaryOut.model_validate(summary)
         job = self.db.scalar(select(DocumentCheckJob).where(
             DocumentCheckJob.id == job_id,
             DocumentCheckJob.status == DocumentCheckJobStatus.PROCESSING,
@@ -163,6 +165,9 @@ class DocumentCheckJobService:
         if job is None:
             self.db.rollback()
             return False
+        expected_pages = (job.settings_snapshot or {}).get("page_exclusions", {}).get("pages", [])
+        if summary.get("excluded_pages", []) != expected_pages:
+            raise ValueError("Analyzer exclusions do not match the run snapshot")
         if job.settings_snapshot is not None:
             identities = {uuid.UUID(rule["id"]): rule for rule in job.settings_snapshot["rules"] if rule["enabled"]}
         else:

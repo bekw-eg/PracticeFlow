@@ -688,6 +688,14 @@ def save_document_settings(submission_id: uuid.UUID, request: DocumentSettingsWr
                            ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)):
     service = TeacherDocumentSubmissionService(db)
     submission = service.get(ctx, submission_id)
+    if request.page_exclusions.pages:
+        from app.services.document_page_exclusions import validate_preview_locations
+        preview = service.preview(ctx, submission_id)
+        try:
+            validate_preview_locations(request.page_exclusions, preview.html)
+        except ValueError:
+            raise HTTPException(422, detail={"code": "PAGE_LAYOUT_INVALID",
+                                            "message": "Reload the document preview and select pages again."}) from None
     if request.paragraph_overrides:
         indexes = {str(item["paragraph_index"]) for item in service.paragraphs(submission)}
         if set(request.paragraph_overrides) - indexes:
@@ -741,7 +749,8 @@ def get_document_run(submission_id: uuid.UUID, job_id: uuid.UUID, response: Resp
     response.headers["Cache-Control"] = "private, no-store"
     return DocumentRunDetailOut(**DocumentCheckJobOut.model_validate(job).model_dump(),
                                 rules=service.run_rules(submission, job),
-                                paragraph_overrides=(job.settings_snapshot or {}).get("paragraph_overrides", {}))
+                                paragraph_overrides=(job.settings_snapshot or {}).get("paragraph_overrides", {}),
+                                page_exclusions=(job.settings_snapshot or {}).get("page_exclusions", {}))
 
 
 @router.get(

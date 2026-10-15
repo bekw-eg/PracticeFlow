@@ -38,7 +38,7 @@ class _LeaseLost(Exception):
 
 def _stage_and_analyze_child(
     path, storage, storage_key, expected_size, expected_sha, max_upload_bytes,
-    rules, max_findings, paragraph_overrides, result_queue,
+    rules, max_findings, paragraph_overrides, page_exclusions, result_queue,
 ) -> None:
     """Storage I/O is covered by the same hard deadline as format analysis."""
     try:
@@ -64,15 +64,17 @@ def _stage_and_analyze_child(
     except (StorageUnavailableError, FileNotFoundError, OSError):
         result_queue.put(("error", "CHECK_STORAGE_UNAVAILABLE"))
         return
-    _analyze_child(path, rules, max_findings, result_queue, paragraph_overrides)
+    _analyze_child(path, rules, max_findings, result_queue, paragraph_overrides, page_exclusions)
 
 
 def _analyze_child(
     path: str, rules: list[AnalyzerRule], max_findings: int, result_queue,
     paragraph_overrides=None,
+    page_exclusions=None,
 ) -> None:
     try:
-        findings, summary = analyze_document(path, rules, max_findings=max_findings, paragraph_overrides=paragraph_overrides)
+        findings, summary = analyze_document(path, rules, max_findings=max_findings,
+                                            paragraph_overrides=paragraph_overrides, page_exclusions=page_exclusions)
         result_queue.put(("success", [finding.as_dict() for finding in findings], summary))
     except Exception as exc:
         capture_exception(exc)
@@ -221,6 +223,7 @@ class DocumentCheckWorker:
                 return True
             submission, rules = payload
             paragraph_overrides = (job.settings_snapshot or {}).get("paragraph_overrides", {})
+            page_exclusions = (job.settings_snapshot or {}).get("page_exclusions", {})
             storage_key, expected_size, expected_sha = submission.storage_key, submission.size_bytes, submission.sha256
             has_similarity = job.teacher_submission_id is not None
             database_url = db.get_bind().url
@@ -231,6 +234,7 @@ class DocumentCheckWorker:
                 outcome = self._run_child(job_id, _stage_and_analyze_child, (
                     str(path), self.storage, storage_key, expected_size, expected_sha,
                     settings.DOCX_MAX_UPLOAD_BYTES, rules, settings.DOCUMENT_CHECK_MAX_FINDINGS, paragraph_overrides,
+                    page_exclusions,
                 ))
                 if outcome[0] != "success":
                     self._retry(job_id, outcome[1])

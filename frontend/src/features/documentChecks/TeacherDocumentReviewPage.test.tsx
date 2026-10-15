@@ -2,15 +2,23 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { api } from "../../lib/api";
 import { changeLocale } from "../../i18n";
-import type { DocumentCheckJob, DocumentSettings, TeacherDocumentSubmission } from "../../types/api";
+import type { DocumentCheckJob, DocumentPageLayout, DocumentSettings, TeacherDocumentSubmission } from "../../types/api";
 import { TeacherDocumentReviewPage } from "./TeacherDocumentReviewPage";
 
 vi.mock("./DocumentChecksGate", () => ({ DocumentChecksGate: ({ children }: { children: ReactNode }) => children }));
-vi.mock("./PaginatedDocument", () => ({ PaginatedDocument: ({ onParagraphSelect }: { onParagraphSelect: (paragraph: { index: number; text: string }) => void }) =>
-  <button onClick={() => onParagraphSelect({ index: 2, text: "Введение" })}>Select source paragraph</button> }));
+vi.mock("./PaginatedDocument", () => ({ PaginatedDocument: ({ onParagraphSelect, onLayout }: {
+  onParagraphSelect: (paragraph: { index: number; text: string }) => void;
+  onLayout: (layout: DocumentPageLayout[]) => void;
+}) => {
+  useEffect(() => { onLayout([
+    { number: 1, section_index: 1, paragraphs: { "1": [] } },
+    { number: 2, section_index: 1, paragraphs: { "2": [1] } },
+  ]); }, [onLayout]);
+  return <button onClick={() => onParagraphSelect({ index: 2, text: "Введение" })}>Select source paragraph</button>;
+} }));
 
 const base = "/document-checks/teacher/submissions/doc-1";
 const job: DocumentCheckJob = {
@@ -61,6 +69,32 @@ function setup() {
 
 beforeEach(async () => { await changeLocale("ru"); });
 afterEach(() => { vi.restoreAllMocks(); });
+
+it("saves page exceptions with the measured layout and restores them after reopening", async () => {
+  const { put, post, client, unmount } = setup();
+  await screen.findByText("Сохранено для документа · версия 1");
+  fireEvent.click(screen.getByRole("tab", { name: "Правила" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Страница 2" }));
+  expect(put).not.toHaveBeenCalled();
+  expect(post).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Сохранить", exact: true }));
+  await screen.findByText("Сохранено для документа · версия 2");
+  expect(put.mock.calls[0][1]).toMatchObject({ page_exclusions: { pages: [2], layout: [
+    { number: 1, section_index: 1, paragraphs: { "1": [] } },
+    { number: 2, section_index: 1, paragraphs: { "2": [1] } },
+  ] } });
+  unmount();
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/document-checks/doc-1"]}>
+    <Routes><Route path="/document-checks/:submissionId" element={<TeacherDocumentReviewPage />} /></Routes>
+  </MemoryRouter></QueryClientProvider>);
+  fireEvent.click(await screen.findByRole("tab", { name: "Правила" }));
+  expect(await screen.findByRole("checkbox", { name: "Страница 2" })).toBeChecked();
+  fireEvent.click(screen.getByRole("button", { name: "Убрать все исключения" }));
+  fireEvent.click(screen.getByRole("button", { name: "Перепроверить" }));
+  await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+  expect(put.mock.calls[1][1]).toMatchObject({ page_exclusions: { pages: [], layout: [] } });
+  client.clear();
+});
 
 it("keeps edits after save failure and saves manual classification without starting analysis", async () => {
   const { put, post, client } = setup();

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { DocumentCheckFinding, ParagraphType, TeacherDocumentPreview } from "../../types/api";
+import type { DocumentCheckFinding, DocumentPageLayout, ParagraphType, TeacherDocumentPreview } from "../../types/api";
 import { paginateDocx, type PreviewPage } from "./paginateDocx";
+import { collectPageLayout } from "./pageLayout";
 
 export interface FindingPosition {
   pages: number[];
@@ -15,6 +16,8 @@ type Props = {
   onSelect: (id: string) => void;
   onPositions: (positions: Record<string, FindingPosition>) => void;
   excludeFirstPage: boolean;
+  excludedPages?: number[];
+  onLayout?: (layout: DocumentPageLayout[]) => void;
   paragraphTypes?: Record<number, ParagraphType>;
   selectedParagraphIndex?: number;
   paragraphSelectionEnabled?: boolean;
@@ -22,13 +25,14 @@ type Props = {
 };
 
 const rank = { INFO: 1, WARNING: 2, ERROR: 3 };
+const EMPTY_PAGES: number[] = [];
 const positiveIndex = (value: unknown) => {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : null;
 };
 
 export function PaginatedDocument({ preview, findings, selectedId, onSelect, onPositions, excludeFirstPage,
-  paragraphTypes, selectedParagraphIndex, paragraphSelectionEnabled, onParagraphSelect }: Props) {
+  excludedPages = EMPTY_PAGES, onLayout, paragraphTypes, selectedParagraphIndex, paragraphSelectionEnabled, onParagraphSelect }: Props) {
   const { t } = useTranslation("documentChecks");
   const root = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PreviewPage[]>([]);
@@ -51,6 +55,8 @@ export function PaginatedDocument({ preview, findings, selectedId, onSelect, onP
     return () => controller.abort();
   }, [preview, t]);
 
+  useEffect(() => { onLayout?.(building ? [] : collectPageLayout(pages)); }, [pages, building, onLayout]);
+
   useEffect(() => {
     if (building) return;
     for (const image of Array.from(root.current?.querySelectorAll<HTMLImageElement>("img[data-preview-label]") ?? [])) {
@@ -67,6 +73,12 @@ export function PaginatedDocument({ preview, findings, selectedId, onSelect, onP
       || !!node.querySelector('[data-check-image]:not([data-check-excluded="true"])');
     for (const page of pages) {
       page.annotations.replaceChildren();
+      if (excludedPages.includes(page.number)) {
+        const label = document.createElement("div");
+        label.className = "pf-docx-excluded-label";
+        label.textContent = t("pageExcluded");
+        page.annotations.append(label);
+      }
       if (excludeFirstPage && !hasCheckedContent(page.body) && page.body.querySelector('[data-check-excluded="true"]')) {
         const label = document.createElement("div");
         label.className = "pf-docx-excluded-label";
@@ -93,6 +105,7 @@ export function PaginatedDocument({ preview, findings, selectedId, onSelect, onP
       // Unknown locations never fall back to page one.
       if ((!finding.location.part || finding.location.part === "word/document.xml") && paragraph) {
         for (const item of paragraphs.get(paragraph) ?? []) {
+          if (Array.isArray(finding.location.pages) && !finding.location.pages.includes(item.page.number)) continue;
           if (run) {
             item.node.querySelectorAll<HTMLElement>(`[data-run-index="${run}"]`).forEach((node) => {
               const matches = excludeFirstPage ? checkedText(node) : [node];
@@ -107,6 +120,7 @@ export function PaginatedDocument({ preview, findings, selectedId, onSelect, onP
       } else if (section && (!finding.location.part || finding.location.part === "word/document.xml")) {
         const side = /^margin_(top|right|bottom|left)$/.exec(finding.property_name)?.[1];
         for (const page of pages.filter((page) => page.section === section)) {
+          if (Array.isArray(finding.location.pages) && !finding.location.pages.includes(page.number)) continue;
           if (excludeFirstPage && !hasCheckedContent(page.body)) continue;
           const region = document.createElement("div");
           region.className = `pf-docx-page-issue ${side ? `pf-docx-margin-${side}` : "pf-docx-format-issue"}`;
@@ -172,7 +186,7 @@ export function PaginatedDocument({ preview, findings, selectedId, onSelect, onP
     targets.current = targetMap;
     onPositions(positions);
     return () => removers.forEach((remove) => remove());
-  }, [pages, findings, building, onPositions, onSelect, excludeFirstPage, t]);
+  }, [pages, findings, building, onPositions, onSelect, excludeFirstPage, excludedPages, t]);
 
   useEffect(() => {
     if (building) return;

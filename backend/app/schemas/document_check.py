@@ -367,6 +367,7 @@ class DocumentCheckResultSummaryOut(BaseModel):
     findings_count: int = Field(ge=0, le=50000)
     findings_truncated: bool
     first_page_exclusion: Literal["APPLIED", "BOUNDARY_UNKNOWN", "NO_CONTENT"] | None = None
+    excluded_pages: list[int] = Field(default_factory=list, max_length=2000)
 
     @model_validator(mode="after")
     def validate_counts(self) -> DocumentCheckResultSummaryOut:
@@ -488,6 +489,35 @@ class DocumentCheckFindingOut(BaseModel):
 
 ParagraphType = Literal["BODY", "HEADING_1", "HEADING_2", "HEADING_3", "HEADING_4", "HEADING_5", "HEADING_6"]
 ParagraphIndex = Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]{0,6}$")]
+PageNumber = Annotated[int, Field(strict=True, ge=1, le=2000)]
+RunIndex = Annotated[int, Field(strict=True, ge=1, le=1000000)]
+
+
+class DocumentPageLayout(BaseModel):
+    number: PageNumber
+    section_index: Annotated[int, Field(strict=True, ge=1, le=1000000)]
+    paragraphs: dict[ParagraphIndex, list[RunIndex]] = Field(max_length=50000)
+    model_config = ConfigDict(extra="forbid")
+
+
+class DocumentPageExclusions(BaseModel):
+    pages: list[PageNumber] = Field(default_factory=list, max_length=2000)
+    layout: list[DocumentPageLayout] = Field(default_factory=list, max_length=2000)
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_layout(self):
+        if not self.pages and not self.layout:
+            return self
+        if not self.pages or [page.number for page in self.layout] != list(range(1, len(self.layout) + 1)):
+            raise ValueError("Page exclusions require a complete, ordered preview layout")
+        if len(set(self.pages)) != len(self.pages) or set(self.pages) - {page.number for page in self.layout}:
+            raise ValueError("Excluded pages must be unique pages of this preview")
+        if sum(len(page.paragraphs) + sum(len(runs) for runs in page.paragraphs.values())
+               for page in self.layout) > 200000:
+            raise ValueError("Preview layout is too large")
+        self.pages.sort()
+        return self
 
 
 class DocumentSettingsWrite(BulkReplaceCheckRulesRequest):
@@ -495,6 +525,7 @@ class DocumentSettingsWrite(BulkReplaceCheckRulesRequest):
     rules: list[CheckRuleWrite] = Field(max_length=201)
     revision: int = Field(ge=1)
     paragraph_overrides: dict[ParagraphIndex, ParagraphType] = Field(default_factory=dict, max_length=50000)
+    page_exclusions: DocumentPageExclusions = Field(default_factory=DocumentPageExclusions)
     model_config = ConfigDict(extra="forbid")
 
 
@@ -519,6 +550,7 @@ class ParagraphClassificationOut(BaseModel):
 class DocumentRunDetailOut(DocumentCheckJobOut):
     rules: list[CheckRuleWrite]
     paragraph_overrides: dict[str, ParagraphType]
+    page_exclusions: DocumentPageExclusions = Field(default_factory=DocumentPageExclusions)
 
 
 class LocalPlagiarismRunOut(BaseModel):
