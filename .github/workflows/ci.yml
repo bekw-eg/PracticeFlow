@@ -82,7 +82,7 @@ jobs:
         run: python ../scripts/verify_capacity_configuration.py
       - name: Upload backend test report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-test-report
           if-no-files-found: warn
@@ -111,7 +111,7 @@ jobs:
         run: npm audit --audit-level=high
       - name: Upload frontend test report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-test-report
           if-no-files-found: warn
@@ -156,7 +156,7 @@ jobs:
         run: npm run test:e2e
       - name: Save Playwright traces, screenshots, videos and HTML report
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-failure-artifacts
           if-no-files-found: warn
