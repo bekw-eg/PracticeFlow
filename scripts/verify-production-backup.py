@@ -134,10 +134,59 @@ def main():
                 check=True,
             )
             return b""
-        return run(
-            ["docker", "compose", "--project-name", project, "-f", str(COMPOSE), *args],
-            env=env,
-        )
+        try:
+            return run(
+                [
+                    "docker",
+                    "compose",
+                    "--project-name",
+                    project,
+                    "-f",
+                    str(COMPOSE),
+                    *args,
+                ],
+                env=env,
+            )
+        except RuntimeError:
+            # A disposable fixture may report state and probe exit codes, never
+            # container environment, raw healthcheck output or application logs.
+            print(json.dumps({"fixture_operation_failed": args[0]}), flush=True)
+            ids = (
+                run(
+                    [
+                        "docker",
+                        "ps",
+                        "-aq",
+                        "--filter",
+                        f"label=com.docker.compose.project={project}",
+                    ]
+                )
+                .decode()
+                .split()
+            )
+            for container in (
+                json.loads(run(["docker", "inspect", *ids])) if ids else []
+            ):
+                state = container["State"]
+                health = state.get("Health", {})
+                print(
+                    json.dumps(
+                        {
+                            "service": container["Config"]["Labels"][
+                                "com.docker.compose.service"
+                            ],
+                            "status": state["Status"],
+                            "exit_code": state["ExitCode"],
+                            "oom_killed": state["OOMKilled"],
+                            "health": health.get("Status"),
+                            "probe_exit_codes": [
+                                probe["ExitCode"] for probe in health.get("Log", [])
+                            ],
+                        }
+                    ),
+                    flush=True,
+                )
+            raise
 
     # Authorize cleanup only for UUID namespaces proven unused before creation.
     for project in (source, target):
@@ -164,9 +213,9 @@ def main():
                 "postgres",
                 "redis",
                 "minio",
-                "minio-init",
                 "vault",
             )
+            compose(source, "run", "--rm", "--no-deps", "minio-init")
             run(["docker", "network", "connect", f"{source}_default", runner])
             compose(
                 source,
@@ -288,9 +337,8 @@ def main():
                 flush=True,
             )
             recovery_started = time.monotonic()
-            compose(
-                target, "up", "-d", "--wait", "postgres", "redis", "minio", "minio-init"
-            )
+            compose(target, "up", "-d", "--wait", "postgres", "redis", "minio")
+            compose(target, "run", "--rm", "--no-deps", "minio-init")
             run(["docker", "network", "connect", f"{target}_default", runner])
             restored_config = {
                 **config,
