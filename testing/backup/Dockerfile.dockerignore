@@ -1,0 +1,8 @@
+# Root-context test build: send only the runner definition and pinned SDK input.
+**
+!testing/
+!testing/backup/
+!testing/backup/Dockerfile
+!deployment/
+!deployment/backup/
+!deployment/backup/requirements.txt

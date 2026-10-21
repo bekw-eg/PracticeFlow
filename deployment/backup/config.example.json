@@ -1,0 +1,25 @@
+{
+  "installation": "replace-with-stable-random-id",
+  "project": "practiceflow-production",
+  "compose_files": ["/opt/practiceflow/docker-compose.prod.yml"],
+  "env_file": "/etc/practiceflow/production.env",
+  "state_directory": "/var/lib/practiceflow-backup",
+  "storage": {
+    "endpoint": "https://objects.example.invalid",
+    "bucket": "practiceflow-private",
+    "region": "replace-with-source-region",
+    "addressing_style": "path",
+    "access_key_env": "PF_SOURCE_ACCESS_KEY",
+    "secret_key_env": "PF_SOURCE_SECRET_KEY"
+  },
+  "repository": "s3:https://backup.example.invalid/practiceflow-vault/restic",
+  "repository_id": "replace-with-restic-cat-config-id",
+  "password_file": "/etc/practiceflow/backup-password",
+  "vault_access_key_env": "PF_VAULT_ACCESS_KEY",
+  "vault_secret_key_env": "PF_VAULT_SECRET_KEY",
+  "vault_region": "replace-with-vault-region",
+  "offsite_private_confirmed": false,
+  "external_writers_fenced": false,
+  "retention_days": 30,
+  "keep_last": 7
+}

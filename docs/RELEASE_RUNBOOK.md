@@ -41,9 +41,10 @@ does not publish images automatically. See
 ## 3. Backup and migration plan
 
 1. Verify database backup age, checksum, encryption/access control and a
-   previously tested restore procedure. For production S3, separately verify
-   provider versioning/replication/export; local-volume backup tooling is not a
-   complete S3 backup.
+   previously tested restore procedure. Use the coordinated PostgreSQL + S3
+   workflow in [production backups](PRODUCTION_BACKUPS.md), including all API
+   and worker writers. Verify provider versioning/replication separately;
+   local-volume backup tooling is not a complete S3 backup.
 2. Capture baseline `/health/ready`, worker heartbeat, queue depth, database
    pool, Redis memory and storage error metrics. Preserve only safe aggregate
    evidence.

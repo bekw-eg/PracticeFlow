@@ -103,6 +103,11 @@ existing cAdvisor-compatible collector; this repository does not deploy it.
 
 ## Backup and restore
 
+Use the [production backup and restore runbook](PRODUCTION_BACKUPS.md) for the
+coordinated PostgreSQL + external S3 workflow, systemd schedule, encrypted vault,
+retention, restart journal recovery and measured isolated drill. Its deployment
+inputs and monitoring must be supplied before claiming production coverage.
+
 Follow the existing backup/restore sections in [README](../README.md) and
 [data retention](DATA_RETENTION.md). Before restoring:
 
