@@ -263,6 +263,14 @@ docker compose --env-file .env.production -f docker-compose.prod.yml -f deployme
 
 При отсутствии/коротком/placeholder JWT, MFA secrets/custodian hashes, development `DATABASE_URL`, включённом seed, insecure cookie, wildcard CORS, не-Redis limiter/resource guard/export queue, private HTTPS S3 configuration или неполном наборе upload/export лимитов production backend аварийно прекращает запуск.
 
+### Первая организация и Super Admin
+
+Первую организацию и первого Super Admin на пустой migrated базе создайте
+отдельной приватной командой `python -m app.cli.bootstrap`. Пароль вводится
+скрыто или через защищённый stdin; production guards и обязательная MFA
+сохраняются. Команды и безопасный порядок первого входа описаны в
+[инструкции production bootstrap](docs/PRODUCTION_BOOTSTRAP.md).
+
 ### Reverse proxy и TLS
 
 Готовый production template: [Caddyfile](deployment/caddy/Caddyfile) и [Compose override](deployment/caddy/docker-compose.caddy.yml). Он публикует только `80/443`, перенаправляет HTTP на HTTPS, включает HSTS и пропускает `/metrics` только из `METRICS_ALLOWED_CIDR`. Caddy хранит ACME account/certificates в named volume `caddy_data`; не удаляйте его при обычном restart.
