@@ -6,6 +6,13 @@ incident record with time, service, alert, change correlation and safe request
 ID hash. Do not collect secrets, tokens, object keys, raw document content or
 customer data in monitoring notes.
 
+## First installation
+
+For a new installation with no identities, use the private
+[production bootstrap command](PRODUCTION_BOOTSTRAP.md) before opening traffic.
+It does not modify existing users, reset passwords or bypass administrator MFA.
+For an existing installation, use the normal administration/recovery workflow.
+
 ## First five minutes
 
 1. Confirm scope: one tenant, one service, all API traffic or only exports.
