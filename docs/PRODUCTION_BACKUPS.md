@@ -26,6 +26,8 @@ storage deletion has not completed. Stored DB digests are also compared. A missi
 or incorrect size fails the backup; resolve pending deletion inconsistencies
 before retrying. Neither credentials, `.env`, deployment files nor raw logs
 are included. Manifest keys and metadata are sensitive and stay encrypted.
+The snapshot tree always uses `/bundle`, independently of the temporary
+absolute capture path recorded by restic in snapshot metadata.
 
 The consistency procedure is a maintenance window:
 
@@ -131,7 +133,7 @@ Do not re-enable outbound SMTP, public ingress or seed in a real-data drill.
 
 ## Linux installation and schedule
 
-Install a maintained restic package (tested runner version is recorded below),
+Install a maintained restic package (the test runner uses restic 0.18.1),
 Docker Compose v2 with `!override` support for the test fixture, and Python 3.12+.
 The production backend image and application dependencies are unchanged.
 The auxiliary runner uses the same immutable Python base digest, an allowlisted

@@ -27,6 +27,7 @@ import boto3
 from botocore.config import Config
 
 ENGINE = "practiceflow-postgres-s3-v2"
+SNAPSHOT_ROOT = "/bundle"
 SAFE_SERVICES = {"postgres", "redis", "frontend", "caddy"}
 REFERENCES_SQL = """
 SELECT coalesce(json_agg(r ORDER BY key, size_bytes NULLS FIRST), '[]') FROM (
@@ -68,9 +69,22 @@ def run(args, *, env=None, cwd=None, stdin=None, stdout=None):
         timeout=10800,
         check=False,
     )
-    require(
-        result.returncode == 0, "External command failed; sensitive output suppressed"
-    )
+    operation = "external command"
+    if args[0] == "restic":
+        commands = {
+            "cat",
+            "backup",
+            "restore",
+            "check",
+            "snapshots",
+            "forget",
+            "prune",
+            "init",
+        }
+        operation = "restic " + next(
+            (arg for arg in args[1:] if arg in commands), "operation"
+        )
+    require(result.returncode == 0, f"{operation} failed; sensitive output suppressed")
     return result.stdout or b""
 
 
@@ -389,6 +403,11 @@ class Backup:
         # Persist restart intent before the first stop, including across power loss.
         with self.journal.open("r+") as stream:
             os.fsync(stream.fileno())
+        directory_fd = os.open(self.state, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         try:
             for container in writers:
                 run(["docker", "stop", "--time", "120", container["Id"]])
@@ -538,7 +557,7 @@ class Backup:
             )
             verify = Path(temporary) / "verified"
             self.restic(
-                "restore", snapshot + ":" + bundle.as_posix(), "--target", str(verify)
+                "restore", snapshot + ":" + SNAPSHOT_ROOT, "--target", str(verify)
             )
             validate_bundle(verify, self.c["installation"])
             self.restic("check")
@@ -571,7 +590,7 @@ class Backup:
         ) as temporary:
             bundle = Path(temporary) / "bundle"
             self.restic(
-                "restore", snapshot + ":" + owned["paths"][0], "--target", str(bundle)
+                "restore", snapshot + ":" + SNAPSHOT_ROOT, "--target", str(bundle)
             )
             manifest = validate_bundle(bundle, self.c["installation"])
             require(

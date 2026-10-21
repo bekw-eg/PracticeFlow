@@ -4,6 +4,8 @@ import contextlib
 import fcntl
 import io
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -291,6 +293,53 @@ class BackupTests(unittest.TestCase):
             set(json.loads(self.backup.journal.read_text())["ids"]),
             {"backend", "export-worker", "document-check-worker"},
         )
+
+    def test_real_restic_relative_tree_roundtrip(self):
+        fixture, manifest = self.bundle()
+        password = self.root / "password"
+        password.write_text("synthetic-roundtrip-password")
+        password.chmod(0o600)
+        self.backup.c.update(
+            repository=str(self.root / "repository"),
+            password_file=str(password),
+            vault_access_key_env="PF_TEST_ACCESS",
+            vault_secret_key_env="PF_TEST_SECRET",
+            vault_region="us-east-1",
+        )
+
+        @contextlib.contextmanager
+        def paused():
+            yield
+
+        def capture(bundle):
+            for path in fixture.iterdir():
+                shutil.copyfile(path, bundle / path.name)
+            return manifest
+
+        with (
+            patch.dict(
+                os.environ,
+                {"PF_TEST_ACCESS": "synthetic", "PF_TEST_SECRET": "synthetic"},
+            ),
+            patch.object(self.backup, "paused", paused),
+            patch.object(self.backup, "capture", side_effect=capture),
+        ):
+            self.backup.restic("init")
+            self.backup.c["repository_id"] = json.loads(
+                self.backup.restic("cat", "config")
+            )["id"]
+            result = self.backup.backup()
+            restored = self.root / "restored"
+            self.backup.restic(
+                "restore",
+                result["snapshot"] + ":" + pb.SNAPSHOT_ROOT,
+                "--target",
+                str(restored),
+            )
+            self.assertEqual(
+                pb.validate_bundle(restored, "test-installation"), manifest
+            )
+            self.assertEqual(result["objects"], 1)
 
 
 if __name__ == "__main__":
