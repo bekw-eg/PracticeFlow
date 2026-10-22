@@ -1,0 +1,25 @@
+[Unit]
+Description=Coordinated encrypted PracticeFlow PostgreSQL and S3 backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/practiceflow
+EnvironmentFile=/etc/practiceflow/backup-credentials
+ExecStart=/opt/practiceflow-backup-venv/bin/python /opt/practiceflow/scripts/production_backup.py --config /etc/practiceflow/backup.json backup
+ExecStopPost=/opt/practiceflow-backup-venv/bin/python /opt/practiceflow/scripts/production_backup.py --config /etc/practiceflow/backup.json resume
+StateDirectory=practiceflow-backup
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=12h
+TimeoutStopSec=5min
+KillMode=mixed
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/practiceflow-backup
+# Wire OnFailure to the site's existing alert transport in a local drop-in.

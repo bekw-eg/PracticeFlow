@@ -1,0 +1,2 @@
+# Match the application's S3 SDK; install in a dedicated host virtualenv.
+boto3==1.43.82

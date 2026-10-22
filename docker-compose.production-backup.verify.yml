@@ -1,0 +1,40 @@
+# Only synthetic data. The verifier generates two new UUID project names.
+services:
+  postgres:
+    extends: { file: docker-compose.e2e.yml, service: postgres }
+  redis:
+    extends: { file: docker-compose.e2e.yml, service: redis }
+  minio:
+    extends: { file: docker-compose.e2e.yml, service: minio }
+  vault:
+    extends: { file: docker-compose.e2e.yml, service: minio }
+    volumes: !override
+      - vault_data:/data
+    environment:
+      MINIO_ROOT_USER: practiceflow_backup_vault
+      MINIO_ROOT_PASSWORD: practiceflow_backup_vault_local_only
+  minio-init:
+    extends: { file: docker-compose.e2e.yml, service: minio-init }
+  backend:
+    extends: { file: docker-compose.e2e.yml, service: backend }
+    image: ${BACKUP_TEST_APP_IMAGE:-practiceflow-backup-test-app}
+    environment:
+      S3_ENDPOINT_URL: http://${BACKUP_TEST_PROJECT:?required}-minio-1:9000
+      SEED_ON_START: "false"
+      RUN_MIGRATIONS: "false"
+      RUN_SEED: "false"
+  export-worker:
+    extends: { file: docker-compose.e2e.yml, service: export-worker }
+    image: ${BACKUP_TEST_APP_IMAGE:-practiceflow-backup-test-app}
+    environment:
+      S3_ENDPOINT_URL: http://${BACKUP_TEST_PROJECT:?required}-minio-1:9000
+    stop_grace_period: 120s
+  document-check-worker:
+    extends: { file: docker-compose.e2e.yml, service: document-check-worker }
+    image: ${BACKUP_TEST_APP_IMAGE:-practiceflow-backup-test-app}
+    environment:
+      S3_ENDPOINT_URL: http://${BACKUP_TEST_PROJECT:?required}-minio-1:9000
+    stop_grace_period: 120s
+volumes:
+  e2e_minio_data:
+  vault_data:

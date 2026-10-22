@@ -399,7 +399,14 @@ Hash chaining detects accidental or ordinary application/API-level alteration, m
 
 ### S3 object-storage backup и restore
 
-Production Compose использует S3, поэтому archive `backend_storage` не является backup-ом production objects. Настройте у провайдера bucket до первого upload:
+Автоматическое согласованное копирование production PostgreSQL и всех текущих
+S3 objects реализовано в [production backup runbook](docs/PRODUCTION_BACKUPS.md):
+systemd timer, остановка API и обоих workers, шифрованный off-site restic vault,
+manifest/SHA-256, retention и изолированная проверка восстановления через API.
+Production требует реальных endpoint/credentials и успешного запуска; шаблоны
+сами по себе не означают, что production backup уже настроен.
+
+Production Compose использует S3, поэтому archive `backend_storage` не является backup-ом production objects. Дополнительно настройте у провайдера bucket до первого upload:
 
 - bucket block-public-access и отсутствие public ACL/policy; приложение не выдаёт public/presigned URL;
 - versioning с отдельно утверждённой lifecycle/retention policy, достаточной для `EXPORT_JOB_RETENTION_SECONDS` и recovery window;
@@ -408,17 +415,20 @@ Production Compose использует S3, поэтому archive `backend_stor
 
 Восстановление S3 выполняется только как disaster-recovery procedure в изолированном target: восстановите PostgreSQL dump и согласованный snapshot/version objects в private target bucket, настройте backend и worker на этот bucket, затем проверьте `/health/ready`, authorized image API, открытие report с image и новый DOCX/PDF export. Не делайте restore поверх live bucket: ключи намеренно стабильны, и смешивание версий DB/object storage может выдать неверный artifact или потерять данные. Репозиторий не запускает provider restore и не создаёт external bucket автоматически — это требует доступа deployer-а к реальной S3 infrastructure.
 
+Следующие примеры — только для LocalStorage в development Compose. В `.env.restore`
+установите `SEED_ON_START=false`; production использует отдельный runbook выше.
+
 Windows:
 
 ```powershell
-.\scripts\backup-postgres.ps1 -OutputDirectory .\backups -ComposeFile docker-compose.prod.yml -EnvFile .env.production
+.\scripts\backup-postgres.ps1 -OutputDirectory .\backups -ComposeFile docker-compose.yml -EnvFile .env
 ```
 
 Linux/macOS:
 
 ```bash
 chmod +x scripts/backup-postgres.sh
-ENV_FILE=.env.production COMPOSE_FILE=docker-compose.prod.yml ./scripts/backup-postgres.sh ./backups
+ENV_FILE=.env COMPOSE_FILE=docker-compose.yml ./scripts/backup-postgres.sh ./backups
 ```
 
 ### Безопасный restore
@@ -430,21 +440,21 @@ Restore разрешён только в **пустую** target database и п�
 
 ```bash
 RESTORE_PROJECT="pf-restore-$(date +%s)-$$"
-docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.prod.yml build backend
-docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.prod.yml up -d --wait postgres
-ENV_FILE=.env.restore COMPOSE_PROJECT_NAME="$RESTORE_PROJECT" COMPOSE_FILE=docker-compose.prod.yml \
+docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.yml build backend
+docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.yml up -d --wait postgres
+ENV_FILE=.env.restore COMPOSE_PROJECT_NAME="$RESTORE_PROJECT" COMPOSE_FILE=docker-compose.yml \
   ./scripts/restore-practiceflow.sh ./backups/practiceflow-backup-YYYYMMDDTHHMMSSZ --confirm-empty-target
-docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.prod.yml up -d --wait backend
+docker compose --project-name "$RESTORE_PROJECT" --env-file .env.restore -f docker-compose.yml up -d --wait backend
 ```
 
 Windows PowerShell:
 
 ```powershell
 $restoreProject = "pf-restore-$([guid]::NewGuid().ToString('N').Substring(0,12))"
-docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.prod.yml build backend
-docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.prod.yml up -d --wait postgres
-.\scripts\restore-practiceflow.ps1 -BackupDirectory .\backups\practiceflow-backup-YYYYMMDDTHHMMSSZ -ConfirmEmptyTarget -ProjectName $restoreProject -EnvFile .env.restore
-docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.prod.yml up -d --wait backend
+docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.yml build backend
+docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.yml up -d --wait postgres
+.\scripts\restore-practiceflow.ps1 -BackupDirectory .\backups\practiceflow-backup-YYYYMMDDTHHMMSSZ -ConfirmEmptyTarget -ProjectName $restoreProject -ComposeFile docker-compose.yml -EnvFile .env.restore
+docker compose --project-name $restoreProject --env-file .env.restore -f docker-compose.yml up -d --wait backend
 ```
 
 `--clean` используется только внутри уже проверенного пустого target, никогда не применяйте restore script к live production project. После restore проверьте `/health/ready`, вход пользователя, открытие документа с изображением и DOCX/PDF export.
