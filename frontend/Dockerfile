@@ -17,7 +17,7 @@ FROM nginxinc/nginx-unprivileged@sha256:adf5042a17f4ecdd200c595fa9ffd1be37efb18f
 # alpine:3.24 (manifest resolved 2026-10-05)
 # A fresh runtime installs fixed libraries without carrying stale APK packages
 # from the otherwise current upstream Nginx image.
-FROM alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 RUN apk upgrade --no-cache && apk add --no-cache ca-certificates pcre2 zlib libssl3 libcrypto3 \
     && addgroup -g 101 nginx && adduser -D -u 101 -G nginx nginx \
     && mkdir -p /var/cache/nginx /var/log/nginx /usr/share/nginx/html \
