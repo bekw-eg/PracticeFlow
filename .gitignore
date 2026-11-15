@@ -16,3 +16,6 @@ frontend/.env
 .env
 .env.production
 backups/
+
+# Local agent scratch output (presentation builds, reports, node_modules)
+.codex-tmp/
