@@ -316,6 +316,48 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   scroll-margin-top: 8rem;
 }
 
+/* Word tab: the paginator sets the width from the paragraph's tab stops. */
+.pf-docx-content .pf-tab {
+  position: relative;
+  display: inline-block;
+  width: 12.7mm;
+  text-indent: 0;
+  white-space: pre;
+  tab-size: 1;
+  clip-path: inset(0);
+}
+
+/* Leaders end at the stop, as in Word tables of contents. */
+.pf-docx-content .pf-tab[data-leader]::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  white-space: pre;
+}
+
+.pf-docx-content .pf-tab[data-leader="dot"]::before {
+  content: "..............................................................................................................................................................................................................";
+  letter-spacing: 0.12em;
+}
+
+.pf-docx-content .pf-tab[data-leader="middleDot"]::before {
+  content: "··································································································································································";
+  letter-spacing: 0.12em;
+}
+
+.pf-docx-content .pf-tab[data-leader="hyphen"]::before {
+  content: "------------------------------------------------------------------------------------------------------------------------------------";
+}
+
+.pf-docx-content .pf-tab[data-leader="underscore"]::before,
+.pf-docx-content .pf-tab[data-leader="heavy"]::before {
+  content: "____________________________________________________________________________________________________________________________________";
+}
+
+.pf-docx-content .pf-tab[data-leader="heavy"]::before {
+  font-weight: 700;
+}
+
 .pf-docx-content table {
   width: 100%;
   margin: 10pt 0;
