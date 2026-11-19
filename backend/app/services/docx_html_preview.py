@@ -38,6 +38,53 @@ def _safe_font(value: str | None) -> str | None:
     return cleaned[:100] or None
 
 
+DEFAULT_TAB_STOP_MM = 12.7
+_TAB_ALIGNMENTS = {
+    "left": "left", "start": "left", "num": "left",
+    "right": "right", "end": "right", "center": "center", "decimal": "decimal",
+}
+_TAB_LEADERS = {"dot", "hyphen", "underscore", "heavy", "middleDot"}
+_MAX_TAB_POSITION_TWIPS = 34_020  # 600 mm, far beyond any supported page width.
+
+
+def _twips_to_mm(value: float) -> float:
+    return value / 1440 * 25.4
+
+
+def _tab_stops(properties: list[etree._Element], left_mm: float, hanging_mm: float) -> list[tuple[float, str, str]]:
+    """Merge Word tab stops from defaults, styles and direct formatting.
+
+    Stops are cumulative through the style chain; ``w:val="clear"`` removes an
+    inherited stop at the same position. A hanging indent adds Word's implicit
+    stop at the left indent so ``1.1<tab>Title`` lines up like in Word.
+    """
+    stops: dict[int, tuple[str, str]] = {}
+    for paragraph_properties in reversed(properties):
+        tabs = paragraph_properties.find("w:tabs", NS)
+        if tabs is None:
+            continue
+        for tab in tabs.findall("w:tab", NS):
+            position = round(_number(_attr(tab, "pos"), -1))
+            kind = _attr(tab, "val")
+            if kind == "clear":
+                stops.pop(position, None)
+            elif kind in _TAB_ALIGNMENTS and 0 <= position <= _MAX_TAB_POSITION_TWIPS:
+                leader = _attr(tab, "leader")
+                stops[position] = (_TAB_ALIGNMENTS[kind], leader if leader in _TAB_LEADERS else "none")
+    result = [(round(_twips_to_mm(position), 2), alignment, leader)
+              for position, (alignment, leader) in sorted(stops.items())]
+    if hanging_mm > 0 and 0 < left_mm <= 100 and all(abs(position - left_mm) > 0.01 for position, _, _ in result):
+        result.append((round(left_mm, 2), "left", "none"))
+        result.sort()
+    return result[:64]
+
+
+def _default_tab_stop_mm(settings: etree._Element | None) -> float:
+    value = _number(_attr(settings.find("w:defaultTabStop", NS) if settings is not None else None, "val"), 720)
+    millimetres = _twips_to_mm(value)
+    return round(millimetres, 2) if 1 <= millimetres <= 100 else DEFAULT_TAB_STOP_MM
+
+
 def _first_node(properties: list[etree._Element], tag: str) -> etree._Element | None:
     for properties_node in properties:
         if (node := properties_node.find(f"w:{tag}", NS)) is not None:
@@ -66,7 +113,15 @@ def _run_html(paragraph: etree._Element, run: etree._Element, run_index: int, st
         elif node.tag == f"{{{W}}}lastRenderedPageBreak" and node is scope.boundary_node:
             parts.append('<br data-page-break="true">')
         elif node.tag == f"{{{W}}}tab":
-            parts.append("&emsp;")
+            # The browser paginator sizes this to the paragraph's Word tab stop.
+            parts.append('<span class="pf-tab">\t</span>')
+        elif node.tag == f"{{{W}}}ptab":
+            alignment = _attr(node, "alignment")
+            leader = _attr(node, "leader")
+            attributes = f' data-ptab="{alignment}"' if alignment in {"left", "center", "right"} else ""
+            if leader in _TAB_LEADERS:
+                attributes += f' data-ptab-leader="{leader}"'
+            parts.append(f'<span class="pf-tab"{attributes}>\t</span>')
         elif node.tag in {f"{{{W}}}br", f"{{{W}}}cr"}:
             parts.append('<br data-page-break="true">' if _attr(node, "type") == "page" else "<br>")
         elif node.tag == f"{{{W}}}noBreakHyphen":
@@ -151,11 +206,74 @@ def _paragraph_html(paragraph: etree._Element, index: int, styles: _Styles, scop
         content = f'<span class="pf-docx-list-marker">{escape(labels[paragraph])}</span>{content}'
     style = f' style="{escape(";".join(css), quote=True)}"' if css else ""
     page_break = ' data-page-break-before="true"' if _toggle(properties, "pageBreakBefore") else ""
-    return f'<p data-paragraph-index="{index}"{page_break}{style}>{content or "&nbsp;"}</p>'
+    tabs = ""
+    if 'class="pf-tab"' in content and (stops := _tab_stops(properties, left, hanging)):
+        serialized = ";".join(f"{position:g} {alignment} {leader}" for position, alignment, leader in stops)
+        tabs = f' data-tab-stops="{serialized}"'
+    return f'<p data-paragraph-index="{index}"{page_break}{tabs}{style}>{content or "&nbsp;"}</p>'
+
+
+_BORDER_SIDES = ("top", "left", "bottom", "right", "insideH", "insideV")
+_BORDER_ALIASES = {"start": "left", "end": "right"}
+_BORDER_STYLES = {
+    "single": "solid", "thick": "solid", "double": "double", "dotted": "dotted",
+    "dashed": "dashed", "dashSmallGap": "dashed", "dotDash": "dashed", "dotDotDash": "dashed",
+}
+
+
+def _border_css(node: etree._Element) -> str:
+    kind = _attr(node, "val") or "none"
+    if kind in {"none", "nil"}:
+        return "none"
+    width = max(0.25, min(6.0, _number(_attr(node, "sz"), 4) / 8))
+    style = _BORDER_STYLES.get(kind, "solid")
+    if style == "double":
+        width = max(width * 3, 1.5)
+    color = _attr(node, "color")
+    color = f"#{color}" if color and re.fullmatch(r"[0-9A-Fa-f]{6}", color) else "#000000"
+    return f"{round(width, 2)}pt {style} {color}"
+
+
+def _collect_borders(container: etree._Element | None, borders: dict[str, str]) -> None:
+    if container is None:
+        return
+    for node in container:
+        side = etree.QName(node).localname
+        side = _BORDER_ALIASES.get(side, side)
+        if side in _BORDER_SIDES:
+            borders[side] = _border_css(node)
+
+
+def _table_borders(table: etree._Element, styles: _Styles) -> dict[str, str]:
+    """Word draws no table borders unless direct formatting or a table style asks for them."""
+    style_id = _attr(table.find("w:tblPr/w:tblStyle", NS), "val")
+    if style_id is None:
+        style_id = next((key for key, node in styles.styles.items()
+                         if _attr(node, "type") == "table" and _attr(node, "default") in {"1", "true"}), None)
+    borders = dict.fromkeys(_BORDER_SIDES, "none")
+    for style in reversed(styles._chain(style_id)):
+        _collect_borders(style.find("w:tblPr/w:tblBorders", NS), borders)
+    _collect_borders(table.find("w:tblPr/w:tblBorders", NS), borders)
+    return borders
+
+
+def _cell_border_css(table_borders: dict[str, str], cell: dict, row: int, rows: int, columns: int) -> str:
+    edges = {
+        "top": table_borders["top"] if row == 0 else table_borders["insideH"],
+        "bottom": table_borders["bottom"] if row + cell["rows"] >= rows else table_borders["insideH"],
+        "left": table_borders["left"] if cell["column"] == 0 else table_borders["insideV"],
+        "right": table_borders["right"] if cell["column"] + cell["span"] >= columns else table_borders["insideV"],
+    }
+    if cell["borders"] is not None:
+        own: dict[str, str] = {}
+        _collect_borders(cell["borders"], own)
+        edges.update({side: value for side, value in own.items() if side in edges})
+    return ";".join(f"border-{side}:{value}" for side, value in edges.items())
 
 
 def _table_html(table, paragraph_indexes, styles, scope, images, labels) -> str:
     rows, previous = [], {}
+    table_borders = _table_borders(table, styles)
     def content(parent):
         parts = []
         for child in parent:
@@ -170,7 +288,8 @@ def _table_html(table, paragraph_indexes, styles, scope, images, labels) -> str:
         cells, current = [], {}
         column = max(0, min(100, int(_number(_attr(row.find("w:trPr/w:gridBefore", NS), "val")))))
         if column:
-            cells.append({"span": column, "rows": 1, "html": "", "tag": "td", "css": ""})
+            cells.append({"span": column, "rows": 1, "html": "", "tag": "td", "css": "", "column": 0,
+                          "borders": None, "filler": True})
         header = row.find("w:trPr/w:tblHeader", NS)
         tag = "th" if header is not None and (_attr(header, "val") or "1") not in {"0", "false", "off"} else "td"
         for cell in row.findall("w:tc", NS):
@@ -191,18 +310,26 @@ def _table_html(table, paragraph_indexes, styles, scope, images, labels) -> str:
                 fill = _attr(cell.find("w:tcPr/w:shd", NS), "fill")
                 if fill and re.fullmatch(r"[0-9A-Fa-f]{6}", fill):
                     css.append("background-color:#" + fill)
-                item = {"span": span, "rows": 1, "html": html, "tag": tag, "css": ";".join(css)}
+                item = {"span": span, "rows": 1, "html": html, "tag": tag, "css": ";".join(css), "column": column,
+                        "borders": cell.find("w:tcPr/w:tcBorders", NS), "filler": False}
                 cells.append(item)
                 if merge is not None:
                     current[key] = item
             column += span
         rows.append(cells)
         previous = current
+    grid_columns = sum(1 for _ in table.findall("w:tblGrid/w:gridCol", NS))
+    total_columns = max([grid_columns, *(cell["column"] + cell["span"] for cells in rows for cell in cells)])
     rendered = []
-    for cells in rows:
-        rendered.append('<tr>' + ''.join(
-            f'<{cell["tag"]} colspan="{cell["span"]}" rowspan="{cell["rows"]}" style="{cell["css"]}">{cell["html"]}</{cell["tag"]}>'
-            for cell in cells) + '</tr>')
+    for row_index, cells in enumerate(rows):
+        parts = []
+        for cell in cells:
+            borders = ("border:none" if cell["filler"]
+                       else _cell_border_css(table_borders, cell, row_index, len(rows), total_columns))
+            css = ";".join(filter(None, (cell["css"], borders)))
+            parts.append(f'<{cell["tag"]} colspan="{cell["span"]}" rowspan="{cell["rows"]}" style="{css}">'
+                         f'{cell["html"]}</{cell["tag"]}>')
+        rendered.append('<tr>' + ''.join(parts) + '</tr>')
     columns = ''.join(f'<col style="width:{max(1, min(500, _number(_attr(col, "w")) / 1440 * 25.4)):.2f}mm">'
                       for col in table.findall("w:tblGrid/w:gridCol", NS))
     width = table.find("w:tblPr/w:tblW", NS)
@@ -242,6 +369,8 @@ def render_docx_html(source: str | Path | BinaryIO) -> DocxHtmlPreview:
         document = _xml(package.read("word/document.xml"))
         styles_root = _xml(package.read("word/styles.xml")) if "word/styles.xml" in package.namelist() else None
         theme = _xml(package.read("word/theme/theme1.xml")) if "word/theme/theme1.xml" in package.namelist() else None
+        settings = _xml(package.read("word/settings.xml")) if "word/settings.xml" in package.namelist() else None
+        default_tab = _default_tab_stop_mm(settings)
         styles = _Styles(styles_root, theme)
         scope = first_page_scope(document, styles)
         images = embedded_images(package, document, scope)
@@ -269,7 +398,10 @@ def render_docx_html(source: str | Path | BinaryIO) -> DocxHtmlPreview:
             )
         )
         index = section_indexes.get(section, len(sections) + 1)
-        sections.append(f'<section class="pf-docx-content" data-section-index="{index}" {attributes}>{"".join(blocks)}</section>')
+        sections.append(
+            f'<section class="pf-docx-content" data-section-index="{index}" {attributes} '
+            f'data-default-tab="{default_tab:g}">{"".join(blocks)}</section>'
+        )
         blocks.clear()
 
     def visit(parent: etree._Element) -> None:

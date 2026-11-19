@@ -1,4 +1,5 @@
 import type { TeacherDocumentPreview } from "../../types/api";
+import { DEFAULT_TAB_STOP_MM, layoutTabs } from "./tabStops";
 
 export interface PreviewPage {
   number: number;
@@ -45,6 +46,8 @@ function textBoundary(block: HTMLElement, offset: number): [Node, number] {
 function fits(body: HTMLElement): boolean {
   const last = body.lastElementChild as HTMLElement | null;
   if (!last) return true;
+  // Tabs change line widths, so size them before every height measurement.
+  layoutTabs(last);
   const bottom = last.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(last).marginBottom) || 0);
   return bottom <= body.getBoundingClientRect().bottom + 1 && body.scrollHeight <= body.clientHeight + 1;
 }
@@ -149,6 +152,7 @@ export async function paginateDocx(
     const left = number("margin-left", preview.margin_left_mm, 0, width * 0.4);
     const right = number("margin-right", preview.margin_right_mm, 0, width * 0.4);
     const sectionIndex = number("section-index", 1, 1, 1000000);
+    const defaultTab = number("default-tab", DEFAULT_TAB_STOP_MM, 1, 100);
     const createPage = () => {
       const element = document.createElement("article");
       element.className = "pf-docx-page";
@@ -161,6 +165,7 @@ export async function paginateDocx(
       });
       const body = document.createElement("section");
       body.className = "pf-docx-content";
+      body.dataset.defaultTab = String(defaultTab);
       const annotations = document.createElement("div");
       annotations.className = "pf-docx-annotations";
       const footer = document.createElement("div");
