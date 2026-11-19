@@ -20,6 +20,9 @@ describe("notification localization", () => {
   });
 
   it.each([
+    ["STUDENT_RISK_DIGEST", "ru", "Студентам в группе нужно внимание"],
+    ["STUDENT_RISK_DIGEST", "kk", "Топтағы студенттерге назар аудару керек"],
+    ["STUDENT_RISK_DIGEST", "en", "Students in a group need attention"],
     ["REPORT_DEADLINE_SOON", "ru", "Скоро срок сдачи отчёта"],
     ["REPORT_DEADLINE_SOON", "kk", "Есепті тапсыру мерзімі жақындап қалды"],
     ["REPORT_DEADLINE_SOON", "en", "Report deadline is approaching"],

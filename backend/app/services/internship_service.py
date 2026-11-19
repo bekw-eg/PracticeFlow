@@ -7,10 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.enums import AuditEventType, InternshipStatus, ReportStatus
+from app.models.group import Group
 from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
 from app.models.report import Report
 from app.models.student import Student
+from app.models.teacher_group import TeacherGroup
 from app.models.user import User
 from app.permissions.rbac import require_teacher_owns_group
 from app.repositories.group_member_repository import GroupMemberRepository
@@ -226,6 +228,70 @@ class InternshipService:
             )
             created += int(was_created)
 
+        if created:
+            self.db.commit()
+        return created
+
+    def create_risk_digest_for_teacher(
+        self, org_id: uuid.UUID, user_id: uuid.UUID, teacher_id: uuid.UUID, *, now: datetime | None = None
+    ) -> int:
+        """One in-app reminder per group and UTC day while students in it are RED.
+
+        Like student deadline reminders, this is materialized as the teacher's
+        notification bell polls, so no scheduler is needed. Only reports that
+        can be RED (open, deadline passed or within RED_DAYS_LEFT days) are
+        loaded, which keeps the polling path cheap.
+        """
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise ValueError("risk digest time must be timezone-aware")
+        today = instant.astimezone(timezone.utc).date()
+        rows = self.db.execute(
+            select(
+                Group.id, Group.name, Report.status, Report.document_data, Report.updated_at,
+                Internship.start_date, Internship.deadline,
+            )
+            .join(Internship, Internship.id == Report.internship_id)
+            .join(Group, Group.id == Internship.group_id)
+            .join(TeacherGroup, TeacherGroup.group_id == Group.id)
+            .where(
+                Report.organization_id == org_id,
+                Internship.organization_id == org_id,
+                Group.organization_id == org_id,
+                TeacherGroup.teacher_id == teacher_id,
+                Internship.status == InternshipStatus.PUBLISHED,
+                Report.status.in_((ReportStatus.DRAFT, ReportStatus.REVISION_REQUIRED)),
+                Internship.start_date <= today,
+                Internship.deadline <= today + timedelta(days=student_risk.RED_DAYS_LEFT),
+            )
+        ).all()
+
+        red_by_group: dict[uuid.UUID, tuple[str, int]] = {}
+        for group_id, group_name, report_status, document_data, updated_at, start_date, deadline in rows:
+            result = student_risk.assess(
+                status=report_status,
+                start_date=start_date,
+                deadline=deadline,
+                today=today,
+                completion=student_risk.completion_ratio(document_data),
+                idle_days=student_risk.days_idle(updated_at, start_date, instant),
+            )
+            if result.level == student_risk.RiskLevel.RED:
+                name, count = red_by_group.get(group_id, (group_name, 0))
+                red_by_group[group_id] = (name, count + 1)
+
+        created = 0
+        for group_id, (group_name, red) in red_by_group.items():
+            _, was_created = self.notifications.create_once(
+                org_id,
+                user_id,
+                "STUDENT_RISK_DIGEST",
+                f"Нужно внимание: {red} студ. в группе {group_name}",
+                body=group_name,
+                link=f"/groups/{group_id}",
+                dedupe_key=f"student-risk:{group_id}:{today.isoformat()}",
+            )
+            created += int(was_created)
         if created:
             self.db.commit()
         return created

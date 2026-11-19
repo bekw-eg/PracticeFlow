@@ -73,6 +73,7 @@ export const ru = {
       REPORT_DEADLINE_TODAY: "Срок сдачи отчёта — сегодня",
       REPORT_DEADLINE_OVERDUE: "Срок сдачи отчёта истёк",
       DOCUMENT_CHECK_ASSIGNED: "Назначена проверка документа",
+      STUDENT_RISK_DIGEST: "Студентам в группе нужно внимание",
       UNKNOWN: "Новое уведомление",
     },
     notificationBodies: {
