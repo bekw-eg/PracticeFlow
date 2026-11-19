@@ -12,12 +12,12 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # nginxinc/nginx-unprivileged:1.30.4-alpine3.24 — reviewed Nginx binary/config.
-FROM nginxinc/nginx-unprivileged@sha256:09b0d3eda2aa592d2487f284519419015cab010d7df16cd0fe224b585fc60eb6 AS nginx
+FROM nginxinc/nginx-unprivileged@sha256:adf5042a17f4ecdd200c595fa9ffd1be37efb18f89a830bd1a00e4ab4d59d42c AS nginx
 
 # alpine:3.24 (manifest resolved 2026-10-05)
 # A fresh runtime installs fixed libraries without carrying stale APK packages
 # from the otherwise current upstream Nginx image.
-FROM alpine@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+FROM alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 RUN apk upgrade --no-cache && apk add --no-cache ca-certificates pcre2 zlib libssl3 libcrypto3 \
     && addgroup -g 101 nginx && adduser -D -u 101 -G nginx nginx \
     && mkdir -p /var/cache/nginx /var/log/nginx /usr/share/nginx/html \
