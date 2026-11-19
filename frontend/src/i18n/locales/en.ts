@@ -77,6 +77,7 @@ export const en = {
       REPORT_DEADLINE_TODAY: "Report deadline is today",
       REPORT_DEADLINE_OVERDUE: "Report deadline has passed",
       DOCUMENT_CHECK_ASSIGNED: "Document check assigned",
+      STUDENT_RISK_DIGEST: "Students in a group need attention",
       UNKNOWN: "New notification",
     },
     notificationBodies: {

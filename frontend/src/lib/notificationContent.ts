@@ -10,6 +10,7 @@ type NotificationTranslationKey =
   | "notificationTypes.REPORT_DEADLINE_TODAY"
   | "notificationTypes.REPORT_DEADLINE_OVERDUE"
   | "notificationTypes.DOCUMENT_CHECK_ASSIGNED"
+  | "notificationTypes.STUDENT_RISK_DIGEST"
   | "notificationTypes.UNKNOWN"
   | "notificationBodies.REPORT_SUBMITTED"
   | "notificationBodies.REVISION_REQUIRED";
@@ -26,6 +27,7 @@ const titleKeys: Record<string, NotificationTranslationKey> = {
   REPORT_DEADLINE_TODAY: "notificationTypes.REPORT_DEADLINE_TODAY",
   REPORT_DEADLINE_OVERDUE: "notificationTypes.REPORT_DEADLINE_OVERDUE",
   DOCUMENT_CHECK_ASSIGNED: "notificationTypes.DOCUMENT_CHECK_ASSIGNED",
+  STUDENT_RISK_DIGEST: "notificationTypes.STUDENT_RISK_DIGEST",
 };
 
 const generatedBodyKeys: Record<string, NotificationTranslationKey> = {

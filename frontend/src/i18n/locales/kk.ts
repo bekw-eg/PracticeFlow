@@ -77,6 +77,7 @@ export const kk = {
       REPORT_DEADLINE_TODAY: "Есепті тапсыру мерзімі — бүгін",
       REPORT_DEADLINE_OVERDUE: "Есепті тапсыру мерзімі өтіп кетті",
       DOCUMENT_CHECK_ASSIGNED: "Құжатты тексеру тағайындалды",
+      STUDENT_RISK_DIGEST: "Топтағы студенттерге назар аудару керек",
       UNKNOWN: "Жаңа хабарландыру",
     },
     notificationBodies: {
