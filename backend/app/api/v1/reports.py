@@ -29,8 +29,10 @@ from app.schemas.report import (
     StudentReportOut,
     TeacherReviewQueueItem,
     UpdateReportDocumentRequest,
+    WritingHistory,
 )
 from app.services.report_service import ReportService
+from app.services.report_writing_history import history_for_report
 
 router = APIRouter(tags=["reports"])
 
@@ -170,6 +172,14 @@ def report_history(
         )
         for e in entries
     ]
+
+
+@router.get("/reports/{report_id}/writing-history", response_model=WritingHistory)
+def report_writing_history(report_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)) -> WritingHistory:
+    """Teacher-only, counts-only view of how the student's draft grew."""
+    require_role(ctx.role, RoleName.TEACHER)
+    report = ReportService(db).get_for_teacher(ctx.organization_id, ctx.teacher_id, report_id)
+    return WritingHistory(**history_for_report(db, ctx.organization_id, report.id))
 
 
 @router.get("/reports/{report_id}/document", response_model=ReportDocumentResponse)

@@ -52,6 +52,7 @@ function mockPage() {
     if (path === "/reports/report-1") return Promise.resolve({ data: report } as never);
     if (path === "/reports/report-1/document") return Promise.resolve({ data: documentResponse } as never);
     if (path.startsWith("/reports/report-1/history")) return Promise.resolve({ data: [], headers } as never);
+    if (path.startsWith("/reports/report-1/writing-history")) return Promise.resolve({ data: { current_words: null, active_days: 0, total_saves: 0, largest_save_words: 0, large_save_threshold: 300, days: [] } } as never);
     if (path.startsWith("/reports/report-1/comments")) return Promise.resolve({ data: [], headers } as never);
     throw new Error(`Unexpected request: ${path}`);
   });

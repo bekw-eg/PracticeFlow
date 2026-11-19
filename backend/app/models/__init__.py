@@ -24,6 +24,7 @@ from app.models.organization import Organization
 from app.models.refresh_token import RefreshToken
 from app.models.report import Report
 from app.models.report_version import ReportVersion
+from app.models.report_writing_snapshot import ReportWritingSnapshot
 from app.models.role import Role
 from app.models.specialty import Specialty
 from app.models.student import Student
@@ -76,6 +77,7 @@ __all__ = [
     "RefreshToken",
     "Report",
     "ReportVersion",
+    "ReportWritingSnapshot",
     "Role",
     "Specialty",
     "Student",

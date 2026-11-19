@@ -31,6 +31,7 @@ from app.repositories.template_version_repository import TemplateVersionReposito
 from app.services.audit_service import AuditService
 from app.services.report_document_context import build_context_for_report
 from app.services.notification_service import NotificationService
+from app.services.report_writing_history import record_save
 
 EDITABLE_STATUSES = (ReportStatus.DRAFT, ReportStatus.REVISION_REQUIRED)
 REVIEW_QUEUE_COMPLETED_STATUSES = (ReportStatus.APPROVED, ReportStatus.LOCKED)
@@ -355,6 +356,8 @@ class ReportService:
         if errors:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail={"errors": errors})
 
+        previous_document = report.document_data
+        new_document = document.model_dump(mode="json")
         updated = self.db.execute(
             update(Report)
             .where(
@@ -365,7 +368,7 @@ class ReportService:
                 Report.status.in_(EDITABLE_STATUSES),
             )
             .values(
-                document_data=document.model_dump(mode="json"),
+                document_data=new_document,
                 document_schema_version=document.schema_version,
                 revision=Report.revision + 1,
             )
@@ -375,6 +378,7 @@ class ReportService:
             self.db.rollback()
             raise _stale_document_revision()
 
+        record_save(self.db, report, previous_document, new_document, expected_revision + 1)
         self.db.commit()
         self.db.refresh(report)
         return report

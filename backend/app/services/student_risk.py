@@ -80,18 +80,28 @@ def _block_words(block: Any, depth: int = 0) -> int:
     return total
 
 
+def _editable_sections(document_data: Any) -> list[dict]:
+    if not isinstance(document_data, dict):
+        return []
+    return [s for s in _as_list(document_data.get("sections")) if isinstance(s, dict) and s.get("editable", True)]
+
+
+def _section_words(section: dict) -> int:
+    return sum(_block_words(block) for block in _as_list(section.get("blocks")))
+
+
 def completion_ratio(document_data: Any) -> float | None:
     """Share of student-editable sections that hold real text; None if there is nothing to write."""
-    if not isinstance(document_data, dict):
-        return None
-    sections = [s for s in _as_list(document_data.get("sections")) if isinstance(s, dict) and s.get("editable", True)]
+    sections = _editable_sections(document_data)
     if not sections:
         return None
-    written = sum(
-        1 for section in sections
-        if sum(_block_words(block) for block in _as_list(section.get("blocks"))) >= MIN_SECTION_WORDS
-    )
+    written = sum(1 for section in sections if _section_words(section) >= MIN_SECTION_WORDS)
     return written / len(sections)
+
+
+def document_word_count(document_data: Any) -> int:
+    """Words the student has written (student-editable sections only)."""
+    return sum(_section_words(section) for section in _editable_sections(document_data))
 
 
 def _aware(value: datetime) -> datetime:
