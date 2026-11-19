@@ -493,6 +493,23 @@ export interface OrganizationChoice {
   role: Role;
 }
 
+export interface WritingHistoryDay {
+  date: string;
+  word_count: number;
+  words_added: number;
+  saves: number;
+  largest_save_words: number;
+}
+
+export interface WritingHistory {
+  current_words: number | null;
+  active_days: number;
+  total_saves: number;
+  largest_save_words: number;
+  large_save_threshold: number;
+  days: WritingHistoryDay[];
+}
+
 export type StudentRiskLevel = "GREEN" | "YELLOW" | "RED";
 export type StudentRiskReason = "OVERDUE" | "DEADLINE_SOON_LOW_PROGRESS" | "NO_RECENT_ACTIVITY" | "BEHIND_SCHEDULE";
 

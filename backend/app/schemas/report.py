@@ -98,3 +98,22 @@ class ReportHistoryEntry(BaseModel):
     actor_role: str | None
     created_at: datetime
     metadata: dict | None
+
+
+class WritingHistoryDay(BaseModel):
+    date: date
+    word_count: int
+    words_added: int
+    saves: int
+    largest_save_words: int
+
+
+class WritingHistory(BaseModel):
+    """Counts only: how the draft grew, never what was written."""
+
+    current_words: int | None
+    active_days: int
+    total_saves: int
+    largest_save_words: int
+    large_save_threshold: int
+    days: list[WritingHistoryDay]
