@@ -48,6 +48,7 @@ describe("GroupDetailPage review queue", () => {
       if (path.startsWith("/groups/group-1/internships")) return Promise.resolve(paged([]));
       if (path.startsWith("/groups/group-1/available-students")) return Promise.resolve(paged([]));
       if (path.startsWith("/groups/group-1/report-progress")) return Promise.resolve({ data: { total: 0, draft: 0, submitted: 0, under_review: 0, revision_required: 0, locked: 0 } } as never);
+      if (path.startsWith("/groups/group-1/student-risk")) return Promise.resolve({ data: { red: 0, yellow: 0, green: 0, items: [] } } as never);
       if (path.startsWith("/groups/group-1?")) return Promise.resolve({ data: group, headers: paged([]).headers } as never);
       if (path.startsWith("/groups?")) return Promise.resolve(paged([]));
       throw new Error(`Unexpected request: ${path}`);
@@ -80,6 +81,7 @@ describe("GroupDetailPage bulk student actions", () => {
       if (path.startsWith("/groups/group-1/internships")) return Promise.resolve(paged([]));
       if (path.startsWith("/groups/group-1/available-students")) return Promise.resolve(paged([]));
       if (path.startsWith("/groups/group-1/report-progress")) return Promise.resolve({ data: { total: 0, draft: 0, submitted: 0, under_review: 0, revision_required: 0, locked: 0 } } as never);
+      if (path.startsWith("/groups/group-1/student-risk")) return Promise.resolve({ data: { red: 0, yellow: 0, green: 0, items: [] } } as never);
       if (path.startsWith("/groups/group-1?")) return Promise.resolve({ data: groupData, headers: paged(groupData.students).headers } as never);
       if (path.startsWith("/groups?")) return Promise.resolve(paged([{ id: "group-1", name: "BK-2405", academic_year: "2026", student_count: 2 }, { id: "group-2", name: "BK-2406", academic_year: "2026", student_count: 0 }]));
       throw new Error(`Unexpected request: ${path}`);

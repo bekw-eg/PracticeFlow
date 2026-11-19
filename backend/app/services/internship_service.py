@@ -11,6 +11,7 @@ from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
 from app.models.report import Report
 from app.models.student import Student
+from app.models.user import User
 from app.permissions.rbac import require_teacher_owns_group
 from app.repositories.group_member_repository import GroupMemberRepository
 from app.repositories.group_repository import GroupRepository
@@ -18,6 +19,7 @@ from app.repositories.internship_repository import InternshipRepository
 from app.repositories.report_repository import ReportRepository
 from app.repositories.template_version_repository import TemplateVersionRepository
 from app.schemas.internship import CreateInternshipRequest, UpdateInternshipRequest
+from app.services import student_risk
 from app.services.notification_service import NotificationService
 from app.services.audit_service import AuditService
 
@@ -244,3 +246,51 @@ class InternshipService:
             elif report.status in {ReportStatus.LOCKED, ReportStatus.APPROVED}:
                 counts["locked"] += 1
         return counts
+
+    def student_risk(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID, *, now: datetime | None = None) -> dict:
+        """Traffic-light view of every open report in a group the teacher owns."""
+        require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
+        instant = now or datetime.now(timezone.utc)
+        today = instant.astimezone(timezone.utc).date()
+        rows = self.db.execute(
+            select(Report, Internship, User.full_name)
+            .join(Internship, Internship.id == Report.internship_id)
+            .join(Student, Student.id == Report.student_id)
+            .join(OrganizationMembership, OrganizationMembership.id == Student.membership_id)
+            .join(User, User.id == OrganizationMembership.user_id)
+            .where(
+                Report.organization_id == org_id,
+                Internship.organization_id == org_id,
+                OrganizationMembership.organization_id == org_id,
+                Internship.group_id == group_id,
+                Internship.status == InternshipStatus.PUBLISHED,
+            )
+        ).all()
+        items = []
+        for report, internship, full_name in rows:
+            completion = student_risk.completion_ratio(report.document_data)
+            idle = student_risk.days_idle(report.updated_at, internship.start_date, instant)
+            result = student_risk.assess(
+                status=report.status,
+                start_date=internship.start_date,
+                deadline=internship.deadline,
+                today=today,
+                completion=completion,
+                idle_days=idle,
+            )
+            items.append({
+                "student_id": report.student_id,
+                "student_name": full_name,
+                "internship_id": internship.id,
+                "internship_title": internship.title,
+                "report_id": report.id,
+                "report_status": report.status,
+                "deadline": internship.deadline,
+                "completion_percent": None if completion is None else round(completion * 100),
+                "days_since_activity": idle,
+                "level": result.level.value,
+                "reasons": list(result.reasons),
+            })
+        items.sort(key=lambda item: student_risk.sort_key(student_risk.RiskLevel(item["level"]), item["deadline"], item["student_name"]))
+        counts = {level.value.lower(): sum(1 for item in items if item["level"] == level.value) for level in student_risk.RiskLevel}
+        return {**counts, "items": items}

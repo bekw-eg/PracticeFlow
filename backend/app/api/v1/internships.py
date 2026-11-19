@@ -9,7 +9,7 @@ from app.dependencies.auth import RequestContext, get_current_context
 from app.dependencies.features import require_legacy_document_editor_enabled
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
-from app.schemas.internship import CreateInternshipRequest, GroupReportProgress, InternshipOut, UpdateInternshipRequest
+from app.schemas.internship import CreateInternshipRequest, GroupReportProgress, GroupStudentRisk, InternshipOut, UpdateInternshipRequest
 from app.services.internship_service import InternshipService
 
 router = APIRouter(tags=["internships"])
@@ -73,3 +73,9 @@ def close_internship(internship_id: uuid.UUID, ctx: RequestContext = Depends(get
 def report_progress(group_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)) -> GroupReportProgress:
     require_role(ctx.role, RoleName.TEACHER)
     return GroupReportProgress(**InternshipService(db).report_progress(ctx.organization_id, ctx.teacher_id, group_id))
+
+
+@router.get("/groups/{group_id}/student-risk", response_model=GroupStudentRisk)
+def student_risk(group_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)) -> GroupStudentRisk:
+    require_role(ctx.role, RoleName.TEACHER)
+    return GroupStudentRisk(**InternshipService(db).student_risk(ctx.organization_id, ctx.teacher_id, group_id))

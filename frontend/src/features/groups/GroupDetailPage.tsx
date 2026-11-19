@@ -5,6 +5,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { useAddStudent, useAvailableStudents, useBulkRemoveStudents, useBulkTransferStudents, useCloseInternship, useGroupDetail, useGroupInternships, useGroupProgress, useGroupReviewQueue, useMyGroups, usePublishInternship, useRemoveStudent, useTransferStudent, useUpdateInternship } from "./api";
 import { showToast } from "../../lib/toast";
 import { CreateInternshipDialog } from "./CreateInternshipDialog";
+import { StudentRiskPanel } from "./StudentRiskPanel";
 import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { ErrorState, LoadingState } from "../../components/ui/StateViews";
 import { PaginationControls } from "../../components/ui/PaginationControls";
@@ -184,6 +185,7 @@ export function GroupDetailPage() {
 
       {progressQuery.isError && <div className="mb-6"><ErrorState compact error={progressQuery.error} message={t("loadProgressError")} onRetry={() => void progressQuery.refetch()} /></div>}
       {progress && <div className="section-panel mb-6 grid grid-cols-2 overflow-hidden sm:grid-cols-3 lg:grid-cols-6">{[[t("progressTotal"), progress.total, "text-[var(--color-ink)]"], [t("progressDraft"), progress.draft, "text-[var(--color-muted)]"], [t("progressSubmitted"), progress.submitted, "text-[var(--color-amber-500)]"], [t("progressUnderReview"), progress.under_review, "text-[var(--color-amber-500)]"], [t("progressRevision"), progress.revision_required, "text-[var(--color-danger-500)]"], [t("progressLocked"), progress.locked, "text-[var(--color-success-500)]"]].map(([label, value, color]) => <div key={String(label)} className="border-b border-r border-[var(--color-border)] bg-white px-4 py-3 last:border-r-0 lg:border-b-0"><p className="text-xs font-semibold text-[var(--color-muted)]">{label}</p><p className={`mt-1 font-display text-2xl font-bold tracking-[-0.03em] ${color}`}>{formatNumber(Number(value))}</p></div>)}</div>}
+      {legacyDocumentEditorEnabled && groupId && <StudentRiskPanel groupId={groupId} />}
 
       {activeTab === "students" && (
         <div className="table-frame">

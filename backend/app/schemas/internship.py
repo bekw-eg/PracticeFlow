@@ -1,9 +1,10 @@
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import InternshipStatus
+from app.models.enums import InternshipStatus, ReportStatus
 
 
 class CreateInternshipRequest(BaseModel):
@@ -45,3 +46,24 @@ class GroupReportProgress(BaseModel):
     under_review: int
     revision_required: int
     locked: int
+
+
+class StudentRiskItem(BaseModel):
+    student_id: uuid.UUID
+    student_name: str
+    internship_id: uuid.UUID
+    internship_title: str
+    report_id: uuid.UUID
+    report_status: ReportStatus
+    deadline: date
+    completion_percent: int | None
+    days_since_activity: int
+    level: Literal["GREEN", "YELLOW", "RED"]
+    reasons: list[str]
+
+
+class GroupStudentRisk(BaseModel):
+    red: int
+    yellow: int
+    green: int
+    items: list[StudentRiskItem]

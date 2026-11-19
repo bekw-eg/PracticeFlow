@@ -14,6 +14,7 @@ Backend — FastAPI, SQLAlchemy 2, Alembic и PostgreSQL. Frontend — React 19,
 - [Data retention and recovery boundaries](docs/DATA_RETENTION.md)
 - [Role and tenant-boundary matrix](docs/ROLE_MATRIX.md)
 - [Disciplines, topics and private teaching materials](docs/DISCIPLINES.md)
+- [Student progress traffic light](docs/STUDENT_PROGRESS.md)
 - [Capacity planning](docs/CAPACITY_PLANNING.md)
 - [Supply-chain security](docs/SUPPLY_CHAIN_SECURITY.md)
 
