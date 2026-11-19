@@ -493,6 +493,30 @@ export interface OrganizationChoice {
   role: Role;
 }
 
+export type StudentRiskLevel = "GREEN" | "YELLOW" | "RED";
+export type StudentRiskReason = "OVERDUE" | "DEADLINE_SOON_LOW_PROGRESS" | "NO_RECENT_ACTIVITY" | "BEHIND_SCHEDULE";
+
+export interface StudentRiskItem {
+  student_id: string;
+  student_name: string;
+  internship_id: string;
+  internship_title: string;
+  report_id: string;
+  report_status: string;
+  deadline: string;
+  completion_percent: number | null;
+  days_since_activity: number;
+  level: StudentRiskLevel;
+  reasons: StudentRiskReason[];
+}
+
+export interface GroupStudentRisk {
+  red: number;
+  yellow: number;
+  green: number;
+  items: StudentRiskItem[];
+}
+
 export interface GroupReportProgress {
   total: number;
   draft: number;

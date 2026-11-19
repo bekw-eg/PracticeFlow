@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { DEFAULT_PAGE_SIZE, fetchPage, fetchPaginatedResource } from "../../lib/pagination";
-import type { BulkStudentOperationResult, GroupDetail, GroupMemberOut, GroupReportProgress, GroupSummary, InternshipOut, ReportOut, ReviewQueueDeadlineFilter, StudentOptionOut, TeacherReviewQueueItem, TemplateOut } from "../../types/api";
+import type { BulkStudentOperationResult, GroupDetail, GroupMemberOut, GroupReportProgress, GroupStudentRisk, GroupSummary, InternshipOut, ReportOut, ReviewQueueDeadlineFilter, StudentOptionOut, TeacherReviewQueueItem, TemplateOut } from "../../types/api";
 
 export function useMyGroups(offset = 0) {
   return useQuery({
@@ -157,6 +157,10 @@ export function useBulkTransferStudents(groupId: string) {
 
 export function useGroupProgress(groupId: string | undefined) {
   return useQuery({ queryKey: ["groups", groupId, "progress"], queryFn: async () => (await api.get<GroupReportProgress>(`/groups/${groupId}/report-progress`)).data, enabled: !!groupId });
+}
+
+export function useGroupStudentRisk(groupId: string | undefined) {
+  return useQuery({ queryKey: ["groups", groupId, "student-risk"], queryFn: async () => (await api.get<GroupStudentRisk>(`/groups/${groupId}/student-risk`)).data, enabled: !!groupId });
 }
 
 export function useUpdateInternship(groupId: string) {
