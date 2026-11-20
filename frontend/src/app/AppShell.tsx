@@ -5,11 +5,9 @@ import {
   ArrowRightStartOnRectangleIcon,
   Bars3Icon,
   ClipboardDocumentCheckIcon,
-  ClipboardDocumentListIcon,
   DocumentTextIcon,
   ShieldCheckIcon,
   Squares2X2Icon,
-  UserCircleIcon,
   UsersIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -25,14 +23,13 @@ type NavigationSection = { label: string; items: NavigationItem[] };
 
 export function AppShell() {
   const { user, logout } = useAuth();
-  const { t } = useTranslation(["common", "groups", "templates", "reports", "editor", "admin", "audit", "auth", "documentChecks", "disciplines"]);
+  const { t } = useTranslation(["common", "groups", "admin", "audit", "auth", "documentChecks", "disciplines"]);
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
 
   const documentCheckEnabled = user.features?.document_check_enabled ?? true;
-  const legacyDocumentEditorEnabled = user.features?.legacy_document_editor_enabled ?? true;
   const teacherWorkflowNav: NavigationItem[] = documentCheckEnabled
     ? [
         { to: "/review-groups", label: t("documentChecks:reviewGroups.title"), icon: UsersIcon },
@@ -43,9 +40,6 @@ export function AppShell() {
   const teacherAcademicNav: NavigationItem[] = [
     { to: "/disciplines", label: t("disciplines:title"), icon: DocumentTextIcon },
     { to: "/groups", label: t("groups:myGroups"), icon: UsersIcon },
-    ...(legacyDocumentEditorEnabled
-      ? [{ to: "/templates", label: t("templates:templates"), icon: DocumentTextIcon }]
-      : []),
   ];
   const navSections: NavigationSection[] = user.role === "TEACHER"
     ? [
@@ -53,10 +47,7 @@ export function AppShell() {
         { label: t("common:academicManagement"), items: teacherAcademicNav },
       ]
     : user.role === "STUDENT"
-      ? [
-          { label: t("common:workflows"), items: [{ to: "/reports", label: t("reports:myReports"), icon: ClipboardDocumentListIcon }] },
-          { label: t("common:accountAndAccess"), items: [{ to: "/profile", label: t("admin:profile"), icon: UserCircleIcon }] },
-        ]
+      ? []
       : [{
           label: t("common:accountAndAccess"),
           items: [
@@ -73,14 +64,8 @@ export function AppShell() {
     if (pathname.startsWith("/document-checks/")) return t("documentChecks:documentReview");
     if (pathname.includes("/check-profiles/")) return t("documentChecks:ruleConfiguration");
     if (pathname === "/check-profiles") return t("documentChecks:profiles");
-    if (pathname.includes("/templates/")) return t("templates:templateEditor");
-    if (pathname === "/templates") return t("templates:reportTemplates");
-    if (pathname.includes("/groups/") && pathname.includes("/reports/")) return t("reports:reportReview");
     if (pathname.includes("/groups/")) return t("groups:group");
     if (pathname === "/groups") return t("groups:myGroups");
-    if (pathname.includes("/reports/") && pathname.endsWith("/edit")) return t("reports:reportEditor");
-    if (pathname === "/reports") return t("reports:myReports");
-    if (pathname === "/profile") return t("admin:profile");
     if (pathname === "/admin") return t("admin:adminPanel");
     if (pathname === "/audit") return t("audit:auditLog");
     return t("common:appName");

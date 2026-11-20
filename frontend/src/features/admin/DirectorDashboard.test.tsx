@@ -9,38 +9,18 @@ import { DirectorDashboardPage } from "./DirectorDashboard";
 const dashboard = {
   organization: { id: "org-1", name: "Колледж PracticeFlow", slug: "practiceflow" },
   groups_count: 1,
-  internships_count: 1,
-  active_internships_count: 1,
-  reports_count: 2,
-  overdue_reports_count: 1,
-  report_statuses: [{ status: "DRAFT", count: 1 }, { status: "SUBMITTED", count: 1 }],
+  students_count: 18,
+  teachers_count: 1,
   groups: [{
     id: "group-1",
     name: "BK-2405",
     academic_year: "2026–2027",
     student_count: 18,
-    internships_count: 1,
-    reports_count: 2,
-    overdue_reports_count: 1,
-  }],
-  internships: [{
-    id: "internship-1",
-    title: "Летняя практика",
-    group_id: "group-1",
-    group_name: "BK-2405",
-    status: "PUBLISHED",
-    start_date: "2026-06-01",
-    end_date: "2026-07-15",
-    deadline: "2026-07-20",
-    reports_count: 2,
-    overdue_reports_count: 1,
   }],
   teacher_loads: [{
     id: "teacher-1",
     full_name: "Айгуль Серикова",
     groups_count: 1,
-    active_internships_count: 1,
-    reports_to_review_count: 1,
   }],
 };
 
@@ -64,17 +44,15 @@ describe("DirectorDashboardPage", () => {
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Колледж PracticeFlow" })).toBeInTheDocument();
-    expect(screen.getByText("Летняя практика")).toBeInTheDocument();
+    expect(screen.getByText("BK-2405")).toBeInTheDocument();
     expect(screen.getByText("Айгуль Серикова")).toBeInTheDocument();
-    expect(screen.getByText((_, element) => element?.textContent === "Черновик: 1")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Открыть управление группами" })).toHaveAttribute("href", "/admin?view=management&tab=groups");
     expect(screen.getByRole("link", { name: "Открыть список участников" })).toHaveAttribute("href", "/admin?view=management&tab=members");
-    expect(screen.queryByText(/student report content/i)).not.toBeInTheDocument();
     expect(api.get).toHaveBeenCalledWith("/director/dashboard");
   });
 
   it("shows an empty state when the organization has no operational data", async () => {
-    vi.spyOn(api, "get").mockResolvedValue({ data: { ...dashboard, groups_count: 0, internships_count: 0, reports_count: 0, overdue_reports_count: 0, report_statuses: [], groups: [], internships: [], teacher_loads: [] } } as never);
+    vi.spyOn(api, "get").mockResolvedValue({ data: { ...dashboard, groups_count: 0, students_count: 0, teachers_count: 0, groups: [], teacher_loads: [] } } as never);
 
     renderPage();
 

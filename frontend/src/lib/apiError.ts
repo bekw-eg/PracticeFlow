@@ -19,12 +19,8 @@ export type ApiErrorKind =
 export type ApiErrorScope =
   | "auth"
   | "mfa"
-  | "files"
   | "export"
-  | "reports"
-  | "comments"
   | "groups"
-  | "internships"
   | "management"
   | "document"
   | "unknown";
@@ -69,32 +65,9 @@ const detailMessageKeys: Record<string, ErrorKey> = {
   "this recovery request has not been approved": "mfaUnavailable",
   "peer recovery is available only to super admins": "mfaUnavailable",
   "a super admin cannot approve their own recovery": "mfaUnavailable",
-  "unsupported image encoding.": "fileInvalid",
-  "empty file.": "fileInvalid",
-  "invalid or corrupt image file.": "fileInvalid",
-  "image exceeds the configured file-size limit.": "uploadTooLarge",
   "file storage is temporarily unavailable. please try again later.": "fileStorageUnavailable",
-  "report has no document content to export yet.": "exportDocumentUnavailable",
-  "export is not ready for download.": "exportNotReady",
-  "export has expired. create a new export to download it.": "exportExpired",
-  "export file is no longer available.": "exportExpired",
-  "export storage is temporarily unavailable. please try again later.": "exportUnavailable",
-  "pdf export is unavailable because its native rendering dependencies are not installed.": "exportUnavailable",
-  "export permission is no longer valid.": "exportUnavailable",
-  "report is not currently editable": "reportNotEditable",
-  "report document has not been initialized yet": "reportDocumentUnavailable",
-  "report is not in a submittable state": "reportNotEditable",
-  "comments can only be added while a report is under review.": "commentsUnavailable",
-  "report has no submitted version to comment on.": "commentsUnavailable",
-  "this report is not currently under review.": "commentsUnavailable",
-  "only the root comment of a thread can be resolved.": "commentsUnavailable",
   "student already in group": "studentAlreadyInGroup",
   "student is already in the target group": "studentAlreadyInTargetGroup",
-  "dates are inconsistent": "internshipDatesInvalid",
-  "only a draft internship can be edited": "internshipNotDraft",
-  "only a draft internship can be published": "internshipNotDraft",
-  "only a published internship can be closed": "internshipNotPublished",
-  "template version not found or not published": "templateVersionUnavailable",
   "password is required for a new user": "managementPasswordRequired",
   "this user is already a member of the organization": "managementMemberExists",
   "a group with this name already exists": "managementGroupExists",
@@ -193,7 +166,7 @@ function validationMessageKey(error: unknown, scope: ApiErrorScope): ErrorKey {
   if (field === "password") return "validationPassword";
   if (field === "code" || field === "challenge_id") return "validationMfaCode";
   if (field === "file") return "validationFile";
-  if (scope === "document" || scope === "reports" || scope === "export") return "validationDocument";
+  if (scope === "document" || scope === "export") return "validationDocument";
   return "validationInvalid";
 }
 
@@ -205,22 +178,16 @@ function detailMessageKey(error: unknown, scope: ApiErrorScope, status: number |
   if (typeof detail === "string") {
     const exact = detailMessageKeys[detail.trim().toLowerCase()];
     if (exact) return exact;
-    if (scope === "files" && detail.toLowerCase().startsWith("unsupported image type:")) return "fileUnsupportedType";
-    if (scope === "files" && detail.toLowerCase().startsWith("declared content type does not match")) return "fileInvalid";
   }
-  if (asObject(detail)?.errors) return scope === "export" ? "exportDocumentInvalid" : "validationDocument";
+  if (asObject(detail)?.errors) return "validationDocument";
   if (status === 422) return validationMessageKey(error, scope);
   return null;
 }
 
 function defaultDescriptionKey(status: number | null, scope: ApiErrorScope): ErrorKey {
-  if (status === 413 && scope === "files") return "uploadTooLarge";
   if (status === 429 && scope === "auth") return "authRateLimited";
   if (status === 429 && scope === "mfa") return "mfaRateLimited";
-  if (status === 429 && scope === "files") return "uploadRateLimited";
   if (status === 429 && scope === "export") return "exportRateLimited";
-  if (status !== null && status >= 500 && scope === "files") return "fileStorageUnavailable";
-  if (status !== null && status >= 500 && scope === "export") return "exportUnavailable";
   switch (status) {
     case 413: return "fileTooLargeDescription";
     case 401: return "sessionExpiredDescription";
@@ -267,13 +234,9 @@ function titleKey(kind: ApiErrorKind): ErrorKey {
 export function apiErrorScopeFromUrl(url: string): ApiErrorScope {
   if (url.includes("/auth/mfa")) return "mfa";
   if (url.includes("/auth/")) return "auth";
-  if (url.includes("/files")) return "files";
-  if (url.includes("/export") || url.includes("/exports")) return "export";
-  if (url.includes("/comments")) return "comments";
-  if (url.includes("/internships")) return "internships";
+  if (url.includes("/export")) return "export";
   if (url.includes("/groups")) return "groups";
   if (url.includes("/management")) return "management";
-  if (url.includes("/reports")) return "reports";
   if (url.includes("/document-checks") || url.includes("/check-profiles")) return "document";
   return "unknown";
 }

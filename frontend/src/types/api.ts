@@ -2,7 +2,6 @@ export type Role = "SUPER_ADMIN" | "DIRECTOR" | "TEACHER" | "STUDENT";
 
 export interface ProductFeatures {
   document_check_enabled: boolean;
-  legacy_document_editor_enabled: boolean;
 }
 
 export interface CurrentUser {
@@ -52,127 +51,6 @@ export interface GroupDetail {
   students: GroupMemberOut[];
 }
 
-export type InternshipStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
-
-export interface InternshipOut {
-  id: string;
-  title: string;
-  description: string | null;
-  status: InternshipStatus;
-  template_version_id: string;
-  start_date: string;
-  end_date: string;
-  deadline: string;
-  created_at: string;
-}
-
-export type ReportStatus = "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "REVISION_REQUIRED" | "APPROVED" | "LOCKED";
-export type ReportDeadlineState = "UPCOMING" | "DUE_SOON" | "DUE_TODAY" | "OVERDUE" | "SUBMITTED_ON_TIME" | "SUBMITTED_LATE";
-
-export interface ReportOut {
-  id: string;
-  internship_id: string;
-  student_id: string;
-  status: ReportStatus;
-  current_version_id: string | null;
-  created_at: string;
-}
-
-export interface StudentReportOut extends ReportOut {
-  internship_title: string;
-  internship_description: string | null;
-  group_name: string;
-  start_date: string;
-  end_date: string;
-  deadline: string;
-  deadline_state: ReportDeadlineState;
-}
-
-export type ReviewQueueDeadlineFilter = "overdue" | "due_today" | "due_soon" | "upcoming";
-
-export interface TeacherReviewQueueItem extends ReportOut {
-  student_name: string;
-  internship_title: string;
-  deadline: string;
-  is_overdue: boolean;
-  submitted_late: boolean;
-  open_comments_count: number;
-}
-
-export interface ReportVersionOut {
-  id: string;
-  version_number: number;
-  submitted_at: string;
-}
-
-export interface ReportDetail extends ReportOut {
-  versions: ReportVersionOut[];
-  deadline: string;
-  internship_title: string;
-}
-
-export interface TemplateVersionSummary {
-  id: string;
-  version_number: number;
-  is_published: boolean;
-  is_locked: boolean;
-  created_at: string;
-}
-
-export interface TemplateOut {
-  id: string;
-  name: string;
-  description: string | null;
-  versions: TemplateVersionSummary[];
-}
-
-export interface CommentAuthor {
-  id: string;
-  full_name: string;
-}
-
-export interface CommentReply {
-  id: string;
-  author: CommentAuthor;
-  body: string;
-  created_at: string;
-}
-
-export interface ReportComment {
-  id: string;
-  report_version_id: string;
-  author: CommentAuthor;
-  is_general: boolean;
-  node_id: string | null;
-  start_offset: number | null;
-  end_offset: number | null;
-  text_snapshot: string | null;
-  body: string;
-  status: "OPEN" | "RESOLVED";
-  anchor_status: "valid" | "invalid" | null;
-  current_node_text: string | null;
-  created_at: string;
-  resolved_at: string | null;
-  replies: CommentReply[];
-}
-
-export interface ReportHistoryEntry {
-  event: string;
-  actor_name: string | null;
-  actor_role: string | null;
-  created_at: string;
-  metadata: Record<string, unknown> | null;
-}
-
-export interface StudentProfile {
-  student_id: string;
-  full_name: string;
-  email: string;
-  specialty_name: string | null;
-  groups: { id: string; name: string; academic_year: string | null }[];
-  reports_count: number;
-}
-
 export interface OrganizationOut {
   id: string;
   name: string;
@@ -185,7 +63,6 @@ export interface ManagementOverview {
   students_count: number;
   teachers_count: number;
   groups_count: number;
-  active_reports_count: number;
 }
 
 export type CheckProfileVersionStatus = "DRAFT" | "PUBLISHED" | "RETIRED";
@@ -387,52 +264,25 @@ export interface TeacherDocumentPreview {
   margin_left_mm: number;
 }
 
-export interface DirectorReportStatusCount {
-  status: ReportStatus;
-  count: number;
-}
-
 export interface DirectorGroupSummary {
   id: string;
   name: string;
   academic_year: string | null;
   student_count: number;
-  internships_count: number;
-  reports_count: number;
-  overdue_reports_count: number;
-}
-
-export interface DirectorInternshipSummary {
-  id: string;
-  title: string;
-  group_id: string;
-  group_name: string;
-  status: InternshipStatus;
-  start_date: string;
-  end_date: string;
-  deadline: string;
-  reports_count: number;
-  overdue_reports_count: number;
 }
 
 export interface DirectorTeacherLoad {
   id: string;
   full_name: string;
   groups_count: number;
-  active_internships_count: number;
-  reports_to_review_count: number;
 }
 
 export interface DirectorDashboard {
   organization: OrganizationOut;
   groups_count: number;
-  internships_count: number;
-  active_internships_count: number;
-  reports_count: number;
-  overdue_reports_count: number;
-  report_statuses: DirectorReportStatusCount[];
+  students_count: number;
+  teachers_count: number;
   groups: DirectorGroupSummary[];
-  internships: DirectorInternshipSummary[];
   teacher_loads: DirectorTeacherLoad[];
 }
 
@@ -491,54 +341,4 @@ export interface OrganizationChoice {
   name: string;
   slug: string;
   role: Role;
-}
-
-export interface WritingHistoryDay {
-  date: string;
-  word_count: number;
-  words_added: number;
-  saves: number;
-  largest_save_words: number;
-}
-
-export interface WritingHistory {
-  current_words: number | null;
-  active_days: number;
-  total_saves: number;
-  largest_save_words: number;
-  large_save_threshold: number;
-  days: WritingHistoryDay[];
-}
-
-export type StudentRiskLevel = "GREEN" | "YELLOW" | "RED";
-export type StudentRiskReason = "OVERDUE" | "DEADLINE_SOON_LOW_PROGRESS" | "NO_RECENT_ACTIVITY" | "BEHIND_SCHEDULE";
-
-export interface StudentRiskItem {
-  student_id: string;
-  student_name: string;
-  internship_id: string;
-  internship_title: string;
-  report_id: string;
-  report_status: string;
-  deadline: string;
-  completion_percent: number | null;
-  days_since_activity: number;
-  level: StudentRiskLevel;
-  reasons: StudentRiskReason[];
-}
-
-export interface GroupStudentRisk {
-  red: number;
-  yellow: number;
-  green: number;
-  items: StudentRiskItem[];
-}
-
-export interface GroupReportProgress {
-  total: number;
-  draft: number;
-  submitted: number;
-  under_review: number;
-  revision_required: number;
-  locked: number;
 }

@@ -13,9 +13,9 @@ describe("API error presentation", () => {
   it.each([
     [401, "Invalid credentials", "unauthorized"],
     [403, "Organization is not available to this user", "forbidden"],
-    [404, "Report not found", "not-found"],
-    [409, "Report is not currently editable", "conflict"],
-    [413, "Image exceeds the configured file-size limit.", "payload-too-large"],
+    [404, "Group not found", "not-found"],
+    [409, "Student already in group", "conflict"],
+    [413, "Payload too large", "payload-too-large"],
     [422, [{ loc: ["body", "email"], type: "value_error.email" }], "validation"],
     [429, "Too many login attempts. Try again in a few minutes.", "rate-limited"],
     [503, "Internal implementation detail", "server"],
