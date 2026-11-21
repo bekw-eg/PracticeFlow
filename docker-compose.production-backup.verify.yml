@@ -23,12 +23,6 @@ services:
       SEED_ON_START: "false"
       RUN_MIGRATIONS: "false"
       RUN_SEED: "false"
-  export-worker:
-    extends: { file: docker-compose.e2e.yml, service: export-worker }
-    image: ${BACKUP_TEST_APP_IMAGE:-practiceflow-backup-test-app}
-    environment:
-      S3_ENDPOINT_URL: http://${BACKUP_TEST_PROJECT:?required}-minio-1:9000
-    stop_grace_period: 120s
   document-check-worker:
     extends: { file: docker-compose.e2e.yml, service: document-check-worker }
     image: ${BACKUP_TEST_APP_IMAGE:-practiceflow-backup-test-app}

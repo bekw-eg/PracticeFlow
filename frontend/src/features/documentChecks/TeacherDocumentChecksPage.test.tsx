@@ -27,7 +27,7 @@ function paged(data: unknown[], total = data.length, offset = 0) {
 
 function auth(enabled = true, role: "STUDENT" | "TEACHER" = "TEACHER"): AuthContextValue {
   return {
-    user: { user_id: "user-1", organization_id: "org-1", full_name: "Алия", email: "aliya@example.edu", role, features: { document_check_enabled: enabled, legacy_document_editor_enabled: false } },
+    user: { user_id: "user-1", organization_id: "org-1", full_name: "Алия", email: "aliya@example.edu", role, features: { document_check_enabled: enabled } },
     isLoading: false, login: vi.fn(), logout: vi.fn(), switchOrganization: vi.fn(), completeMfaSession: vi.fn(),
   };
 }

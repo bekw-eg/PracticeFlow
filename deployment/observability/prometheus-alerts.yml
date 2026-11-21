@@ -39,13 +39,6 @@ groups:
         annotations:
           summary: PracticeFlow private S3-compatible storage is unavailable
           runbook: deployment/observability/RUNBOOK.md#dependency-unavailable
-      - alert: PracticeFlowExportQueueBacklog
-        expr: min_over_time(practiceflow_export_queue_depth[10m]) > 10
-        for: 10m
-        labels: { severity: warning }
-        annotations:
-          summary: PracticeFlow export queue has more than 10 jobs for 10 minutes
-          runbook: deployment/observability/RUNBOOK.md#export-queue-backlog
       - alert: PracticeFlowDatabasePoolNearExhaustion
         expr: >-
           practiceflow_database_pool_connections{state="checked_out"}
@@ -71,20 +64,6 @@ groups:
         annotations:
           summary: PracticeFlow private storage recorded more than three failures in 10 minutes
           runbook: deployment/observability/RUNBOOK.md#storage-error-rate
-      - alert: PracticeFlowExportWorkerHeartbeatStale
-        expr: practiceflow_export_worker_heartbeat_age_seconds < 0 or practiceflow_export_worker_heartbeat_age_seconds > 90
-        for: 2m
-        labels: { severity: page }
-        annotations:
-          summary: No fresh PracticeFlow export worker heartbeat
-          runbook: deployment/observability/RUNBOOK.md#worker-heartbeat-stale
-      - alert: PracticeFlowExportFailuresOrTimeouts
-        expr: sum(increase(practiceflow_export_job_transitions_total{status=~"failed|timed_out"}[15m])) > 5
-        for: 5m
-        labels: { severity: warning }
-        annotations:
-          summary: PracticeFlow export failures/timeouts exceed five in 15 minutes
-          runbook: deployment/observability/RUNBOOK.md#export-failures-or-timeouts
       - alert: PracticeFlowResourceLimitSpike
         expr: sum(increase(practiceflow_limit_blocks_total[10m])) > 20
         for: 5m
@@ -99,9 +78,9 @@ groups:
       - alert: PracticeFlowContainerMemoryPressure
         expr: >-
           max by (container_label_com_docker_compose_service) (
-            container_memory_working_set_bytes{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+            container_memory_working_set_bytes{container_label_com_docker_compose_service=~"backend|document-check-worker|postgres|redis|frontend|caddy"}
             / on (id) group_left
-            container_spec_memory_limit_bytes{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+            container_spec_memory_limit_bytes{container_label_com_docker_compose_service=~"backend|document-check-worker|postgres|redis|frontend|caddy"}
           ) > 0.85
         for: 10m
         labels: { severity: warning }
@@ -111,12 +90,12 @@ groups:
       - alert: PracticeFlowContainerCpuPressure
         expr: >-
           sum by (container_label_com_docker_compose_service) (
-            rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}[5m])
+            rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~"backend|document-check-worker|postgres|redis|frontend|caddy"}[5m])
           )
           / on (container_label_com_docker_compose_service) group_left
           max by (container_label_com_docker_compose_service) (
-            container_spec_cpu_quota{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
-            / container_spec_cpu_period{container_label_com_docker_compose_service=~"backend|export-worker|postgres|redis|frontend|caddy"}
+            container_spec_cpu_quota{container_label_com_docker_compose_service=~"backend|document-check-worker|postgres|redis|frontend|caddy"}
+            / container_spec_cpu_period{container_label_com_docker_compose_service=~"backend|document-check-worker|postgres|redis|frontend|caddy"}
           ) > 0.85
         for: 10m
         labels: { severity: warning }

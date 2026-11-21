@@ -31,10 +31,7 @@ SNAPSHOT_ROOT = "/bundle"
 SAFE_SERVICES = {"postgres", "redis", "frontend", "caddy"}
 REFERENCES_SQL = """
 SELECT coalesce(json_agg(r ORDER BY key, size_bytes NULLS FIRST), '[]') FROM (
- SELECT storage_key AS key, size_bytes, NULL::text AS sha256 FROM files
- UNION ALL SELECT storage_key, size_bytes, NULL FROM export_jobs
-   WHERE status = 'succeeded' AND storage_key IS NOT NULL
- UNION ALL SELECT storage_key, NULL, NULL FROM group_review_reports
+ SELECT storage_key AS key, NULL::bigint AS size_bytes, NULL::text AS sha256 FROM group_review_reports
    WHERE generated_at IS NOT NULL AND storage_key IS NOT NULL
  UNION ALL SELECT storage_key, size_bytes, sha256 FROM teaching_materials
    WHERE storage_deleted_at IS NULL

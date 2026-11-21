@@ -1,38 +1,27 @@
 import { expect, test } from "@playwright/test";
 
-test("student can open a revision-required report without requesting teacher-only variables", async ({ page }) => {
-  const teacherOnlyResponses: number[] = [];
+test("teacher can navigate between document checks and groups without console errors", async ({ page }) => {
   const consoleErrors: string[] = [];
 
-  page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/api/v1/variables/catalog") teacherOnlyResponses.push(response.status());
-  });
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
 
   await page.goto("/login");
-  await page.getByLabel("Email").fill("student1@demo.edu");
+  await page.getByLabel("Email").fill("teacher@demo.edu");
   await page.getByLabel("Пароль").fill("Practice123!");
   await page.getByRole("button", { name: "Войти", exact: true }).click();
 
-  await expect(page).toHaveURL(/\/reports$/);
-  // A fresh anonymous context can emit expected refresh-token 401s while the
-  // auth provider initializes. The regression boundary starts after student
-  // authentication succeeds and covers opening the report editor.
+  await expect(page).toHaveURL(/\/document-checks$/);
   consoleErrors.length = 0;
-  await page.getByRole("link", { name: "Редактировать" }).click();
 
-  await expect(page.getByRole("heading", { name: "Отчёт по практике" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Редактор раздела: Введение" })).toBeVisible();
-  await expect(page.getByText("This action requires one of: ['TEACHER'].")).toHaveCount(0);
+  await page.getByRole("link", { name: "Мои группы", exact: true }).click();
+  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page.getByText("E2E-Group")).toBeVisible();
+  await page.getByRole("link", { name: /E2E-Group/ }).click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]+$/);
+  await expect(page.getByText("Состав группы")).toBeVisible();
 
-  const editorLabels = await page.locator('[contenteditable="true"][aria-label^="Редактор раздела:"]').evaluateAll((editors) =>
-    editors.map((editor) => editor.getAttribute("aria-label") ?? "")
-  );
-  expect(editorLabels.length).toBeGreaterThan(0);
-  expect(new Set(editorLabels).size).toBe(editorLabels.length);
-  expect(teacherOnlyResponses).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
 

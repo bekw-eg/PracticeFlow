@@ -1,8 +1,7 @@
 # Disciplines, topics and teaching materials
 
 The Teacher workspace provides a curriculum domain alongside groups,
-internships, reports, templates, the legacy editor, document checks, review
-groups and presentation exports. It creates no assignment, analysis job,
+document checks, review groups and presentation exports. It creates no assignment, analysis job,
 generated test, grading record or AI request.
 
 ## Existing architecture reused

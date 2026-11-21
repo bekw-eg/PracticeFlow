@@ -5,7 +5,6 @@ from app.tests.conftest import OrgFixture, auth_headers
 
 def test_me_exposes_product_migration_flags(client, org_a: OrgFixture, monkeypatch):
     monkeypatch.setattr(settings, "DOCUMENT_CHECK_ENABLED", False)
-    monkeypatch.setattr(settings, "LEGACY_DOCUMENT_EDITOR_ENABLED", True)
 
     response = client.get(
         "/api/v1/auth/me",
@@ -15,7 +14,6 @@ def test_me_exposes_product_migration_flags(client, org_a: OrgFixture, monkeypat
     assert response.status_code == 200
     assert response.json()["features"] == {
         "document_check_enabled": False,
-        "legacy_document_editor_enabled": True,
     }
 
 
@@ -29,28 +27,9 @@ def test_disabled_document_check_api_is_hidden(client, org_a: OrgFixture, monkey
     assert response.json()["detail"]["code"] == "DOCUMENT_CHECK_DISABLED"
 
 
-def test_legacy_archive_stays_readable_when_authoring_is_frozen(
-    client, org_a: OrgFixture, monkeypatch
-):
-    headers = auth_headers(org_a.teacher_token(client))
-    monkeypatch.setattr(settings, "LEGACY_DOCUMENT_EDITOR_ENABLED", False)
+def test_legacy_routes_are_not_registered():
+    paths = app.openapi()["paths"]
 
-    list_response = client.get("/api/v1/templates", headers=headers)
-    create_response = client.post(
-        "/api/v1/templates",
-        headers=headers,
-        json={"name": "Must not be created"},
-    )
-
-    assert list_response.status_code == 200
-    assert len(list_response.json()) == 1
-    assert create_response.status_code == 409
-    assert create_response.json()["detail"]["code"] == "LEGACY_DOCUMENT_EDITOR_DISABLED"
-
-
-def test_legacy_routes_are_deprecated_in_openapi():
-    schema = app.openapi()
-
-    assert schema["paths"]["/api/v1/templates"]["get"]["deprecated"] is True
-    assert schema["paths"]["/api/v1/reports"]["get"]["deprecated"] is True
-    assert "deprecated" not in schema["paths"]["/api/v1/check-profiles"]["get"]
+    for removed in ("/api/v1/templates", "/api/v1/reports", "/api/v1/internships/{internship_id}/publish", "/api/v1/files", "/api/v1/export-jobs/{job_id}"):
+        assert removed not in paths
+    assert "get" in paths["/api/v1/check-profiles"]

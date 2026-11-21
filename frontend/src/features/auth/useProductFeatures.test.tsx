@@ -7,16 +7,15 @@ import { useProductFeatures } from "./useProductFeatures";
 
 
 describe("useProductFeatures", () => {
-  it("keeps the additive rollout backward compatible outside the auth provider", () => {
+  it("keeps document checks enabled by default outside the auth provider", () => {
     const { result } = renderHook(() => useProductFeatures());
 
     expect(result.current).toEqual({
       document_check_enabled: true,
-      legacy_document_editor_enabled: true,
     });
   });
 
-  it("uses the migration flags returned by the current-user API", () => {
+  it("uses the feature flags returned by the current-user API", () => {
     const value: AuthContextValue = {
       user: {
         user_id: "user-1",
@@ -25,8 +24,7 @@ describe("useProductFeatures", () => {
         email: "teacher@example.edu",
         role: "TEACHER",
         features: {
-          document_check_enabled: true,
-          legacy_document_editor_enabled: false,
+          document_check_enabled: false,
         },
       },
       isLoading: false,
@@ -41,6 +39,6 @@ describe("useProductFeatures", () => {
 
     const { result } = renderHook(() => useProductFeatures(), { wrapper });
 
-    expect(result.current.legacy_document_editor_enabled).toBe(false);
+    expect(result.current.document_check_enabled).toBe(false);
   });
 });

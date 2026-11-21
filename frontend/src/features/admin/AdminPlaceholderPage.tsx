@@ -293,11 +293,10 @@ function Overview({ overview }: { overview: ManagementOverview | undefined }) {
     [t("studentsMetric"), overview.students_count, t("studentsMetricNote")],
     [t("teachersMetric"), overview.teachers_count, t("teachersMetricNote")],
     [t("groupsMetric"), overview.groups_count, t("groupsMetricNote")],
-    [t("reportsMetric"), overview.active_reports_count, t("reportsMetricNote")],
   ];
   return (
     <div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(([label, value, note]) => (
           <div key={label} className="card p-5">
             <p className="text-sm font-semibold text-[var(--color-muted)]">

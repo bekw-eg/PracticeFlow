@@ -2,17 +2,13 @@ import io
 import logging
 
 import pytest
-import redis
 from botocore.exceptions import EndpointConnectionError
-from fastapi import HTTPException
 
-from app.export_queue import RedisExportQueue
 from app.middleware import JsonFormatter, _safe_log_request_id
 from app.observability.error_tracking import capture_exception, configure_error_tracking
 from app.observability.metrics import ObservabilityMetrics
 from app.storage.base import StorageUnavailableError
 from app.storage.s3 import S3StorageService
-from app.workers.heartbeat import MemoryWorkerHeartbeat
 
 
 def test_metric_names_values_and_low_cardinality_labels():
@@ -23,13 +19,6 @@ def test_metric_names_values_and_low_cardinality_labels():
     registry.set_database_pool(size=5, checked_out=2, overflow=0, capacity=15)
     registry.observe_storage_operation("s3", "upload", "failure", 0.2)
     registry.observe_mfa("challenge", "failure")
-    registry.observe_export_transition("pdf", "timed_out")
-    registry.observe_export_duration("pdf", "timed_out", 46)
-    registry.observe_export_retry("stale_worker")
-    registry.observe_export_stale_recovery()
-    registry.set_export_queue_depth(7)
-    registry.set_export_job_states({"queued": 3, "running": 1, "ignored": 99})
-    registry.set_worker_heartbeat(4.5, 2)
     registry.set_database_pool(size=10, checked_out=8, overflow=0, capacity=15)
     registry.set_redis_memory(used_bytes=1024, max_bytes=2048)
     registry.observe_limit_block("upload_quota")
@@ -44,17 +33,12 @@ def test_metric_names_values_and_low_cardinality_labels():
         "practiceflow_database_errors_total",
         "practiceflow_storage_operations_total",
         "practiceflow_mfa_events_total",
-        "practiceflow_export_job_transitions_total",
-        "practiceflow_export_queue_depth",
-        "practiceflow_export_worker_heartbeat_age_seconds",
         "practiceflow_redis_memory_bytes",
         "practiceflow_limit_blocks_total",
     ):
         assert metric_name in rendered
     assert 'status_class="5xx"' in rendered
     assert 'backend="s3",operation="upload",result="failure"' in rendered
-    assert 'format="pdf",status="timed_out"' in rendered
-    assert 'practiceflow_export_jobs{status="queued"} 3' in rendered
     assert 'practiceflow_database_pool_connections{state="capacity"} 15' in rendered
     assert 'practiceflow_redis_memory_bytes{state="used"} 1024' in rendered
     assert 'reason="upload_quota"' in rendered
@@ -88,36 +72,6 @@ def test_json_formatter_does_not_write_raw_path_or_exception_message():
     assert "person@example.test" not in rendered
     assert '"exception_type": "RuntimeError"' in rendered
     assert "Bearer-secret-value" not in _safe_log_request_id("Bearer-secret-value")
-
-
-def test_memory_worker_heartbeat_reports_fresh_worker_without_identity():
-    heartbeat = MemoryWorkerHeartbeat()
-    assert heartbeat.snapshot() == (None, 0)
-    heartbeat.beat("worker-hostname-1234")
-
-    age, active = heartbeat.snapshot()
-
-    assert age is not None and age >= 0
-    assert active == 1
-
-
-def test_redis_queue_failure_records_dependency_metric(monkeypatch):
-    registry = ObservabilityMetrics()
-    import app.export_queue as queue_module
-
-    monkeypatch.setattr(queue_module, "metrics", registry)
-
-    class BrokenRedis:
-        def lpush(self, *_args):
-            raise redis.ConnectionError("unavailable")
-
-    export_queue = RedisExportQueue("redis://unused")
-    export_queue.client = BrokenRedis()
-    with pytest.raises(HTTPException) as unavailable:
-        export_queue.enqueue("opaque-job-id")
-
-    assert unavailable.value.status_code == 503
-    assert 'component="redis_export_queue",result="failure"' in registry.render_prometheus()
 
 
 def test_s3_failure_records_safe_storage_metric(monkeypatch):

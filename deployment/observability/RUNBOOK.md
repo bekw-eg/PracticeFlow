@@ -21,8 +21,8 @@ is required. Confirm PostgreSQL/Redis/S3 metrics before rollback.
 
 ## High HTTP p95 latency
 
-Compare request duration with database pool `checked_out`, dependency state and
-export queue depth. Do not add raw query or document-data logging to diagnose
+Compare request duration with database pool `checked_out` and dependency state.
+Do not add raw query or document-data logging to diagnose
 this; collect a short, access-controlled profiler sample if required.
 
 ## Dependency unavailable
@@ -31,13 +31,6 @@ For PostgreSQL, Redis or S3, verify the internal Compose service health,
 network/DNS/TLS credentials, provider status and the least-privilege secret
 mount. Redis failures are fail-closed for rate/resource protection; S3 failures
 keep private files unavailable rather than attempting a local fallback.
-
-## Export queue backlog
-
-Check `practiceflow_export_worker_active`, heartbeat age, terminal transition
-rate and worker CPU/RAM. A backlog with fresh workers usually indicates document
-rendering capacity; scale workers only after reviewing the per-organization
-concurrency values and resource limits.
 
 ## Database pool near exhaustion
 
@@ -65,21 +58,6 @@ least-privilege bucket credential. Keep uploads and downloads unavailable on a
 storage error rather than enabling a local fallback. Do not place endpoint
 URLs, bucket names, object keys or credential values in Prometheus labels or
 incident-chat excerpts.
-
-## Worker heartbeat stale
-
-Check the `export-worker` container and its `--check` healthcheck, then Redis.
-The heartbeat is stored as a short TTL Redis sorted set and is refreshed during
-polling and every 15 seconds while a renderer child runs. Restart the worker if
-it is wedged; its stale leases are requeued safely by the next worker.
-
-## Export failures or timeouts
-
-Inspect status transitions and `practiceflow_export_job_duration_seconds`, then
-review structured worker logs using the safe `export_job_id` correlation field.
-Confirm that child renderer timeout and slot release occurred. Do not raise the
-hard timeout blindly: reproduce the authorized document in a non-production
-environment and establish CPU/RAM limits first.
 
 ## Resource-limit spike
 

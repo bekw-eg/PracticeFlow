@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import { AppShell } from "./app/AppShell";
 import { ProtectedRoute } from "./app/ProtectedRoute";
 import { useAuth } from "./features/auth/useAuth";
@@ -8,31 +9,37 @@ import { CompleteAccessPage } from "./features/auth/CompleteAccessPage";
 import { MfaPage } from "./features/auth/MfaPage";
 import { MyGroupsPage } from "./features/groups/MyGroupsPage";
 import { GroupDetailPage } from "./features/groups/GroupDetailPage";
-import { TemplatesPage } from "./features/templates/TemplatesPage";
-import { StudentReportsPage } from "./features/reports/StudentReportsPage";
 import { AdminPlaceholderPage } from "./features/admin/AdminPlaceholderPage";
 import { AuditLogPage } from "./features/audit/AuditLogPage";
-import { StudentProfilePage } from "./features/profile/StudentProfilePage";
-import { TeacherReportPage } from "./features/reports/TeacherReportPage";
 import { CheckProfilesPage } from "./features/documentChecks/CheckProfilesPage";
 import { CheckProfileRuleEditorPage } from "./features/documentChecks/CheckProfileRuleEditorPage";
 import { TeacherDocumentChecksPage } from "./features/documentChecks/TeacherDocumentChecksPage";
 import { ReviewGroupsPage, ReviewGroupPage } from "./features/documentChecks/ReviewGroupsPage";
 import { TeacherDocumentReviewPage } from "./features/documentChecks/TeacherDocumentReviewPage";
 import { ToastViewport } from "./components/ToastViewport";
-import { LoadingState } from "./components/ui/StateViews";
 import { DisciplinePage, DisciplinesPage, TopicPage } from "./features/disciplines/DisciplinePages";
-import { useTranslation } from "react-i18next";
 
-// The document editor pulls in Tiptap/ProseMirror, by far the heaviest
-// dependency in the app. Lazy-loading it means someone who only ever visits
-// My Groups or Reports never downloads it at all.
-const TemplateEditorPage = lazy(() => import("./features/documents/TemplateEditorPage").then((m) => ({ default: m.TemplateEditorPage })));
-const ReportEditorPage = lazy(() => import("./features/documents/ReportEditorPage").then((m) => ({ default: m.ReportEditorPage })));
-
-function EditorFallback() {
-  const { t } = useTranslation("editor");
-  return <LoadingState label={t("loadingEditor")} />;
+function StudentWorkspaceUnavailablePage() {
+  const { logout } = useAuth();
+  const { t } = useTranslation(["common", "auth"]);
+  return (
+    <section className="mx-auto mt-12 max-w-lg rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center shadow-[var(--shadow-card)]">
+      <h1 className="font-display text-xl font-bold text-[var(--color-ink)]">
+        {t("common:studentWorkspaceUnavailableTitle")}
+      </h1>
+      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">
+        {t("common:studentWorkspaceUnavailableDescription")}
+      </p>
+      <button
+        type="button"
+        onClick={() => void logout()}
+        className="btn btn-primary mt-6 inline-flex items-center gap-2"
+      >
+        <ArrowRightStartOnRectangleIcon className="size-4" aria-hidden="true" />
+        {t("auth:signOut")}
+      </button>
+    </section>
+  );
 }
 
 function RoleLandingRedirect() {
@@ -42,7 +49,7 @@ function RoleLandingRedirect() {
     const documentCheckEnabled = user.features?.document_check_enabled ?? true;
     return <Navigate to={documentCheckEnabled ? "/document-checks" : "/groups"} replace />;
   }
-  if (user.role === "STUDENT") return <Navigate to="/reports" replace />;
+  if (user.role === "STUDENT") return <Navigate to="/student-unavailable" replace />;
   return <Navigate to="/admin" replace />;
 }
 
@@ -81,30 +88,12 @@ export function App() {
           }
         />
         <Route
-          path="/templates"
-          element={
-            <ProtectedRoute allowedRoles={["TEACHER"]}>
-              <TemplatesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/check-profiles"
           element={<ProtectedRoute allowedRoles={["TEACHER"]}><CheckProfilesPage /></ProtectedRoute>}
         />
         <Route
           path="/check-profiles/:profileId/versions/:versionId"
           element={<ProtectedRoute allowedRoles={["TEACHER"]}><CheckProfileRuleEditorPage /></ProtectedRoute>}
-        />
-        <Route
-          path="/templates/:templateId/versions/:versionId"
-          element={
-            <ProtectedRoute allowedRoles={["TEACHER"]}>
-              <Suspense fallback={<EditorFallback />}>
-                <TemplateEditorPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
         />
         <Route path="/review-groups" element={<ProtectedRoute allowedRoles={["TEACHER"]}><ReviewGroupsPage /></ProtectedRoute>} />
         <Route path="/review-groups/:groupId" element={<ProtectedRoute allowedRoles={["TEACHER"]}><ReviewGroupPage /></ProtectedRoute>} />
@@ -117,36 +106,10 @@ export function App() {
           element={<ProtectedRoute allowedRoles={["TEACHER"]}><TeacherDocumentReviewPage /></ProtectedRoute>}
         />
         <Route
-          path="/reports"
+          path="/student-unavailable"
           element={
             <ProtectedRoute allowedRoles={["STUDENT"]}>
-              <StudentReportsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports/:reportId/edit"
-          element={
-            <ProtectedRoute allowedRoles={["STUDENT"]}>
-              <Suspense fallback={<EditorFallback />}>
-                <ReportEditorPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={["STUDENT"]}>
-              <StudentProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/groups/:groupId/reports/:reportId"
-          element={
-            <ProtectedRoute allowedRoles={["TEACHER"]}>
-              <TeacherReportPage />
+              <StudentWorkspaceUnavailablePage />
             </ProtectedRoute>
           }
         />
@@ -166,6 +129,7 @@ export function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<RoleLandingRedirect />} />
       </Route>
     </Routes>
     <ToastViewport />

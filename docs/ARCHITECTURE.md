@@ -2,10 +2,9 @@
 
 The additive [curriculum module](DISCIPLINES.md) uses the same validated
 membership context, Teacher ownership, private storage and resource quotas.
-Disciplines, topics and teaching materials remain independent of legacy
-internships/reports and direct document checks.
+Disciplines, topics and teaching materials remain independent of direct document checks.
 
-PracticeFlow — multi-tenant приложение для учебной практики. Этот документ
+PracticeFlow — multi-tenant приложение для преподавательской проверки документов (DOCX) и локального анализа схожести. Этот документ
 описывает текущую архитектуру repository и её security boundaries; он не
 описывает будущий HA-кластер или managed cloud-инфраструктуру.
 
@@ -15,12 +14,11 @@ PracticeFlow — multi-tenant приложение для учебной пра�
 | --- | --- | --- |
 | Frontend | React UI, собранный Vite и раздаваемый внутренним Nginx | Не является источником tenant/role truth; получает только API responses |
 | Caddy | Единственная public TLS edge: redirect HTTPS, HSTS, proxy и CIDR gate для `/metrics` | Certificate/account data находятся в Caddy volume; config и domain задаёт deployer |
-| Backend | FastAPI API, RBAC, tenant enforcement, document workflow, validation и observability | Работает с PostgreSQL, Redis и private S3 через private network |
-| PostgreSQL | Authoritative state: organizations, memberships, documents, reports, export jobs и audit trail | Persistent source of truth; не публикуется наружу |
-| Redis | Login/MFA throttling, resource guards, export queue, leases и worker heartbeat | Derived/short-lived security and work state; `noeviction`, failures are fail-closed |
-| Export worker | Отдельный consumer durable export jobs; renderer запускается в killable child process | PostgreSQL claim/lease определяет правду, Redis только transport/guard |
+| Backend | FastAPI API, RBAC, tenant enforcement, document-check workflow, validation и observability | Работает с PostgreSQL, Redis и private S3 через private network |
+| PostgreSQL | Authoritative state: organizations, memberships, groups, disciplines, check profiles, submissions, check jobs, review groups и audit trail | Persistent source of truth; не публикуется наружу |
+| Redis | Login/MFA throttling и resource guards | Derived/short-lived security and work state; `noeviction`, failures are fail-closed |
 | Document-check worker | Отдельный consumer очереди DOCX-проверок; анализатор запускается в ограниченном дочернем процессе | PostgreSQL хранит очередь, lease, попытки, итог и неизменяемые замечания |
-| S3-compatible storage | Private images, immutable DOCX originals и finished export artifacts | Objects доступны только через authorized backend, не public URL |
+| S3-compatible storage | Private immutable DOCX originals, teaching materials и презентации проверок групп | Objects доступны только через authorized backend, не public URL |
 | Prometheus | Внешний monitoring system, scrape безопасных aggregate metrics | Repository не deploys Prometheus; Caddy пропускает scrape только from `METRICS_ALLOWED_CIDR` |
 | Sentry | Optional external error tracking | Получает только sanitized event; request/user/context, breadcrumbs, exception text and stack trace удаляются до send |
 
@@ -30,10 +28,9 @@ Browser (untrusted)
   -> frontend Nginx private proxy
   -> FastAPI backend private application boundary
        -> PostgreSQL (authoritative state)
-       -> Redis (guards, queue, heartbeat)
+       -> Redis (throttling, resource guards)
        -> private S3-compatible storage
 
-export-worker -> PostgreSQL + Redis + private S3
 document-check-worker -> PostgreSQL + private S3
 Prometheus allowed CIDR -> Caddy -> /metrics
 ```
@@ -77,9 +74,7 @@ from a non-existent object (`404`) to avoid cross-tenant disclosure.
 
 ## Document-check domain (teacher-only direct checking)
 
-Phase 1 adds a configuration and assignment domain alongside the existing
-template/internship/report document editor. It does not replace or change the
-legacy editor and every legacy route remains available.
+PracticeFlow provides a Teacher-only document checking and similarity analysis domain.
 
 ```text
 CheckProfile
@@ -235,59 +230,12 @@ filenames, storage keys, or internal exceptions. Database triggers make
 terminal jobs and findings immutable. Analyzer start/completion/failure are
 audited with bounded operational metadata. `DOCUMENT_CHECK_MAX_FINDINGS` caps
 database growth and the result summary records truncation. Automatic grading,
-teacher grading, and annotated DOCX/PDF are absent. The legacy editor,
-templates, reports, comments, and export worker remain in place.
+teacher grading, and annotated DOCX/PDF are absent.
 
-### Migration controls
+### Feature flags and storage flow
 
-The additive domain and the legacy editor are controlled independently by
-deployment settings. `DOCUMENT_CHECK_ENABLED` hides the document-check API and UI
-when disabled. `LEGACY_DOCUMENT_EDITOR_ENABLED=false` freezes legacy
-authoring: new templates, template versions, internships, report edits, and
-editor image uploads are rejected, while existing templates, reports,
-history, comments, review start/approval, exports, and final closure remain
-readable or operable. Returning a report for revision is blocked because the
-student could no longer edit it. `DOCUMENT_CHECK_ENABLED` and
-`LEGACY_DOCUMENT_EDITOR_ENABLED` default to `true`.
-`DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED` defaults to `false`; it keeps the
-historical assignment-based Student upload API unavailable and omitted from
-OpenAPI. No legacy tables or stored data are removed.
+The document-check domain is controlled by deployment settings. `DOCUMENT_CHECK_ENABLED` hides the document-check API and UI when disabled (defaults to `true`). `DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED` defaults to `false`; it keeps the historical assignment-based Student upload API unavailable and omitted from OpenAPI.
 
-## Document autosave and review flow
-
-1. A Student reads their own report document through backend authorization.
-2. The frontend sends a save with `expected_revision`; backend atomically
-   updates the document and revision in PostgreSQL.
-3. A stale editor receives the documented conflict response rather than
-   overwriting newer content. The UI reloads/reconciles the latest server
-   document.
-4. Teacher reads only reports for groups assigned to that teacher and has a
-   resolved, read-only document view; review/comment actions are separately
-   role checked.
-
-Document contents live in PostgreSQL. Request logs and Prometheus labels use
-route templates and safe operation fields, not document text or filenames.
-
-## Export and storage flow
-
-```text
-authorized API request
-  -> PostgreSQL export_jobs row (durable, deduplicated for active format)
-  -> Redis queue notification
-  -> export-worker claims PostgreSQL lease
-  -> isolated renderer child
-  -> private S3 object
-  -> PostgreSQL terminal status
-  -> authorized API download checks current tenant and role again
-```
-
-Redis queue messages may be duplicated or lost during an outage; this is safe
-because the PostgreSQL job and lease state are authoritative. On restart, a
-worker requeues queued and expired-lease jobs. The worker rechecks membership,
-role and current report access before rendering. Timeout/cancel terminates the
-child before the job becomes terminal and releases its Redis concurrency slot.
-
-Uploads are staged and validated as allowed image bytes before private storage.
 Storage keys are server-generated under organization UUID prefixes and never
 come from a client filename. S3 unavailability returns a controlled `503`; the
 application does not fall back to public or local production storage.

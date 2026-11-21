@@ -1,37 +1,42 @@
-from app.models.audit_log import AuditLog
-from app.models.audit_chain_head import AuditChainHead
 from app.models.access_link import AccessLink
-from app.models.comment import Comment
+from app.models.audit_chain_head import AuditChainHead
+from app.models.audit_log import AuditLog
 from app.models.department import Department
+from app.models.discipline import Discipline, DisciplineGroup, DisciplineTopic, TeachingMaterial
 from app.models.document_check import (
-    AssignmentStudent, CheckProfile, CheckProfileVersion, CheckRule, DocumentCheckAssignment,
-    DocumentCheckFinding, DocumentCheckJob, StudentDocumentSubmission, TeacherDocumentSubmission,
-    DocumentCheckSettings, DocumentCheckRunRule, LocalPlagiarismIndex, LocalPlagiarismParagraph,
-    LocalPlagiarismRun, LocalPlagiarismMatch, TeacherDocumentLifecycle,
+    AssignmentStudent,
+    CheckProfile,
+    CheckProfileVersion,
+    CheckRule,
+    DocumentCheckAssignment,
+    DocumentCheckFinding,
+    DocumentCheckJob,
+    DocumentCheckRunRule,
+    DocumentCheckSettings,
+    LocalPlagiarismIndex,
+    LocalPlagiarismMatch,
+    LocalPlagiarismParagraph,
+    LocalPlagiarismRun,
+    StudentDocumentSubmission,
+    TeacherDocumentLifecycle,
+    TeacherDocumentSubmission,
 )
-from app.models.file import File
-from app.models.export_job import ExportJob
 from app.models.group import Group
-from app.models.review_group import ReviewGroup, TeacherDocumentReview
 from app.models.group_member import GroupMember
-from app.models.internship import Internship
-from app.models.notification import Notification
+from app.models.group_review_report import GroupReviewReport
 from app.models.membership import OrganizationMembership
 from app.models.mfa_challenge import MfaChallenge
 from app.models.mfa_credential import MfaCredential
 from app.models.mfa_recovery_code import MfaRecoveryCode
+from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.refresh_token import RefreshToken
-from app.models.report import Report
-from app.models.report_version import ReportVersion
-from app.models.report_writing_snapshot import ReportWritingSnapshot
+from app.models.review_group import ReviewGroup, TeacherDocumentReview
 from app.models.role import Role
 from app.models.specialty import Specialty
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.teacher_group import TeacherGroup
-from app.models.template import Template
-from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 __all__ = [
@@ -42,7 +47,6 @@ __all__ = [
     "AuditLog",
     "AuditChainHead",
     "AccessLink",
-    "Comment",
     "Department",
     "CheckProfile",
     "CheckProfileVersion",
@@ -60,14 +64,11 @@ __all__ = [
     "LocalPlagiarismParagraph",
     "LocalPlagiarismRun",
     "LocalPlagiarismMatch",
-    "File",
-    "ExportJob",
     "Group",
     "GroupReviewReport",
     "ReviewGroup",
     "TeacherDocumentReview",
     "GroupMember",
-    "Internship",
     "Notification",
     "OrganizationMembership",
     "MfaChallenge",
@@ -75,18 +76,10 @@ __all__ = [
     "MfaRecoveryCode",
     "Organization",
     "RefreshToken",
-    "Report",
-    "ReportVersion",
-    "ReportWritingSnapshot",
     "Role",
     "Specialty",
     "Student",
     "Teacher",
     "TeacherGroup",
-    "Template",
-    "TemplateVersion",
     "User",
 ]
-
-from app.models.group_review_report import GroupReviewReport
-from app.models.discipline import Discipline, DisciplineGroup, DisciplineTopic, TeachingMaterial

@@ -2,36 +2,25 @@
 
 Run with: PYTHONPATH=. python seed.py
 
-Creates: Demo University org, all 4 roles, a Director, a Teacher, three
-groups (BK2405/04/03), several students, one reusable template with a
-published version, one internship in BK2405 published to its students,
-and one submitted report — enough to exercise the full Phase 1 slice
-(login as any seeded user, My Groups, group detail, create/publish
-internship, student submit) without hand-creating data through the API.
+Creates: Demo University org, all 4 roles, a Super Admin, a Director, a Teacher,
+three groups (BK2405/04/03), and several students assigned to those groups.
 """
-from copy import deepcopy
-
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
 from app.core.config import settings
+from app.core.security import hash_password
 from app.db.session import SessionLocal
-from app.documents.defaults import build_default_document
 from app.models.department import Department
-from app.models.enums import InternshipStatus, RoleName
+from app.models.enums import RoleName
 from app.models.group import Group
 from app.models.group_member import GroupMember
-from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
-from app.models.report import Report
 from app.models.role import Role
 from app.models.specialty import Specialty
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.teacher_group import TeacherGroup
-from app.models.template import Template
-from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 DEV_PASSWORD = "Practice123!"
@@ -126,7 +115,7 @@ def run() -> None:
                 db.add(TeacherGroup(teacher_id=teacher.id, group_id=group.id))
                 db.flush()
 
-        # --- Students (5 in BK2405, 2 each in the others) ---
+        # --- Students (5 in BK2405, 2 in BK2404) ---
         student_first_names = ["Айгерим", "Дамир", "Жанна", "Ержан", "Сая", "Нурлан", "Динара"]
         all_students = []
         for i, first_name in enumerate(student_first_names):
@@ -149,64 +138,6 @@ def run() -> None:
             if not db.query(GroupMember).filter_by(group_id=groups["BK2404"].id, student_id=student.id).one_or_none():
                 db.add(GroupMember(group_id=groups["BK2404"].id, student_id=student.id))
         db.flush()
-
-        # --- Template + published version ---
-        template = db.query(Template).filter_by(organization_id=org.id, name="Отчет по производственной практике").one_or_none()
-        if template is None:
-            template = Template(
-                organization_id=org.id,
-                created_by_teacher_id=teacher.id,
-                name="Отчет по производственной практике",
-                description="Стандартный шаблон отчета по практике (ГОСТ)",
-            )
-            db.add(template)
-            db.flush()
-
-        template_version = db.query(TemplateVersion).filter_by(template_id=template.id, version_number=1).one_or_none()
-        if template_version is None:
-            default_document = build_default_document()
-            template_version = TemplateVersion(
-                template_id=template.id,
-                version_number=1,
-                document_data=default_document.model_dump(mode="json"),
-                schema_version=default_document.schema_version,
-                is_published=True,
-            )
-            db.add(template_version)
-            db.flush()
-
-        # --- Internship in BK2405, published ---
-        from datetime import date
-
-        internship = db.query(Internship).filter_by(organization_id=org.id, group_id=groups["BK2405"].id).one_or_none()
-        if internship is None:
-            internship = Internship(
-                organization_id=org.id,
-                group_id=groups["BK2405"].id,
-                template_version_id=template_version.id,
-                created_by_teacher_id=teacher.id,
-                title="Производственная практика 2025",
-                description="Летняя производственная практика для группы BK2405",
-                specialty_id=specialty.id,
-                start_date=date(2025, 6, 1),
-                end_date=date(2025, 7, 15),
-                deadline=date(2025, 7, 20),
-                status=InternshipStatus.PUBLISHED,
-            )
-            db.add(internship)
-            db.flush()
-
-            for student in bk2405_students:
-                db.add(
-                    Report(
-                        organization_id=org.id,
-                        internship_id=internship.id,
-                        student_id=student.id,
-                        document_data=deepcopy(template_version.document_data),
-                        document_schema_version=template_version.schema_version,
-                    )
-                )
-            db.flush()
 
         db.commit()
 

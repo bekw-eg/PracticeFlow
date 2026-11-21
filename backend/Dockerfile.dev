@@ -4,8 +4,8 @@ FROM python@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4
 WORKDIR /app
 
 RUN apk upgrade --no-cache && apk add --no-cache \
-    build-base cairo libffi-dev gdk-pixbuf pango fontconfig \
-    font-dejavu font-noto openssl poppler-utils shared-mime-info \
+    build-base libffi-dev fontconfig \
+    font-dejavu font-noto openssl poppler-utils \
     && fc-cache -f
 
 COPY requirements.txt .

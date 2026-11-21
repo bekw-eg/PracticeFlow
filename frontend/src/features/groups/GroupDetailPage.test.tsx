@@ -40,32 +40,6 @@ function renderPage(initialEntry: string) {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("GroupDetailPage review queue", () => {
-  it("opens a filtered queue from a deep link and renders its empty state", async () => {
-    const get = vi.spyOn(api, "get").mockImplementation((url) => {
-      const path = String(url);
-      if (path.startsWith("/groups/group-1/reports/queue")) return Promise.resolve(paged([]));
-      if (path.startsWith("/groups/group-1/internships")) return Promise.resolve(paged([]));
-      if (path.startsWith("/groups/group-1/available-students")) return Promise.resolve(paged([]));
-      if (path.startsWith("/groups/group-1/report-progress")) return Promise.resolve({ data: { total: 0, draft: 0, submitted: 0, under_review: 0, revision_required: 0, locked: 0 } } as never);
-      if (path.startsWith("/groups/group-1/student-risk")) return Promise.resolve({ data: { red: 0, yellow: 0, green: 0, items: [] } } as never);
-      if (path.startsWith("/groups/group-1?")) return Promise.resolve({ data: group, headers: paged([]).headers } as never);
-      if (path.startsWith("/groups?")) return Promise.resolve(paged([]));
-      throw new Error(`Unexpected request: ${path}`);
-    });
-
-    renderPage("/groups/group-1?tab=reports&status=SUBMITTED&deadline=overdue&student=Aya");
-
-    expect(await screen.findByText("Нет отчётов, подходящих под выбранные фильтры.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Статус")).toHaveValue("SUBMITTED");
-    expect(screen.getByLabelText("Срок")).toHaveValue("overdue");
-    expect(screen.getByLabelText("Студент")).toHaveValue("Aya");
-    expect(get).toHaveBeenCalledWith(expect.stringContaining("status=SUBMITTED"));
-    expect(get).toHaveBeenCalledWith(expect.stringContaining("deadline=overdue"));
-    expect(get).toHaveBeenCalledWith(expect.stringContaining("student=Aya"));
-  });
-});
-
 describe("GroupDetailPage bulk student actions", () => {
   const groupWithStudents = {
     ...group,
@@ -78,10 +52,7 @@ describe("GroupDetailPage bulk student actions", () => {
   function mockStudentPage(groupData = groupWithStudents) {
     return vi.spyOn(api, "get").mockImplementation((url) => {
       const path = String(url);
-      if (path.startsWith("/groups/group-1/internships")) return Promise.resolve(paged([]));
       if (path.startsWith("/groups/group-1/available-students")) return Promise.resolve(paged([]));
-      if (path.startsWith("/groups/group-1/report-progress")) return Promise.resolve({ data: { total: 0, draft: 0, submitted: 0, under_review: 0, revision_required: 0, locked: 0 } } as never);
-      if (path.startsWith("/groups/group-1/student-risk")) return Promise.resolve({ data: { red: 0, yellow: 0, green: 0, items: [] } } as never);
       if (path.startsWith("/groups/group-1?")) return Promise.resolve({ data: groupData, headers: paged(groupData.students).headers } as never);
       if (path.startsWith("/groups?")) return Promise.resolve(paged([{ id: "group-1", name: "BK-2405", academic_year: "2026", student_count: 2 }, { id: "group-2", name: "BK-2406", academic_year: "2026", student_count: 0 }]));
       throw new Error(`Unexpected request: ${path}`);
@@ -97,7 +68,7 @@ describe("GroupDetailPage bulk student actions", () => {
       },
     } as never);
 
-    renderPage("/groups/group-1?tab=students");
+    renderPage("/groups/group-1");
 
     fireEvent.click(await screen.findByLabelText("Выбрать Алия"));
     fireEvent.click(screen.getByLabelText("Выбрать Бек"));
@@ -118,7 +89,7 @@ describe("GroupDetailPage bulk student actions", () => {
     mockStudentPage();
     const post = vi.spyOn(api, "post").mockResolvedValue({ data: { succeeded_student_ids: ["student-1"], failed: [] } } as never);
 
-    renderPage("/groups/group-1?tab=students");
+    renderPage("/groups/group-1");
 
     fireEvent.click(await screen.findByLabelText("Выбрать Алия"));
     fireEvent.change(screen.getByLabelText("Перевести выбранных в…"), { target: { value: "group-2" } });

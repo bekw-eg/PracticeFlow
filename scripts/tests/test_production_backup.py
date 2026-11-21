@@ -260,7 +260,6 @@ class BackupTests(unittest.TestCase):
             }
 
         writers = [
-            writer("export-worker"),
             writer("document-check-worker"),
             writer("backend"),
         ]
@@ -291,7 +290,7 @@ class BackupTests(unittest.TestCase):
         self.assertEqual(calls[0][-1], "backend")
         self.assertEqual(
             set(json.loads(self.backup.journal.read_text())["ids"]),
-            {"backend", "export-worker", "document-check-worker"},
+            {"backend", "document-check-worker"},
         )
 
     def test_real_restic_relative_tree_roundtrip(self):

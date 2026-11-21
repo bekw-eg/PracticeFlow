@@ -166,7 +166,6 @@ def me(ctx: RequestContext = Depends(get_current_context), db: Session = Depends
         role=ctx.role,
         features=ProductFeatures(
             document_check_enabled=settings.DOCUMENT_CHECK_ENABLED,
-            legacy_document_editor_enabled=settings.LEGACY_DOCUMENT_EDITOR_ENABLED,
         ),
     )
 

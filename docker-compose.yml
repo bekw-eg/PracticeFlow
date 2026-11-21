@@ -47,7 +47,6 @@ services:
       SEED_ON_START: ${SEED_ON_START:-true}
       DOCUMENT_CHECK_ENABLED: ${DOCUMENT_CHECK_ENABLED:-true}
       DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED: ${DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED:-false}
-      LEGACY_DOCUMENT_EDITOR_ENABLED: ${LEGACY_DOCUMENT_EDITOR_ENABLED:-true}
       DOCX_MAX_UPLOAD_BYTES: ${DOCX_MAX_UPLOAD_BYTES:-20971520}
       DOCX_MAX_ZIP_ENTRIES: ${DOCX_MAX_ZIP_ENTRIES:-2048}
       DOCX_MAX_UNCOMPRESSED_BYTES: ${DOCX_MAX_UNCOMPRESSED_BYTES:-104857600}
@@ -70,7 +69,6 @@ services:
       SMTP_FROM: ${SMTP_FROM:-no-reply@practiceflow.local}
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -82,12 +80,12 @@ services:
       timeout: 5s
       retries: 10
 
-  export-worker:
+  document-check-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
     restart: unless-stopped
-    command: ["python", "-m", "app.workers.export_worker"]
+    command: ["python", "-m", "app.workers.document_check_worker"]
     depends_on:
       backend:
         condition: service_healthy
@@ -97,24 +95,9 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-change-me-before-any-real-deployment}
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
       STORAGE_LOCAL_PATH: /app/storage_data
       RUN_MIGRATIONS: "false"
       RUN_SEED: "false"
-    volumes:
-      - ./backend:/app
-      - backend_storage:/app/storage_data
-    healthcheck:
-      test: ["CMD", "python", "-m", "app.workers.export_worker", "--check"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  document-check-worker:
-    extends:
-      service: export-worker
-    command: ["python", "-m", "app.workers.document_check_worker"]
-    environment:
       DOCX_MAX_UPLOAD_BYTES: ${DOCX_MAX_UPLOAD_BYTES:-20971520}
       DOCX_MAX_ZIP_ENTRIES: ${DOCX_MAX_ZIP_ENTRIES:-2048}
       DOCX_MAX_UNCOMPRESSED_BYTES: ${DOCX_MAX_UNCOMPRESSED_BYTES:-104857600}
@@ -129,6 +112,9 @@ services:
       LOCAL_PLAGIARISM_MAX_MATCHES: ${LOCAL_PLAGIARISM_MAX_MATCHES:-300}
       LOCAL_PLAGIARISM_MAX_CANDIDATE_DOCUMENTS: ${LOCAL_PLAGIARISM_MAX_CANDIDATE_DOCUMENTS:-250}
       LOCAL_PLAGIARISM_MAX_INDEXED_WORDS: ${LOCAL_PLAGIARISM_MAX_INDEXED_WORDS:-100000}
+    volumes:
+      - ./backend:/app
+      - backend_storage:/app/storage_data
     healthcheck:
       test: ["CMD", "python", "-m", "app.workers.document_check_worker", "--check"]
       interval: 15s

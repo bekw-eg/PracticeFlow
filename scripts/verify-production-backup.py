@@ -8,14 +8,12 @@ No host ports, real accounts, production environment files or documents used.
 from __future__ import annotations
 
 import importlib.util
-import io
 import json
 import os
 import subprocess
 import tempfile
 import time
 import uuid
-import zipfile
 from pathlib import Path
 
 from production_backup import ENGINE, Backup, run
@@ -51,49 +49,19 @@ def cli(config, command, *args, success=True):
     assert "local_only" not in result.stderr, "Credential appeared in failure log"
 
 
-def verify_application(base_url, report_id, file_id):
-    """Exercise the current asynchronous export API and its real worker."""
-    token = api.login_student(base_url)
-    assert (
-        api.request_bytes(base_url, f"/api/v1/files/{file_id}", token=token)
-        == api.PNG_BYTES
-    )
-    document = api.request_json(
-        base_url, f"/api/v1/reports/{report_id}/document", token=token
-    )
-    assert any(
-        block.get("file_id") == file_id
-        for section in document["document"]["sections"]
-        for block in section["blocks"]
-        if block.get("type") == "image"
-    )
-    created = api.request_json(
+def verify_application(base_url, topic_id, material_id):
+    """Exercise teaching material readback and the real document-check worker."""
+    token = api.login_teacher(base_url)
+    api.verify_restored_material(base_url, topic_id, material_id)
+    submission_id = api.upload_teacher_docx_submission(base_url, token)
+    api.wait_for_teacher_submission(base_url, token, submission_id)
+    content = api.request_bytes(
         base_url,
-        f"/api/v1/reports/{report_id}/exports/docx",
-        method="POST",
+        f"/api/v1/document-checks/teacher/submissions/{submission_id}/original",
         token=token,
     )
-    job_id = created["job_id"]
-    deadline = time.monotonic() + 120
-    while True:
-        job = api.request_json(base_url, f"/api/v1/export-jobs/{job_id}", token=token)
-        if job["status"] == "succeeded":
-            break
-        assert job["status"] in {"queued", "running"}, (
-            "Restored application export failed"
-        )
-        assert time.monotonic() < deadline, "Restored application export timed out"
-        time.sleep(1)
-    content = api.request_bytes(
-        base_url, f"/api/v1/export-jobs/{job_id}/download", token=token
-    )
-    with zipfile.ZipFile(io.BytesIO(content)) as docx:
-        assert any(
-            docx.read(name) == api.PNG_BYTES
-            for name in docx.namelist()
-            if name.startswith("word/media/")
-        )
-    return job_id
+    assert content == api.DOCX_BYTES, "Uploaded DOCX bytes did not match original"
+    return submission_id
 
 
 def main():
@@ -234,15 +202,16 @@ def main():
                 "-d",
                 "--wait",
                 "backend",
-                "export-worker",
                 "document-check-worker",
             )
             source_url = f"http://{source}-backend-1:8000"
             api.wait_for_api(source_url)
-            report, file = api.attach_uploaded_image(
-                source_url, api.login_student(source_url)
+            topic_id, material_id = api.upload_teaching_material(
+                source_url, api.login_teacher(source_url)
             )
-            source_export_job = verify_application(source_url, report, file)
+            source_submission_id = verify_application(
+                source_url, topic_id, material_id
+            )
             password = temporary / "password"
             password.write_text(uuid.uuid4().hex + uuid.uuid4().hex)
             config = {
@@ -292,28 +261,28 @@ def main():
                 Body=b"synthetic orphan bytes",
             )
             print(
-                "Backing up live API + both worker services; verifying remote readback",
+                "Backing up live API + document-check worker; verifying remote readback",
                 flush=True,
             )
             backup = cli(source_config, "backup")
-            assert len(instance.writers()) == 3, "Original API/workers were not resumed"
+            assert len(instance.writers()) == 2, "Original API/worker were not resumed"
             assert backup["objects"] >= 3
-            # A mid-capture completeness failure must resume both workers and API,
+            # A mid-capture completeness failure must resume the worker and API,
             # and must not publish or expire any snapshot.
-            image_key = instance.sql(
-                "SELECT storage_key FROM files ORDER BY storage_key LIMIT 1"
+            material_key = instance.sql(
+                "SELECT storage_key FROM teaching_materials ORDER BY storage_key LIMIT 1"
             )
-            image = s3.get_object(Bucket=bucket, Key=image_key)
-            image_bytes = image["Body"].read()
-            s3.delete_object(Bucket=bucket, Key=image_key)
+            material_obj = s3.get_object(Bucket=bucket, Key=material_key)
+            material_bytes = material_obj["Body"].read()
+            s3.delete_object(Bucket=bucket, Key=material_key)
             cli(source_config, "backup", success=False)
-            assert len(instance.writers()) == 3
+            assert len(instance.writers()) == 2
             assert len(instance.owned_snapshots()) == 1
             s3.put_object(
                 Bucket=bucket,
-                Key=image_key,
-                Body=image_bytes,
-                ContentType=image["ContentType"],
+                Key=material_key,
+                Body=material_bytes,
+                ContentType=material_obj["ContentType"],
             )
             # The source project/bucket must never be a restore destination.
             cli(
@@ -330,7 +299,7 @@ def main():
             bad_path = temporary / "bad.json"
             bad_path.write_text(json.dumps(bad))
             cli(bad_path, "backup", success=False)
-            assert len(instance.writers()) == 3
+            assert len(instance.writers()) == 2
 
             print(
                 "Restoring into a new empty PostgreSQL + independent private bucket",
@@ -375,20 +344,20 @@ def main():
                 "-d",
                 "--wait",
                 "backend",
-                "export-worker",
                 "document-check-worker",
             )
             verify_started = time.monotonic()
             target_url = f"http://{target}-backend-1:8000"
-            restored_export = api.request_bytes(
+            api.wait_for_api(target_url)
+            restored_docx = api.request_bytes(
                 target_url,
-                f"/api/v1/export-jobs/{source_export_job}/download",
-                token=api.login_student(target_url),
+                f"/api/v1/document-checks/teacher/submissions/{source_submission_id}/original",
+                token=api.login_teacher(target_url),
             )
-            assert restored_export.startswith(b"PK"), (
-                "Previously generated export did not survive restore"
+            assert restored_docx == api.DOCX_BYTES, (
+                "Previously uploaded teacher DOCX submission did not survive restore"
             )
-            verify_application(target_url, report, file)
+            verify_application(target_url, topic_id, material_id)
             api_seconds = round(time.monotonic() - verify_started, 3)
             recovery_seconds = round(time.monotonic() - recovery_started, 3)
             recovered_s3, recovered_bucket = Backup(restored_config).storage()
@@ -447,11 +416,11 @@ def main():
                         "drill_total_seconds": round(time.monotonic() - started, 3),
                         "checks": [
                             "full remote readback",
-                            "API image bytes",
-                            "report image reference",
-                            "DOCX embedded media",
+                            "API teaching material bytes",
+                            "teacher DOCX submission original",
+                            "document-check worker job completion",
                             "unreferenced object",
-                            "both workers resumed",
+                            "writers resumed",
                             "capture failure resumes writers",
                             "source restore rejected",
                             "nonempty restore rejected",
