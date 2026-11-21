@@ -5,8 +5,6 @@ This script is deliberately separate from ``seed.py``.  It may run only with
 ephemeral PostgreSQL database.  It must never be used for local development
 or a deployed environment.
 """
-from copy import deepcopy
-from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -14,30 +12,25 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
-from app.documents.defaults import build_default_document
 from app.models.department import Department
-from app.models.enums import InternshipStatus, ReportStatus, RoleName
+from app.models.enums import RoleName
 from app.models.group import Group
 from app.models.group_member import GroupMember
-from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
-from app.models.report import Report
 from app.models.role import Role
 from app.models.specialty import Specialty
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.teacher_group import TeacherGroup
-from app.models.template import Template
-from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 
 E2E_PASSWORD = "Practice123!"
 # This ID is intentionally stable so the browser suite can prove that a
-# student from demo-university cannot retrieve a report that belongs to the
+# teacher from demo-university cannot retrieve a group that belongs to the
 # second tenant.
-OTHER_TENANT_REPORT_ID = UUID("d4ccf32d-6f2b-4f0e-9cbd-3bd1b2c3c502")
+OTHER_TENANT_GROUP_ID = UUID("d4ccf32d-6f2b-4f0e-9cbd-3bd1b2c3c502")
 
 
 def _role(db: Session, name: RoleName) -> Role:
@@ -57,12 +50,11 @@ def _seed_tenant(
     teacher_email: str,
     student_email: str,
     director_email: str | None = None,
-    report_id: UUID | None = None,
-) -> Report:
+    group_id: UUID | None = None,
+) -> Group:
     existing = db.query(Organization).filter_by(slug=organization_slug).one_or_none()
     if existing is not None:
-        report = db.query(Report).filter_by(organization_id=existing.id).one()
-        return report
+        return db.query(Group).filter_by(organization_id=existing.id).one()
 
     organization = Organization(name=organization_name, slug=organization_slug)
     db.add(organization)
@@ -124,6 +116,7 @@ def _seed_tenant(
     db.flush()
 
     group = Group(
+        **({"id": group_id} if group_id else {}),
         organization_id=organization.id,
         specialty_id=specialty.id,
         name="E2E-Group",
@@ -132,54 +125,8 @@ def _seed_tenant(
     db.add(group)
     db.flush()
     db.add_all([TeacherGroup(teacher_id=teacher.id, group_id=group.id), GroupMember(group_id=group.id, student_id=student.id)])
-
-    template = Template(
-        organization_id=organization.id,
-        created_by_teacher_id=teacher.id,
-        name="E2E Report Template",
-        description="Deterministic fixture template for browser tests.",
-    )
-    db.add(template)
     db.flush()
-    document = build_default_document()
-    template_version = TemplateVersion(
-        template_id=template.id,
-        version_number=1,
-        document_data=document.model_dump(mode="json"),
-        schema_version=document.schema_version,
-        is_published=True,
-    )
-    db.add(template_version)
-    db.flush()
-
-    internship = Internship(
-        organization_id=organization.id,
-        group_id=group.id,
-        template_version_id=template_version.id,
-        created_by_teacher_id=teacher.id,
-        title="E2E Practice",
-        description="Fixture internship for browser tests.",
-        specialty_id=specialty.id,
-        start_date=date(2025, 6, 1),
-        end_date=date(2025, 6, 30),
-        deadline=date(2025, 7, 1),
-        status=InternshipStatus.PUBLISHED,
-    )
-    db.add(internship)
-    db.flush()
-
-    report = Report(
-        **({"id": report_id} if report_id else {}),
-        organization_id=organization.id,
-        internship_id=internship.id,
-        student_id=student.id,
-        status=ReportStatus.REVISION_REQUIRED,
-        document_data=deepcopy(template_version.document_data),
-        document_schema_version=template_version.schema_version,
-    )
-    db.add(report)
-    db.flush()
-    return report
+    return group
 
 
 def run() -> None:
@@ -202,7 +149,7 @@ def run() -> None:
             organization_slug="other-university",
             teacher_email="teacher@other.demo.edu",
             student_email="student@other.demo.edu",
-            report_id=OTHER_TENANT_REPORT_ID,
+            group_id=OTHER_TENANT_GROUP_ID,
         )
         db.commit()
         print("E2E fixture seed complete: two deterministic organizations created.")

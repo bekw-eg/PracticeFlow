@@ -22,4 +22,3 @@ class Student(UUIDPKMixin, TimestampMixin, Base):
     membership: Mapped["OrganizationMembership"] = relationship(back_populates="student_profile")
     specialty: Mapped["Specialty"] = relationship()
     group_memberships: Mapped[list["GroupMember"]] = relationship(back_populates="student")
-    reports: Mapped[list["Report"]] = relationship(back_populates="student")

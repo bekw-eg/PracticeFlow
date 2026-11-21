@@ -38,7 +38,7 @@ def main() -> int:
     production_source = "docker-compose.prod.yml"
     production = load(production_source)
     prod_services = production.get("services", {})
-    for service_name in ("postgres", "redis", "backend", "export-worker", "frontend"):
+    for service_name in ("postgres", "redis", "backend", "document-check-worker", "frontend"):
         service = prod_services.get(service_name)
         if not service:
             fail(errors, f"{production_source}:{service_name} is required")
@@ -56,10 +56,10 @@ def main() -> int:
     redis_command = " ".join(str(part) for part in prod_services.get("redis", {}).get("command", []))
     if "--maxmemory" not in redis_command or "--maxmemory-policy noeviction" not in redis_command:
         fail(errors, f"{production_source}:redis must use bounded noeviction memory policy")
-    worker_dependencies = prod_services.get("export-worker", {}).get("depends_on", {})
+    worker_dependencies = prod_services.get("document-check-worker", {}).get("depends_on", {})
     for dependency in ("backend", "postgres", "redis"):
         if worker_dependencies.get(dependency, {}).get("condition") != "service_healthy":
-            fail(errors, f"{production_source}:export-worker must wait for healthy {dependency}")
+            fail(errors, f"{production_source}:document-check-worker must wait for healthy {dependency}")
     for variable in (
         "DATABASE_POOL_SIZE",
         "DATABASE_MAX_OVERFLOW",
@@ -70,7 +70,7 @@ def main() -> int:
         "WORKER_DATABASE_POOL_TIMEOUT_SECONDS",
         "WORKER_DATABASE_POOL_RECYCLE_SECONDS",
     ):
-        for service_name in ("backend", "export-worker"):
+        for service_name in ("backend", "document-check-worker"):
             if variable not in prod_services.get(service_name, {}).get("environment", {}):
                 fail(errors, f"{production_source}:{service_name} must pass {variable}")
 
@@ -83,7 +83,7 @@ def main() -> int:
 
     e2e_source = "docker-compose.e2e.yml"
     e2e_services = load(e2e_source).get("services", {})
-    for service_name in ("postgres", "redis", "minio", "minio-init", "backend", "export-worker", "frontend"):
+    for service_name in ("postgres", "redis", "minio", "minio-init", "backend", "document-check-worker", "frontend"):
         service = e2e_services.get(service_name)
         if not service:
             fail(errors, f"{e2e_source}:{service_name} is required")
@@ -114,7 +114,6 @@ def main() -> int:
     for alert_name in (
         "PracticeFlowDatabasePoolNearExhaustion",
         "PracticeFlowRedisMemoryNearLimit",
-        "PracticeFlowExportQueueBacklog",
         "PracticeFlowStorageErrorRate",
         "PracticeFlowContainerMemoryPressure",
         "PracticeFlowContainerCpuPressure",

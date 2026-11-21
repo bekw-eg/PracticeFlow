@@ -5,7 +5,6 @@ from app.rate_limit.base import LoginRateLimiter
 from app.rate_limit.memory import MemoryLoginRateLimiter
 from app.rate_limit.redis_backend import RedisLoginRateLimiter
 from app.resource_protection import MemoryResourceGuard, RedisResourceGuard, ResourceGuard, ResourceProtectionConfig
-from app.export_queue import ExportQueue, MemoryExportQueue, RedisExportQueue
 
 
 @lru_cache
@@ -47,12 +46,3 @@ def get_resource_guard() -> ResourceGuard:
             raise RuntimeError("REDIS_URL is required for the Redis resource-protection backend")
         return RedisResourceGuard(settings.REDIS_URL, config)
     return MemoryResourceGuard(config)
-
-
-@lru_cache
-def get_export_queue() -> ExportQueue:
-    if settings.EXPORT_QUEUE_BACKEND == "redis":
-        if not settings.REDIS_URL:
-            raise RuntimeError("REDIS_URL is required for the Redis export queue")
-        return RedisExportQueue(settings.REDIS_URL)
-    return MemoryExportQueue()

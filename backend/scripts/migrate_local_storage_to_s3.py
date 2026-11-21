@@ -14,59 +14,66 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.enums import ExportJobStatus
-from app.models.export_job import ExportJob
-from app.models.file import File
 from app.models.discipline import TeachingMaterial
+from app.models.document_check import StudentDocumentSubmission, TeacherDocumentLifecycle, TeacherDocumentSubmission
 from app.models.group_review_report import GroupReviewReport
 from app.services.group_review_report_service import PPTX_MIME
 from app.services.storage_migration import LocalToS3Migrator, StorageMigrationCandidate
-from app.storage.s3 import S3StorageService
 from app.storage.local import LocalStorageService
+from app.storage.s3 import S3StorageService
 
 
 def candidates_from_database(db: Session) -> list[StorageMigrationCandidate]:
-    candidates = [
+    candidates: list[StorageMigrationCandidate] = [
         StorageMigrationCandidate(
-            key=file_row.storage_key,
-            content_type=file_row.content_type,
-            expected_size_bytes=file_row.size_bytes,
-            source="file",
+            key=submission.storage_key,
+            content_type=submission.detected_mime,
+            expected_size_bytes=submission.size_bytes,
+            source="student_document_submission",
         )
-        for file_row in db.scalars(select(File).order_by(File.created_at, File.id))
+        for submission in db.scalars(
+            select(StudentDocumentSubmission).order_by(StudentDocumentSubmission.created_at, StudentDocumentSubmission.id)
+        )
     ]
     candidates.extend(
         StorageMigrationCandidate(
-            key=job.storage_key,
-            content_type=job.content_type,
-            expected_size_bytes=job.size_bytes,
-            source="export_job",
+            key=submission.storage_key,
+            content_type=submission.detected_mime,
+            expected_size_bytes=submission.size_bytes,
+            source="teacher_document_submission",
         )
-        for job in db.scalars(
-            select(ExportJob)
-            .where(
-                ExportJob.status == ExportJobStatus.SUCCEEDED,
-                ExportJob.storage_key.is_not(None),
-                ExportJob.content_type.is_not(None),
-            )
-            .order_by(ExportJob.created_at, ExportJob.id)
+        for submission in db.scalars(
+            select(TeacherDocumentSubmission)
+            .where(~TeacherDocumentSubmission.lifecycle.has(TeacherDocumentLifecycle.original_deleted_at.is_not(None)))
+            .order_by(TeacherDocumentSubmission.created_at, TeacherDocumentSubmission.id)
         )
-        if job.storage_key is not None and job.content_type is not None
     )
     candidates.extend(
-        StorageMigrationCandidate(key=report.storage_key, content_type=PPTX_MIME,
-                                  expected_size_bytes=None, source="group_review_report")
-        for report in db.scalars(select(GroupReviewReport).where(
-            GroupReviewReport.generated_at.is_not(None), GroupReviewReport.storage_key.is_not(None),
-        ).order_by(GroupReviewReport.created_at, GroupReviewReport.id))
+        StorageMigrationCandidate(
+            key=report.storage_key,
+            content_type=PPTX_MIME,
+            expected_size_bytes=None,
+            source="group_review_report",
+        )
+        for report in db.scalars(
+            select(GroupReviewReport)
+            .where(GroupReviewReport.generated_at.is_not(None), GroupReviewReport.storage_key.is_not(None))
+            .order_by(GroupReviewReport.created_at, GroupReviewReport.id)
+        )
         if report.storage_key is not None
     )
     candidates.extend(
-        StorageMigrationCandidate(key=material.storage_key, content_type=material.content_type,
-                                  expected_size_bytes=material.size_bytes, source="teaching_material")
-        for material in db.scalars(select(TeachingMaterial).where(
-            TeachingMaterial.deleted_at.is_(None),
-        ).order_by(TeachingMaterial.created_at, TeachingMaterial.id))
+        StorageMigrationCandidate(
+            key=material.storage_key,
+            content_type=material.content_type,
+            expected_size_bytes=material.size_bytes,
+            source="teaching_material",
+        )
+        for material in db.scalars(
+            select(TeachingMaterial)
+            .where(TeachingMaterial.storage_deleted_at.is_(None))
+            .order_by(TeachingMaterial.created_at, TeachingMaterial.id)
+        )
     )
     return candidates
 

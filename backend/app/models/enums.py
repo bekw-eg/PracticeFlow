@@ -8,21 +8,6 @@ class RoleName(str, enum.Enum):
     STUDENT = "STUDENT"
 
 
-class ReportStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    SUBMITTED = "SUBMITTED"
-    UNDER_REVIEW = "UNDER_REVIEW"
-    REVISION_REQUIRED = "REVISION_REQUIRED"
-    APPROVED = "APPROVED"
-    LOCKED = "LOCKED"
-
-
-class InternshipStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-    CLOSED = "CLOSED"
-
-
 class CheckProfileVersionStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
@@ -66,25 +51,6 @@ class DocumentCheckJobStatus(str, enum.Enum):
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
-
-
-class CommentStatus(str, enum.Enum):
-    OPEN = "OPEN"
-    RESOLVED = "RESOLVED"
-
-
-class ExportJobStatus(str, enum.Enum):
-    QUEUED = "queued"
-    RUNNING = "running"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-    TIMED_OUT = "timed_out"
-    CANCELLED = "cancelled"
-
-
-class ExportFormat(str, enum.Enum):
-    DOCX = "docx"
-    PDF = "pdf"
 
 
 class AuditEventType(str, enum.Enum):

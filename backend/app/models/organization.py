@@ -14,4 +14,3 @@ class Organization(UUIDPKMixin, TimestampMixin, Base):
     memberships: Mapped[list["OrganizationMembership"]] = relationship(back_populates="organization")
     departments: Mapped[list["Department"]] = relationship(back_populates="organization")
     groups: Mapped[list["Group"]] = relationship(back_populates="organization")
-    templates: Mapped[list["Template"]] = relationship(back_populates="organization")

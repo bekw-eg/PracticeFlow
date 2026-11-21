@@ -99,7 +99,6 @@ services:
       LOGIN_RATE_LIMIT_BACKEND: memory
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
       STORAGE_BACKEND: s3
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET: practiceflow-e2e
@@ -126,11 +125,11 @@ services:
       timeout: 5s
       retries: 30
 
-  export-worker:
+  document-check-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: ["python", "-m", "app.workers.export_worker"]
+    command: ["python", "-m", "app.workers.document_check_worker"]
     depends_on:
       backend:
         condition: service_healthy
@@ -146,7 +145,6 @@ services:
       JWT_SECRET_KEY: e2e-only-secret-that-is-never-used-in-production
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
       STORAGE_BACKEND: s3
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET: practiceflow-e2e
@@ -165,29 +163,16 @@ services:
       WORKER_DATABASE_POOL_RECYCLE_SECONDS: "300"
       RUN_MIGRATIONS: "false"
       RUN_SEED: "false"
-    deploy:
-      resources:
-        limits: { cpus: "0.75", memory: 1G }
-        reservations: { cpus: "0.50", memory: 512M }
-    healthcheck:
-      test: ["CMD", "python", "-m", "app.workers.export_worker", "--check"]
-      # Include Python imports and dependency probes within the worker CPU limit.
-      interval: 10s
-      timeout: 15s
-      start_period: 20s
-      retries: 12
-
-  document-check-worker:
-    extends:
-      service: export-worker
-    command: ["python", "-m", "app.workers.document_check_worker"]
-    environment:
       DOCX_MAX_UPLOAD_BYTES: "20971520"
       DOCUMENT_CHECK_WORKER_POLL_SECONDS: "0.2"
       DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS: "30"
       DOCUMENT_CHECK_WORKER_LEASE_SECONDS: "60"
       DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS: "3"
       DOCUMENT_CHECK_MAX_FINDINGS: "5000"
+    deploy:
+      resources:
+        limits: { cpus: "0.75", memory: 1G }
+        reservations: { cpus: "0.50", memory: 512M }
     healthcheck:
       test: ["CMD", "python", "-m", "app.workers.document_check_worker", "--check"]
       interval: 10s

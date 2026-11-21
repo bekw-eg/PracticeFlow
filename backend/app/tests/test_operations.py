@@ -30,7 +30,6 @@ def test_readiness_checks_database_and_rate_limiter(client, org_a: OrgFixture):
         "database": "ok",
         "rate_limit_backend": "ok",
         "resource_protection_backend": "ok",
-        "export_queue": "ok",
         "storage_backend": "ok",
     }
 

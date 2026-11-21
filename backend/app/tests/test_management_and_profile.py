@@ -3,16 +3,12 @@
 The tests deliberately use the same two-tenant fixture as the rest of the
 suite, so the new convenience endpoints cannot quietly bypass tenant scoping.
 """
-from datetime import date, timedelta
-
 import pytest
 
 from app.core.security import hash_password
-from app.models.enums import InternshipStatus, ReportStatus, RoleName
+from app.models.enums import RoleName
 from app.models.group_member import GroupMember
-from app.models.internship import Internship
 from app.models.membership import OrganizationMembership
-from app.models.report import Report
 from app.models.role import Role
 from app.models.user import User
 from app.tests.conftest import DEV_PASSWORD, OrgFixture, auth_headers
@@ -84,16 +80,7 @@ def test_director_can_manage_current_organization_only(client, db, org_a: OrgFix
     assert str(org_b.teacher.id) not in groups.json()["teacher_ids"]
 
 
-def test_student_profile_and_teacher_roster_actions(client, db, org_a: OrgFixture):
-    student_token = org_a.student_token(client)
-    profile = client.get("/api/v1/profile", headers=auth_headers(student_token))
-    assert profile.status_code == 200
-    assert profile.json()["student_id"] == str(org_a.student.id)
-
-    update = client.patch("/api/v1/profile", headers=auth_headers(student_token), json={"full_name": "Updated Student"})
-    assert update.status_code == 200
-    assert update.json()["full_name"] == "Updated Student"
-
+def test_teacher_roster_actions(client, db, org_a: OrgFixture):
     teacher_token = org_a.teacher_token(client)
     available = client.get(f"/api/v1/groups/{org_a.group.id}/available-students", headers=auth_headers(teacher_token))
     assert available.status_code == 200
@@ -104,6 +91,10 @@ def test_student_profile_and_teacher_roster_actions(client, db, org_a: OrgFixtur
     available_after = client.get(f"/api/v1/groups/{org_a.group.id}/available-students", headers=auth_headers(teacher_token))
     assert str(org_a.student.id) not in {student["id"] for student in available_after.json()}
 
+
+def test_student_profile_route_is_removed(client, org_a: OrgFixture):
+    response = client.get("/api/v1/profile", headers=auth_headers(org_a.student_token(client)))
+    assert response.status_code == 404
 
 @pytest.mark.parametrize("target_role", [RoleName.DIRECTOR, RoleName.SUPER_ADMIN])
 @pytest.mark.parametrize(
@@ -198,71 +189,10 @@ def test_super_admin_can_manage_privileged_member(client, db, org_a: OrgFixture)
     assert reset.status_code == 200
 
 
-def test_director_dashboard_is_tenant_scoped_and_excludes_report_content(client, db, org_a: OrgFixture, org_b: OrgFixture):
-    """Directors receive aggregate metadata for their tenant, never documents."""
-    today = date.today()
+def test_director_dashboard_is_tenant_scoped_and_operational_only(client, db, org_a: OrgFixture, org_b: OrgFixture):
+    """Directors receive aggregate structure data for their tenant only."""
     db.add(GroupMember(group_id=org_a.group.id, student_id=org_a.student.id))
     db.add(GroupMember(group_id=org_b.group.id, student_id=org_b.student.id))
-    overdue_internship = Internship(
-        organization_id=org_a.org.id,
-        group_id=org_a.group.id,
-        template_version_id=org_a.template_version.id,
-        created_by_teacher_id=org_a.teacher.id,
-        title="Organization A overdue internship",
-        start_date=today - timedelta(days=20),
-        end_date=today - timedelta(days=10),
-        deadline=today - timedelta(days=2),
-        status=InternshipStatus.PUBLISHED,
-    )
-    upcoming_internship = Internship(
-        organization_id=org_a.org.id,
-        group_id=org_a.group.id,
-        template_version_id=org_a.template_version.id,
-        created_by_teacher_id=org_a.teacher.id,
-        title="Organization A upcoming internship",
-        start_date=today,
-        end_date=today + timedelta(days=10),
-        deadline=today + timedelta(days=12),
-        status=InternshipStatus.PUBLISHED,
-    )
-    other_tenant_internship = Internship(
-        organization_id=org_b.org.id,
-        group_id=org_b.group.id,
-        template_version_id=org_b.template_version.id,
-        created_by_teacher_id=org_b.teacher.id,
-        title="Organization B private internship",
-        start_date=today - timedelta(days=20),
-        end_date=today - timedelta(days=10),
-        deadline=today - timedelta(days=2),
-        status=InternshipStatus.PUBLISHED,
-    )
-    db.add_all([overdue_internship, upcoming_internship, other_tenant_internship])
-    db.flush()
-    db.add_all(
-        [
-            Report(
-                organization_id=org_a.org.id,
-                internship_id=overdue_internship.id,
-                student_id=org_a.student.id,
-                status=ReportStatus.DRAFT,
-                document_data={"private": "organization A report content"},
-            ),
-            Report(
-                organization_id=org_a.org.id,
-                internship_id=upcoming_internship.id,
-                student_id=org_a.student.id,
-                status=ReportStatus.SUBMITTED,
-                document_data={"private": "another organization A report"},
-            ),
-            Report(
-                organization_id=org_b.org.id,
-                internship_id=other_tenant_internship.id,
-                student_id=org_b.student.id,
-                status=ReportStatus.DRAFT,
-                document_data={"private": "organization B report content"},
-            ),
-        ]
-    )
     db.commit()
 
     token = _director_token(client, db, org_a)
@@ -272,43 +202,22 @@ def test_director_dashboard_is_tenant_scoped_and_excludes_report_content(client,
     payload = response.json()
     assert payload["organization"]["id"] == str(org_a.org.id)
     assert payload["groups_count"] == 1
-    assert payload["internships_count"] == 2
-    assert payload["active_internships_count"] == 2
-    assert payload["reports_count"] == 2
-    assert payload["overdue_reports_count"] == 1
-    assert {item["status"]: item["count"] for item in payload["report_statuses"]} == {
-        "DRAFT": 1,
-        "SUBMITTED": 1,
-    }
+    assert payload["students_count"] == 1
+    assert payload["teachers_count"] == 1
     assert payload["groups"] == [
         {
             "id": str(org_a.group.id),
             "name": org_a.group.name,
             "academic_year": None,
             "student_count": 1,
-            "internships_count": 2,
-            "reports_count": 2,
-            "overdue_reports_count": 1,
         }
     ]
-    assert {item["title"] for item in payload["internships"]} == {
-        "Organization A overdue internship",
-        "Organization A upcoming internship",
-    }
     assert payload["teacher_loads"] == [
-        {
-            "id": str(org_a.teacher.id),
-            "full_name": "Test Teacher",
-            "groups_count": 1,
-            "active_internships_count": 2,
-            "reports_to_review_count": 1,
-        }
+        {"id": str(org_a.teacher.id), "full_name": "Test Teacher", "groups_count": 1}
     ]
-    assert "Organization B private internship" not in response.text
-    assert "organization A report content" not in response.text
-    assert "document_data" not in response.text
-    assert "comments" not in response.text
-
+    assert org_b.group.name not in response.text
+    for removed in ("internships", "reports", "report_statuses", "document_data"):
+        assert removed not in response.text
 
 @pytest.mark.parametrize("token_getter", ["teacher_token", "student_token"])
 def test_director_dashboard_rejects_teacher_and_student(client, org_a: OrgFixture, token_getter: str):

@@ -31,4 +31,3 @@ class Group(UUIDPKMixin, TimestampMixin, Base):
     specialty: Mapped["Specialty"] = relationship(back_populates="groups")
     members: Mapped[list["GroupMember"]] = relationship(back_populates="group")
     teacher_links: Mapped[list["TeacherGroup"]] = relationship(back_populates="group")
-    internships: Mapped[list["Internship"]] = relationship(back_populates="group")

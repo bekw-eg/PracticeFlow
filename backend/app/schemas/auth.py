@@ -23,7 +23,6 @@ class TokenResponse(BaseModel):
 
 class ProductFeatures(BaseModel):
     document_check_enabled: bool
-    legacy_document_editor_enabled: bool
 
 
 class CurrentUserResponse(BaseModel):

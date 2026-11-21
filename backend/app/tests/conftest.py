@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import get_db
-from app.documents.defaults import build_default_document
 from app.main import app
 from app.models.enums import RoleName
 from app.models.group import Group
@@ -19,8 +18,6 @@ from app.models.role import Role
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.teacher_group import TeacherGroup
-from app.models.template import Template
-from app.models.template_version import TemplateVersion
 from app.models.user import User
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
@@ -140,17 +137,6 @@ class OrgFixture:
         db.flush()
         db.add(TeacherGroup(teacher_id=self.teacher.id, group_id=self.group.id))
 
-        self.template = Template(organization_id=self.org.id, created_by_teacher_id=self.teacher.id, name="Test Template")
-        db.add(self.template)
-        db.flush()
-        default_document = build_default_document()
-        self.template_version = TemplateVersion(
-            template_id=self.template.id,
-            version_number=1,
-            document_data=default_document.model_dump(mode="json"),
-            is_published=True,
-        )
-        db.add(self.template_version)
         db.commit()
 
     def login(self, client: TestClient, email: str) -> str:

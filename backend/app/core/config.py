@@ -75,11 +75,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
     SEED_ON_START: bool = False
 
-    # Migration controls. Both default to on so deploying this additive phase
-    # cannot strand existing students before DOCX submission is available.
+    # Feature controls.
     DOCUMENT_CHECK_ENABLED: bool = True
     DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED: bool = False
-    LEGACY_DOCUMENT_EDITOR_ENABLED: bool = True
 
     REFRESH_COOKIE_NAME: str = "practiceflow_refresh"
     COOKIE_SECURE: bool = False
@@ -97,8 +95,6 @@ class Settings(BaseSettings):
     # production must use the same Redis service as the authentication limiter
     # so a second backend replica cannot bypass quotas or export slots.
     RESOURCE_GUARD_BACKEND: Literal["memory", "redis"] = "memory"
-    UPLOAD_MAX_FILE_BYTES: int = 5 * 1024 * 1024
-    # DOCX preflight limits are separate from editor image upload limits.
     DOCX_MAX_UPLOAD_BYTES: int = Field(default=20 * 1024 * 1024, gt=0)
     DOCX_MAX_ZIP_ENTRIES: int = Field(default=2048, gt=0)
     DOCX_MAX_UNCOMPRESSED_BYTES: int = Field(default=100 * 1024 * 1024, gt=0)
@@ -130,14 +126,6 @@ class Settings(BaseSettings):
     EXPORT_MAX_CONCURRENT_PER_USER: int = 1
     EXPORT_MAX_CONCURRENT_PER_ORGANIZATION: int = 3
     EXPORT_TIMEOUT_SECONDS: int = 45
-    EXPORT_QUEUE_BACKEND: Literal["memory", "redis"] = "memory"
-    EXPORT_JOB_RETENTION_SECONDS: int = 24 * 60 * 60
-    EXPORT_WORKER_LEASE_SECONDS: int = 75
-    EXPORT_WORKER_HARD_TIMEOUT_SECONDS: int = 45
-    EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS: int = 5
-    EXPORT_WORKER_REQUEUE_DELAY_SECONDS: int = 1
-    EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS: int = 15
-    EXPORT_WORKER_HEARTBEAT_TTL_SECONDS: int = 90
 
     MFA_TOTP_ENCRYPTION_KEY: str = _DEV_MFA_FERNET_KEY
     MFA_RECOVERY_CODE_PEPPER: str = _DEV_MFA_RECOVERY_PEPPER
@@ -241,8 +229,6 @@ class Settings(BaseSettings):
             raise ValueError("Production requires LOGIN_RATE_LIMIT_BACKEND=redis and REDIS_URL")
         if self.RESOURCE_GUARD_BACKEND != "redis" or not self.REDIS_URL:
             raise ValueError("Production requires RESOURCE_GUARD_BACKEND=redis and REDIS_URL")
-        if self.EXPORT_QUEUE_BACKEND != "redis" or not self.REDIS_URL:
-            raise ValueError("Production requires EXPORT_QUEUE_BACKEND=redis and REDIS_URL")
         if self.STORAGE_BACKEND != "s3":
             raise ValueError("Production requires STORAGE_BACKEND=s3; LocalStorage is development/test only")
         if not self.S3_VERIFY_TLS or not (self.S3_ENDPOINT_URL or "").startswith("https://"):
@@ -271,7 +257,6 @@ class Settings(BaseSettings):
         if self.MFA_CHALLENGE_EXPIRE_MINUTES <= 0 or self.MFA_MAX_ATTEMPTS <= 0 or self.MFA_RATE_LIMIT_ATTEMPTS <= 0 or self.MFA_RATE_LIMIT_WINDOW_SECONDS <= 0:
             raise ValueError("MFA expiry and rate-limit values must be positive")
         resource_limit_fields = (
-            "UPLOAD_MAX_FILE_BYTES",
             "UPLOAD_RATE_LIMIT_REQUESTS",
             "UPLOAD_RATE_LIMIT_WINDOW_SECONDS",
             "UPLOAD_USER_MAX_FILES",
@@ -286,13 +271,6 @@ class Settings(BaseSettings):
             "EXPORT_MAX_CONCURRENT_PER_USER",
             "EXPORT_MAX_CONCURRENT_PER_ORGANIZATION",
             "EXPORT_TIMEOUT_SECONDS",
-            "EXPORT_JOB_RETENTION_SECONDS",
-            "EXPORT_WORKER_LEASE_SECONDS",
-            "EXPORT_WORKER_HARD_TIMEOUT_SECONDS",
-            "EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS",
-            "EXPORT_WORKER_REQUEUE_DELAY_SECONDS",
-            "EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS",
-            "EXPORT_WORKER_HEARTBEAT_TTL_SECONDS",
             "DOCUMENT_CHECK_WORKER_POLL_SECONDS",
             "DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS",
             "DOCUMENT_CHECK_WORKER_LEASE_SECONDS",
@@ -317,10 +295,6 @@ class Settings(BaseSettings):
         missing_audit_fields = [field for field in audit_fields if field not in self.model_fields_set]
         if missing_audit_fields:
             raise ValueError("Production requires explicit audit retention settings: " + ", ".join(missing_audit_fields))
-        if self.EXPORT_WORKER_HARD_TIMEOUT_SECONDS > self.EXPORT_WORKER_LEASE_SECONDS:
-            raise ValueError("EXPORT_WORKER_LEASE_SECONDS must be at least EXPORT_WORKER_HARD_TIMEOUT_SECONDS")
-        if self.EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS >= self.EXPORT_WORKER_HEARTBEAT_TTL_SECONDS:
-            raise ValueError("EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS must be shorter than its TTL")
         if self.DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS >= self.DOCUMENT_CHECK_WORKER_LEASE_SECONDS:
             raise ValueError("DOCUMENT_CHECK_WORKER_LEASE_SECONDS must exceed the analyzer timeout")
         return self

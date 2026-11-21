@@ -23,7 +23,6 @@ def _production_settings(**overrides):
         "LOGIN_RATE_LIMIT_BACKEND": "redis",
         "REDIS_URL": "redis://redis:6379/0",
         "RESOURCE_GUARD_BACKEND": "redis",
-        "EXPORT_QUEUE_BACKEND": "redis",
         "STORAGE_BACKEND": "s3",
         "S3_ENDPOINT_URL": "https://objects.practice.example",
         "S3_BUCKET": "practiceflow-private",
@@ -32,7 +31,6 @@ def _production_settings(**overrides):
         "S3_SECRET_ACCESS_KEY": "production-secret-key",
         "S3_ADDRESSING_STYLE": "virtual",
         "S3_VERIFY_TLS": True,
-        "UPLOAD_MAX_FILE_BYTES": 5 * 1024 * 1024,
         "UPLOAD_RATE_LIMIT_REQUESTS": 20,
         "UPLOAD_RATE_LIMIT_WINDOW_SECONDS": 60,
         "UPLOAD_USER_MAX_FILES": 100,
@@ -47,13 +45,6 @@ def _production_settings(**overrides):
         "EXPORT_MAX_CONCURRENT_PER_USER": 1,
         "EXPORT_MAX_CONCURRENT_PER_ORGANIZATION": 3,
         "EXPORT_TIMEOUT_SECONDS": 45,
-        "EXPORT_JOB_RETENTION_SECONDS": 24 * 60 * 60,
-        "EXPORT_WORKER_LEASE_SECONDS": 75,
-        "EXPORT_WORKER_HARD_TIMEOUT_SECONDS": 45,
-        "EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS": 5,
-        "EXPORT_WORKER_REQUEUE_DELAY_SECONDS": 1,
-        "EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS": 15,
-        "EXPORT_WORKER_HEARTBEAT_TTL_SECONDS": 90,
         "DOCUMENT_CHECK_WORKER_POLL_SECONDS": 1,
         "DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS": 60,
         "DOCUMENT_CHECK_WORKER_LEASE_SECONDS": 120,
@@ -89,8 +80,6 @@ def test_production_rejects_seed_and_in_memory_rate_limit():
         _production_settings(LOGIN_RATE_LIMIT_BACKEND="memory")
     with pytest.raises(ValidationError, match="RESOURCE_GUARD_BACKEND"):
         _production_settings(RESOURCE_GUARD_BACKEND="memory")
-    with pytest.raises(ValidationError, match="EXPORT_QUEUE_BACKEND"):
-        _production_settings(EXPORT_QUEUE_BACKEND="memory")
 
 
 @pytest.mark.parametrize(
@@ -118,9 +107,7 @@ def test_secure_production_configuration_is_accepted():
     assert configured.COOKIE_SECURE is True
 
 
-def test_production_rejects_unsafe_worker_heartbeat_timing():
-    with pytest.raises(ValidationError, match="HEARTBEAT_INTERVAL"):
-        _production_settings(EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS=90)
+def test_production_rejects_unsafe_document_worker_timing():
     with pytest.raises(ValidationError, match="DOCUMENT_CHECK_WORKER_LEASE_SECONDS"):
         _production_settings(DOCUMENT_CHECK_WORKER_LEASE_SECONDS=60)
 

@@ -25,7 +25,7 @@ services:
     # redis:7-alpine
     image: redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
     restart: unless-stopped
-    # Security-critical rate-limit, quota, lease and queue keys must never be
+    # Security-critical rate-limit, quota and lease keys must never be
     # evicted. On exhaustion Redis returns an error and the application fails closed.
     command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "192mb", "--maxmemory-policy", "noeviction"]
     deploy:
@@ -75,15 +75,12 @@ services:
       SEED_ON_START: "false"
       DOCUMENT_CHECK_ENABLED: ${DOCUMENT_CHECK_ENABLED:-true}
       DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED: ${DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED:-false}
-      LEGACY_DOCUMENT_EDITOR_ENABLED: ${LEGACY_DOCUMENT_EDITOR_ENABLED:-true}
       COOKIE_SECURE: "true"
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       LOGIN_RATE_LIMIT_BACKEND: redis
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
-      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:?UPLOAD_MAX_FILE_BYTES is required}
       DOCX_MAX_UPLOAD_BYTES: ${DOCX_MAX_UPLOAD_BYTES:?DOCX_MAX_UPLOAD_BYTES is required}
       DOCX_MAX_ZIP_ENTRIES: ${DOCX_MAX_ZIP_ENTRIES:?DOCX_MAX_ZIP_ENTRIES is required}
       DOCX_MAX_UNCOMPRESSED_BYTES: ${DOCX_MAX_UNCOMPRESSED_BYTES:?DOCX_MAX_UNCOMPRESSED_BYTES is required}
@@ -112,13 +109,6 @@ services:
       EXPORT_MAX_CONCURRENT_PER_USER: ${EXPORT_MAX_CONCURRENT_PER_USER:?EXPORT_MAX_CONCURRENT_PER_USER is required}
       EXPORT_MAX_CONCURRENT_PER_ORGANIZATION: ${EXPORT_MAX_CONCURRENT_PER_ORGANIZATION:?EXPORT_MAX_CONCURRENT_PER_ORGANIZATION is required}
       EXPORT_TIMEOUT_SECONDS: ${EXPORT_TIMEOUT_SECONDS:?EXPORT_TIMEOUT_SECONDS is required}
-      EXPORT_JOB_RETENTION_SECONDS: ${EXPORT_JOB_RETENTION_SECONDS:?EXPORT_JOB_RETENTION_SECONDS is required}
-      EXPORT_WORKER_LEASE_SECONDS: ${EXPORT_WORKER_LEASE_SECONDS:?EXPORT_WORKER_LEASE_SECONDS is required}
-      EXPORT_WORKER_HARD_TIMEOUT_SECONDS: ${EXPORT_WORKER_HARD_TIMEOUT_SECONDS:?EXPORT_WORKER_HARD_TIMEOUT_SECONDS is required}
-      EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS: ${EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS:?EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS is required}
-      EXPORT_WORKER_REQUEUE_DELAY_SECONDS: ${EXPORT_WORKER_REQUEUE_DELAY_SECONDS:?EXPORT_WORKER_REQUEUE_DELAY_SECONDS is required}
-      EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS: ${EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS:?EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS is required}
-      EXPORT_WORKER_HEARTBEAT_TTL_SECONDS: ${EXPORT_WORKER_HEARTBEAT_TTL_SECONDS:?EXPORT_WORKER_HEARTBEAT_TTL_SECONDS is required}
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:?TRUSTED_PROXY_IPS is required}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
       STORAGE_BACKEND: s3
@@ -148,15 +138,13 @@ services:
       start_period: 30s
       retries: 3
 
-  export-worker:
+  document-check-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    # A worker requeues its claim on SIGTERM; this exceeds the renderer's
-    # 45-second hard timeout and gives Postgres/Redis time to remain reachable.
     stop_grace_period: 90s
-    command: ["python", "-m", "app.workers.export_worker"]
+    command: ["python", "-m", "app.workers.document_check_worker"]
     depends_on:
       backend:
         condition: service_healthy
@@ -189,8 +177,6 @@ services:
       LOGIN_RATE_LIMIT_BACKEND: redis
       REDIS_URL: redis://redis:6379/0
       RESOURCE_GUARD_BACKEND: redis
-      EXPORT_QUEUE_BACKEND: redis
-      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:?UPLOAD_MAX_FILE_BYTES is required}
       DOCX_MAX_UPLOAD_BYTES: ${DOCX_MAX_UPLOAD_BYTES:?DOCX_MAX_UPLOAD_BYTES is required}
       DOCX_MAX_ZIP_ENTRIES: ${DOCX_MAX_ZIP_ENTRIES:?DOCX_MAX_ZIP_ENTRIES is required}
       DOCX_MAX_UNCOMPRESSED_BYTES: ${DOCX_MAX_UNCOMPRESSED_BYTES:?DOCX_MAX_UNCOMPRESSED_BYTES is required}
@@ -210,13 +196,6 @@ services:
       EXPORT_MAX_CONCURRENT_PER_USER: ${EXPORT_MAX_CONCURRENT_PER_USER:?EXPORT_MAX_CONCURRENT_PER_USER is required}
       EXPORT_MAX_CONCURRENT_PER_ORGANIZATION: ${EXPORT_MAX_CONCURRENT_PER_ORGANIZATION:?EXPORT_MAX_CONCURRENT_PER_ORGANIZATION is required}
       EXPORT_TIMEOUT_SECONDS: ${EXPORT_TIMEOUT_SECONDS:?EXPORT_TIMEOUT_SECONDS is required}
-      EXPORT_JOB_RETENTION_SECONDS: ${EXPORT_JOB_RETENTION_SECONDS:?EXPORT_JOB_RETENTION_SECONDS is required}
-      EXPORT_WORKER_LEASE_SECONDS: ${EXPORT_WORKER_LEASE_SECONDS:?EXPORT_WORKER_LEASE_SECONDS is required}
-      EXPORT_WORKER_HARD_TIMEOUT_SECONDS: ${EXPORT_WORKER_HARD_TIMEOUT_SECONDS:?EXPORT_WORKER_HARD_TIMEOUT_SECONDS is required}
-      EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS: ${EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS:?EXPORT_WORKER_QUEUE_TIMEOUT_SECONDS is required}
-      EXPORT_WORKER_REQUEUE_DELAY_SECONDS: ${EXPORT_WORKER_REQUEUE_DELAY_SECONDS:?EXPORT_WORKER_REQUEUE_DELAY_SECONDS is required}
-      EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS: ${EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS:?EXPORT_WORKER_HEARTBEAT_INTERVAL_SECONDS is required}
-      EXPORT_WORKER_HEARTBEAT_TTL_SECONDS: ${EXPORT_WORKER_HEARTBEAT_TTL_SECONDS:?EXPORT_WORKER_HEARTBEAT_TTL_SECONDS is required}
       DOCUMENT_CHECK_WORKER_POLL_SECONDS: ${DOCUMENT_CHECK_WORKER_POLL_SECONDS:?DOCUMENT_CHECK_WORKER_POLL_SECONDS is required}
       DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS: ${DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS:?DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS is required}
       DOCUMENT_CHECK_WORKER_LEASE_SECONDS: ${DOCUMENT_CHECK_WORKER_LEASE_SECONDS:?DOCUMENT_CHECK_WORKER_LEASE_SECONDS is required}
@@ -244,18 +223,6 @@ services:
       resources:
         limits: { cpus: "1.00", memory: 1G }
         reservations: { cpus: "0.50", memory: 512M }
-    healthcheck:
-      test: ["CMD", "python", "-m", "app.workers.export_worker", "--check"]
-      interval: 30s
-      timeout: 5s
-      start_period: 30s
-      retries: 3
-
-  document-check-worker:
-    extends:
-      service: export-worker
-    stop_grace_period: 90s
-    command: ["python", "-m", "app.workers.document_check_worker"]
     healthcheck:
       test: ["CMD", "python", "-m", "app.workers.document_check_worker", "--check"]
       interval: 30s
