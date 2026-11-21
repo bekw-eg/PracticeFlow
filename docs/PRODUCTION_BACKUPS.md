@@ -19,8 +19,8 @@ Each encrypted restic snapshot contains only `database.dump`, numbered object
 payloads, `manifest.json` and `manifest.sha256`. The manifest includes UTC time,
 format/installation IDs, source identity hashes, PostgreSQL/schema versions,
 application image digests, object keys/versions/content types/metadata, every
-artifact's SHA-256 and byte size, and database file references from `files`,
-successful `export_jobs`, generated `group_review_reports`, student/teacher DOCX
+artifact's SHA-256 and byte size, and database file references from
+generated `group_review_reports`, student/teacher DOCX
 submissions whose originals remain retained, and teaching material objects whose
 storage deletion has not completed. Stored DB digests are also compared. A missing referenced object
 or incorrect size fails the backup; resolve pending deletion inconsistencies
@@ -47,7 +47,7 @@ The consistency procedure is a maintenance window:
    Restic also uses its own repository locks. Manual calls and the timer must
    share the same state directory and installation ID.
 3. Record exact running container IDs in a private restart journal. Stop all API
-   replicas first, then `export-worker`, `document-check-worker` and every other
+   replicas first, then `document-check-worker` and every other
    running application service in this Compose project, allowing 120 seconds
    per container. Only PostgreSQL, Redis, frontend and Caddy are exempt. Unknown
    writers without matching DB/S3 configuration cause a refusal. Containers
@@ -240,12 +240,12 @@ restic data: it can invalidate retained snapshots.
    DB role ownership/grants separately from the escrow; no role passwords are
    archived. Use the PostgreSQL major version and application image/schema
    recorded in the manifest. Do not run a newer incompatible migration blindly.
-5. Start the matching application image and workers privately, with original
+5. Start the matching application image and worker privately, with original
    MFA/audit keys, seed disabled, fresh Redis and outbound notifications disabled.
-   Check readiness and both worker heartbeats; log in as an authorized drill
-   account, download a known image via `/api/v1/files/{id}`, compare its bytes,
-   open its report document and generate/download a DOCX containing its media.
-   Test MFA/audit and any required PDF/PPTX/material paths separately for the
+   Check readiness; log in as an authorized drill
+   account, download a known teaching material and teacher DOCX submission, compare their bytes,
+   and run a teacher DOCX check through `document-check-worker`.
+   Test MFA/audit and any required PPTX/material paths separately for the
    installation. Only then consider an approved traffic cutover.
 6. A failure after object creation leaves a partial target intentionally. Do
    not rerun against it or auto-delete it: provision another empty bucket/DB.
@@ -272,11 +272,12 @@ UUID namespaces were unused before creation and removes only those projects
 and volumes. Generic failure diagnostics deliberately do not dump app logs.
 
 The drill checks real custom dump/restore, all current objects including an
-orphan, hashes, authenticated image download, report reference, DOCX embedded
-image, API and **both workers** resuming after success and missing-object
-failure, wrong repository refusal, nonempty/source restore refusal, removal
-of an expired owned snapshot, preservation of an unrelated snapshot, anonymous
-object access denial and a full `restic check --read-data`.
+orphan, hashes, authenticated teaching material download, teacher DOCX submission
+original, `document-check-worker` job completion, API and worker resuming after
+success and missing-object failure, wrong repository refusal, nonempty/source
+restore refusal, removal of an expired owned snapshot, preservation of an
+unrelated snapshot, anonymous object access denial and a full
+`restic check --read-data`.
 
 Each successful run prints measured `pause_seconds`, `total_seconds`, dump/object
 byte counts, `restore_seconds`, application verification time and total recovery

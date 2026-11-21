@@ -11,7 +11,7 @@ collector remain deployment responsibilities.
 | Service | Small Compose limit / reservation | Purpose |
 | --- | --- | --- |
 | backend | 0.75 CPU / 768 MiB; 0.25 CPU / 384 MiB | One API replica in the supplied Compose deployment |
-| export-worker | 1 CPU / 1 GiB; 0.5 CPU / 512 MiB | One renderer child at a time |
+| document-check-worker | 0.75 CPU / 768 MiB; 0.25 CPU / 384 MiB | One analyzer child at a time |
 | PostgreSQL | 1 CPU / 1 GiB; 0.5 CPU / 512 MiB | `max_connections=80` |
 | Redis | 0.5 CPU / 256 MiB; 0.25 CPU / 128 MiB | `maxmemory 192mb`, `noeviction` |
 | frontend Nginx | 0.25 CPU / 128 MiB; 0.1 CPU / 64 MiB | Static assets and internal proxy |

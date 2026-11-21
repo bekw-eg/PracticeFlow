@@ -1,8 +1,6 @@
 # PracticeFlow — Phase 2.1
 
-Дата проверки: 2026-09-07. Реализация добавлена поверх незакоммиченных Phase 1/1.5.
-Старые миграции и legacy editor, templates, reports, comments, export worker сохранены.
-`LEGACY_DOCUMENT_EDITOR_ENABLED` по умолчанию остаётся `true`.
+Дата проверки: 2026-09-07 (исторический отчёт этапа 2.1; сценарий редактора отчётов по шаблону и `LEGACY_DOCUMENT_EDITOR_ENABLED` впоследствии удалены в миграции `9b0c1d2e3f4a`).
 
 ## Реализовано
 

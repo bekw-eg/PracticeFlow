@@ -71,20 +71,18 @@ for lost-acknowledgement orphan handling and migration rollback.
 - For a provider outage, apply the owner-approved RTO/communication plan; the
   repository does not provide multi-region S3 failover.
 
-## Worker or export failure
+## Worker or document-check failure
 
-1. Check `export-worker` healthcheck, heartbeat age, queue depth, terminal job
-   transitions, renderer CPU/RAM and Redis/PostgreSQL/S3 dependency state.
+1. Check `document-check-worker` healthcheck, job status transitions, analyzer CPU/RAM and PostgreSQL/S3 dependency state.
 2. Confirm the worker has a graceful stop window. Restart only the intended
    production worker service through the approved deployment command; do not
    stop PostgreSQL, Redis or unrelated projects.
-3. On startup, the worker requeues queued and expired-lease running jobs.
+3. On startup, the worker recovers queued and expired-lease processing jobs.
    PostgreSQL claims prevent duplicate completion; inspect job state before
    manually retrying any job.
-4. For timeout/cancel patterns, reproduce using sanitized test data in an
-   isolated environment before raising rendering timeouts or concurrency.
-5. Escalate when stale leases do not recover, artifacts are missing after a
-   claimed success, or a cross-tenant access concern exists.
+4. For timeout patterns, reproduce using sanitized test data in an
+   isolated environment before raising analysis timeouts or concurrency.
+5. Escalate when stale leases do not recover or a cross-tenant access concern exists.
 
 ## Alert response
 

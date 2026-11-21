@@ -21,9 +21,8 @@ and does not release quota. Active checks block the operation.
 
 | Data | Current behavior | Owner decision still required |
 | --- | --- | --- |
-| Original uploaded images | No repository-wide automatic deletion period is configured. Objects remain while their authorized application record remains. | Legal basis, user deletion workflow, lifecycle/versioning and hold policy |
 | Teacher original DOCX | Owner can archive or request original removal; removal keeps immutable submission metadata and check history, and is retryable if storage is unavailable. | Legal hold, recovery window and whether retained excerpts/index text meet policy |
-| Completed export artifact and terminal job | `EXPORT_JOB_RETENTION_SECONDS=86400` (24 hours) in the production example; worker cleanup removes expired terminal artifact/job state. | Whether 24 hours meets business/legal needs; export archival and incident hold procedure |
+| Teaching materials | Owner can archive discipline/topic or delete a material; deletion commits a tombstone before removing the private object, and is retryable if storage is unavailable. | Curriculum retention policy and legal hold procedure |
 | Audit trail | `AUDIT_RETENTION_DAYS=365`; cleanup creates a retention checkpoint for the remaining application hash chain. | Required duration, legal hold, archive destination, access review and evidence policy |
 | PostgreSQL backup | Coordinated production DB/S3 workflow provides a daily systemd timer template, encrypted off-site restic storage, checksums and configurable retention (30 days, minimum seven copies). Deployment is not yet verified. | Actual vault/credentials, maintenance window, alerting, approved retention and production restore drill |
 | S3-compatible objects | All current objects join the coordinated backup. Provider versioning/replication/object lock and historic versions remain external. | Provider policy, independent failure domain, lifecycle, key management and production restore tests |
