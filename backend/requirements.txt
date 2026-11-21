@@ -4,16 +4,13 @@ annotated-types==0.8.0
 anyio==4.14.2
 bcrypt==5.0.0
 boto3==1.43.114
-brotli==1.2.1
 certifi==2026.10.19
 cffi==2.1.1
 click==8.4.2
 cryptography==50.0.1
-cssselect2==0.9.0
 dnspython==2.9.2
 email-validator==2.3.0
 fastapi==0.141.1
-fonttools==4.63.0
 greenlet==3.5.5
 h11==0.16.0
 httpcore==1.0.9
@@ -33,10 +30,8 @@ pycparser==3.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 pydantic_core==2.46.5
-pydyf==0.12.1
 Pygments==2.21.0
 PyJWT==2.15.0
-pyphen==0.18.1
 pytest==9.1.1
 redis==6.4.0
 sentry-sdk==2.68.1
@@ -47,14 +42,9 @@ qrcode==8.2
 PyYAML==6.0.3
 SQLAlchemy==2.0.52
 starlette==1.6.0
-tinycss2==1.5.1
-tinyhtml5==2.1.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 uvicorn==0.52.4
 uvloop==0.22.1; sys_platform != "win32"
 watchfiles==1.2.0
-weasyprint==70.0
-webencodings==0.6.1
 websockets==17.2
-zopfli==0.4.3

@@ -7,23 +7,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Native libraries required by WeasyPrint for production-quality PDF exports.
+# Fonts and utilities retained for document checks.
 RUN apk upgrade --no-cache && apk add --no-cache \
-    cairo \
     libffi \
-    gdk-pixbuf \
-    pango \
     fontconfig \
     font-dejavu \
     font-noto \
     openssl \
     poppler-utils \
-    shared-mime-info \
     && fc-cache -f
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -c "from weasyprint import HTML; assert HTML(string='<p>PDF rendering smoke test</p>').write_pdf().startswith(b'%PDF-')"
 
 # Preserve the previous Debian image's UID/GID for existing storage volumes.
 RUN addgroup -S -g 101 practiceflow && adduser -S -u 100 -G practiceflow -h /app practiceflow
