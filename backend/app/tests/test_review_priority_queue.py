@@ -3,6 +3,7 @@ import json
 import uuid
 from datetime import UTC, datetime
 
+from app.core.config import settings
 from app.models.document_check import DocumentCheckJob, LocalPlagiarismRun
 from app.models.enums import CheckRuleSeverity, DocumentCheckJobStatus
 from app.services.document_analyzer import ANALYZER_VERSION, AnalyzerFinding, AnalyzerRule
@@ -120,7 +121,9 @@ def test_priority_queue_ordering_pinned_job_and_no_content(client, db, setup_gro
     assert str(claimed_waiting.id) == waiting_sub["job"]["id"]
     claimed_failed = job_svc.claim_next("worker-1")
     assert str(claimed_failed.id) == failed_sub["job"]["id"]
-    assert job_svc.fail(claimed_failed.id, "worker-1", "CHECK_ANALYSIS_FAILED", "Boom")
+    claimed_failed.attempt_count = settings.DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS
+    db.commit()
+    assert job_svc.retry_or_fail(claimed_failed.id, "worker-1", "CHECK_ANALYSIS_FAILED") == DocumentCheckJobStatus.FAILED
 
     # 3. GREEN (0 errors, 0 warnings, similarity 5%)
     green_sub = accepted(client, setup_group, student_label="Green Student", work_title="G1")
