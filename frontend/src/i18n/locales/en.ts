@@ -247,7 +247,27 @@ export const en = {
       "completingRun": "Run #{number} will be confirmed.",
       "resultRequired": "Open the remarks tab and wait for a completed analysis result to load.",
       "pinnedResult": "The summary uses the saved run. Later technical checks do not replace it.",
-      "showReviewedRun": "Show confirmed run"
+      "showReviewedRun": "Show confirmed run",
+      "priorityQueue": {
+        "title": "Priority queue",
+        "hint": "Sorted from most problematic works: unreviewed by teacher first (Failed → Red → Yellow → Waiting → Green). Local similarity is computed only against works already uploaded in the system: a low percentage or 'Clean' does not rule out external borrowing.",
+        "empty": "No works in this group for the priority queue yet.",
+        "level": "Priority",
+        "errors": "Errors (ERROR)",
+        "warnings": "Warnings",
+        "density": "Per 100 paragraphs",
+        "densityUnknown": "Density unknown",
+        "similarity": "Local similarity",
+        "notReviewedByTeacher": "Not yet reviewed by teacher",
+        "reviewedByTeacher": "Reviewed by teacher",
+        "levels": {
+          "FAILED": "Analysis failed",
+          "RED": "High priority",
+          "YELLOW": "Has issues",
+          "WAITING": "In progress",
+          "GREEN": "Clean"
+        }
+      }
 },
     ...documentRuleTextsEn,
     featureUnavailable: "Document checks are currently unavailable",

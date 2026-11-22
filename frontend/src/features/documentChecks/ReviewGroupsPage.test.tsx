@@ -23,6 +23,24 @@ const submission: TeacherDocumentSubmission = {
 };
 const summary = { total_works: 30, pending_works: 26, reviewed_works: 4, included_works: 4, truncated_works: 0,
   violations: [{ rule_type: "PAGE_FORMAT_MARGINS", violations_count: 10, works_count: 1 }] };
+const priorityQueue = [
+  {
+    submission_id: "doc-1", student_label: "Алия", work_title: "Базы данных", work_type: "COURSEWORK",
+    submitted_at: "2026-01-01T00:00:00Z", is_reviewed_by_teacher: false, completed_at: null,
+    evaluated_job_id: "run-1", job_status: "COMPLETED", priority_level: "RED", reasons: ["HIGH_ERROR_DENSITY"],
+    error_count: 20, warning_count: 5, findings_count: 25, findings_truncated: false, paragraph_count: 100,
+    density_unknown: false, errors_per_100_paragraphs: 20, issues_per_100_paragraphs: 25,
+    similarity_percent: 34.5, similarity_status: "COMPLETED",
+  },
+  {
+    submission_id: "doc-2", student_label: "Болат", work_title: "Отчёт", work_type: "REPORT",
+    submitted_at: "2026-01-02T00:00:00Z", is_reviewed_by_teacher: true, completed_at: "2026-01-02T01:00:00Z",
+    evaluated_job_id: "run-2", job_status: "COMPLETED", priority_level: "GREEN", reasons: [],
+    error_count: 0, warning_count: 0, findings_count: 0, findings_truncated: false, paragraph_count: null,
+    density_unknown: true, errors_per_100_paragraphs: null, issues_per_100_paragraphs: null,
+    similarity_percent: null, similarity_status: null,
+  },
+];
 const profile = { id: "p1", name: "Стандарт", versions: [{ id: "v1", state: "PUBLISHED", executable_rule_count: 1, version_number: 1 }] };
 const clients: QueryClient[] = [];
 function paged(items: unknown[], total = items.length, offset = 0) {
@@ -41,6 +59,7 @@ function mockGroup() {
     const path = String(url);
     if (path === `${base}/group-1`) return { data: group } as never;
     if (path === `${base}/group-1/summary`) return { data: summary } as never;
+    if (path.includes("/priority-queue")) return paged(priorityQueue);
     if (path.startsWith(`${base}/group-1/reports`)) return paged([]);
     if (path.includes("/works")) return paged([submission], 30, Number(new URL(path, "http://test").searchParams.get("offset")));
     if (path.startsWith("/check-profiles")) return paged([profile]);
@@ -151,4 +170,21 @@ it("requires a loaded completed result and makes the pinned review available aft
   expect(screen.getByLabelText("Замечания преподавателя")).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Показать подтверждённый запуск" }));
   expect(show).toHaveBeenCalledWith("old-run");
+});
+
+it.each([
+  ["ru", "Очередь приоритета", "Высокий приоритет", "Ещё не проверена преподавателем", "Проверена преподавателем", "Плотность неизвестна", /уже загруженным в систему/i],
+  ["kk", "Басымдық кезегі", "Жоғары басымдық", "Оқытушы әлі тексермеген", "Оқытушы тексерген", "Тығыздық белгісіз", /жүйеге жүктелген жұмыстар/i],
+  ["en", "Priority queue", "High priority", "Not yet reviewed by teacher", "Reviewed by teacher", "Density unknown", /already uploaded in the system/i],
+] as const)("renders priority queue with text labels and similarity disclaimer in %s", async (locale, heading, redLabel, unreviewedText, reviewedText, unknownText, disclaimer) => {
+  await changeLocale(locale);
+  mockGroup();
+  setup();
+  const region = await screen.findByRole("region", { name: heading });
+  expect(await within(region).findByText(redLabel)).toBeVisible();
+  expect(within(region).getByText(unreviewedText)).toBeVisible();
+  expect(within(region).getByText(reviewedText)).toBeVisible();
+  expect(within(region).getByText(unknownText)).toBeVisible();
+  expect(within(region).getByText(disclaimer)).toBeVisible();
+  expect(within(region).getByText(/34[.,]5%/)).toBeVisible();
 });

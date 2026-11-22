@@ -12,7 +12,7 @@ from lxml import etree
 
 from app.models.enums import CheckRuleSeverity, CheckRuleType, EXECUTABLE_CHECK_RULE_TYPES
 
-ANALYZER_VERSION = "phase-2.5.0"
+ANALYZER_VERSION = "phase-2.6.0"
 FINDING_SCHEMA_VERSION = 1
 SUPPORTED_RULE_TYPES = EXECUTABLE_CHECK_RULE_TYPES
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -328,11 +328,21 @@ class DocumentAnalyzer:
                 self._paragraphs(rule, document, resolver, body_scope)
             elif rule.rule_type == CheckRuleType.HEADINGS:
                 self._headings(rule, document, resolver, scope)
+        paragraph_count = 0
+        for index, paragraph in enumerate(document.findall(".//w:p", NS), 1):
+            if paragraph not in scope.paragraphs:
+                continue
+            if not "".join(node.text or "" for node in paragraph.findall(".//w:t", NS) if node in scope.texts).strip():
+                continue
+            if self.page_exclusions.included_pages({"paragraph_index": index}) == []:
+                continue
+            paragraph_count += 1
         summary = {
             "analyzer_version": ANALYZER_VERSION,
             "rules_total": len(rules), "rules_evaluated": evaluated, "rules_skipped": skipped,
             "findings_count": len(self.findings), "findings_truncated": self.truncated,
             "first_page_exclusion": scope.status,
+            "paragraph_count": paragraph_count,
         }
         if self.page_exclusions.excluded:
             summary["excluded_pages"] = sorted(self.page_exclusions.excluded)

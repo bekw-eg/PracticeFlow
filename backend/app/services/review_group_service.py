@@ -1,13 +1,16 @@
 """Server-scoped review folders and whole-group aggregation of pinned runs."""
+from collections import defaultdict
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import and_, func, select
+from sqlalchemy.orm import selectinload
 
 from app.models.document_check import DocumentCheckFinding, DocumentCheckJob, TeacherDocumentSubmission
-from app.models.enums import AuditEventType, DocumentCheckJobStatus
+from app.models.enums import AuditEventType, CheckRuleSeverity, DocumentCheckJobStatus
 from app.models.review_group import ReviewGroup, TeacherDocumentReview
 from app.services.audit_service import AuditService
+from app.services.review_priority import assess_priority, priority_sort_key
 from app.services.teacher_document_submission_service import TeacherDocumentSubmissionService
 
 
@@ -92,6 +95,110 @@ class ReviewGroupService:
         return {"total_works": total, "pending_works": total - reviewed_count, "reviewed_works": reviewed_count,
                 "included_works": included_count, "truncated_works": truncated,
                 "violations": [dict(row._mapping) for row in counts]}
+
+    def priority_queue(self, ctx, group_id, offset, limit):
+        submissions = list(self.db.scalars(
+            self.works_query(ctx, group_id).options(
+                selectinload(TeacherDocumentSubmission.teacher_review),
+                selectinload(TeacherDocumentSubmission.jobs).selectinload(DocumentCheckJob.plagiarism_run),
+            )
+        ))
+        evaluated_by_submission = {}
+        completed_job_ids = []
+        for submission in submissions:
+            review = submission.teacher_review
+            if review is not None and review.completed_at is not None and review.completed_job_id is not None:
+                job = next((item for item in submission.jobs if item.id == review.completed_job_id), None)
+            else:
+                job = submission.latest_completed_job or (submission.jobs[0] if submission.jobs else None)
+            evaluated_by_submission[submission.id] = job
+            if job is not None and job.status == DocumentCheckJobStatus.COMPLETED:
+                completed_job_ids.append(job.id)
+
+        counts_by_job: dict = defaultdict(dict)
+        if completed_job_ids:
+            rows = self.db.execute(
+                select(
+                    DocumentCheckFinding.job_id,
+                    DocumentCheckFinding.severity,
+                    func.count().label("cnt"),
+                )
+                .where(
+                    DocumentCheckFinding.organization_id == ctx.organization_id,
+                    DocumentCheckFinding.job_id.in_(completed_job_ids),
+                    DocumentCheckFinding.severity.in_([CheckRuleSeverity.ERROR, CheckRuleSeverity.WARNING]),
+                )
+                .group_by(DocumentCheckFinding.job_id, DocumentCheckFinding.severity)
+            ).all()
+            for job_id, severity, cnt in rows:
+                counts_by_job[job_id][severity] = cnt
+
+        scored = []
+        for submission in submissions:
+            review = submission.teacher_review
+            is_reviewed = review is not None and review.completed_at is not None
+            job = evaluated_by_submission[submission.id]
+            job_status = job.status if job is not None else DocumentCheckJobStatus.QUEUED
+            is_completed = job is not None and job.status == DocumentCheckJobStatus.COMPLETED
+            summary = (job.result_summary or {}) if is_completed else {}
+            error_count = counts_by_job[job.id].get(CheckRuleSeverity.ERROR, 0) if is_completed else 0
+            warning_count = counts_by_job[job.id].get(CheckRuleSeverity.WARNING, 0) if is_completed else 0
+            findings_truncated = bool(summary.get("findings_truncated", False)) if is_completed else False
+            findings_count = summary.get("findings_count") if is_completed else None
+            paragraph_count = summary.get("paragraph_count") if is_completed else None
+            plagiarism_run = job.plagiarism_run if is_completed else None
+            similarity_status = plagiarism_run.status if plagiarism_run is not None else None
+            similarity_percent = (
+                float(plagiarism_run.similarity_percent)
+                if plagiarism_run is not None and plagiarism_run.status == DocumentCheckJobStatus.COMPLETED
+                else None
+            )
+            assessment = assess_priority(
+                job_status=job_status,
+                error_count=error_count,
+                warning_count=warning_count,
+                findings_truncated=findings_truncated,
+                paragraph_count=paragraph_count,
+                similarity_percent=similarity_percent,
+            )
+            item = {
+                "submission_id": submission.id,
+                "student_label": submission.student_label,
+                "work_title": submission.work_title,
+                "work_type": submission.work_type,
+                "submitted_at": submission.submitted_at,
+                "is_reviewed_by_teacher": is_reviewed,
+                "completed_at": review.completed_at if review is not None else None,
+                "evaluated_job_id": job.id if job is not None else None,
+                "job_status": job_status,
+                "priority_level": assessment.level,
+                "reasons": list(assessment.reasons),
+                "error_count": error_count,
+                "warning_count": warning_count,
+                "findings_count": findings_count,
+                "findings_truncated": findings_truncated,
+                "paragraph_count": paragraph_count,
+                "density_unknown": assessment.density_unknown,
+                "errors_per_100_paragraphs": assessment.errors_per_100_paragraphs,
+                "issues_per_100_paragraphs": assessment.issues_per_100_paragraphs,
+                "similarity_percent": similarity_percent,
+                "similarity_status": similarity_status,
+            }
+            key = priority_sort_key(
+                is_reviewed_by_teacher=is_reviewed,
+                level=assessment.level,
+                similarity_percent=similarity_percent,
+                error_count=error_count,
+                warning_count=warning_count,
+                submitted_at=submission.submitted_at,
+                submission_id=submission.id,
+            )
+            scored.append((key, item))
+
+        scored.sort(key=lambda pair: pair[0])
+        ordered = [item for _, item in scored]
+        total = len(ordered)
+        return ordered[offset : offset + limit], total
 
 
 class TeacherReviewService:

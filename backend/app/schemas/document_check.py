@@ -299,6 +299,7 @@ class DocumentCheckResultSummaryOut(BaseModel):
     findings_truncated: bool
     first_page_exclusion: Literal["APPLIED", "BOUNDARY_UNKNOWN", "NO_CONTENT"] | None = None
     excluded_pages: list[int] = Field(default_factory=list, max_length=2000)
+    paragraph_count: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_counts(self) -> DocumentCheckResultSummaryOut:

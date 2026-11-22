@@ -7,7 +7,10 @@ import { PaginationControls } from "../../components/ui/PaginationControls";
 import { useLocaleFormatters } from "../../i18n/formatters";
 import { DocumentChecksGate } from "./DocumentChecksGate";
 import { TeacherDocumentUpload } from "./TeacherDocumentUpload";
-import { useGroupSummary, useGroupWorks, useReviewGroup, useReviewGroups, useSaveReviewGroup, type ReviewGroup } from "./reviewGroupApi";
+import {
+  useGroupPriorityQueue, useGroupSummary, useGroupWorks, useReviewGroup, useReviewGroups, useSaveReviewGroup,
+  type PriorityLevel, type ReviewGroup,
+} from "./reviewGroupApi";
 
 function GroupForm({ group, onSaved }: { group?: ReviewGroup; onSaved?: (group: ReviewGroup) => void }) {
   const { t } = useTranslation(["documentChecks", "common"]);
@@ -56,6 +59,72 @@ export function ReviewGroupPage() {
   const { groupId = "" } = useParams();
   return <DocumentChecksGate><ReviewGroupDetail key={groupId} id={groupId} /></DocumentChecksGate>;
 }
+const PRIORITY_BADGE_CLASSES: Record<PriorityLevel, string> = {
+  FAILED: "border-rose-300 bg-rose-100 text-rose-950",
+  RED: "border-red-300 bg-red-100 text-red-900",
+  YELLOW: "border-amber-300 bg-amber-100 text-amber-900",
+  WAITING: "border-slate-300 bg-slate-100 text-slate-800",
+  GREEN: "border-emerald-300 bg-emerald-100 text-emerald-900",
+};
+
+function PriorityQueuePanel({ groupId }: { groupId: string }) {
+  const { t } = useTranslation("documentChecks");
+  const { formatNumber } = useLocaleFormatters();
+  const [queueOffset, setQueueOffset] = useState(0);
+  const queue = useGroupPriorityQueue(groupId, queueOffset);
+  return <section className="section-panel mb-5 overflow-hidden" aria-labelledby="priority-queue-heading">
+    <div className="section-heading">
+      <h2 id="priority-queue-heading" className="font-bold">{t("reviewGroups.priorityQueue.title")}</h2>
+      <p className="mt-1 text-xs text-[var(--color-muted)]">{t("reviewGroups.priorityQueue.hint")}</p>
+    </div>
+    {queue.isLoading && <LoadingState label={t("loadingChecks")} />}
+    {queue.isError && <ErrorState error={queue.error} onRetry={() => void queue.refetch()} />}
+    {queue.data && <>
+      {!queue.data.items.length ? <p className="p-5 text-sm">{t("reviewGroups.priorityQueue.empty")}</p> : <div className="overflow-x-auto"><table className="table-base responsive-table">
+        <thead><tr>
+          <th className="px-4 py-3">{t("reviewGroups.priorityQueue.level")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.student")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.workTitle")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.teacherReview")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.priorityQueue.errors")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.priorityQueue.warnings")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.priorityQueue.density")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.priorityQueue.similarity")}</th>
+          <th className="px-4 py-3">{t("reviewGroups.open")}</th>
+        </tr></thead>
+        <tbody>{queue.data.items.map(item => <tr key={item.submission_id}>
+          <td data-label={t("reviewGroups.priorityQueue.level")} className="p-4">
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PRIORITY_BADGE_CLASSES[item.priority_level]}`}>
+              {t(`reviewGroups.priorityQueue.levels.${item.priority_level}`)}
+            </span>
+          </td>
+          <td data-label={t("reviewGroups.student")} className="p-4">{item.student_label ?? "—"}</td>
+          <td data-label={t("reviewGroups.workTitle")} className="p-4 font-semibold">{item.work_title ?? "—"}</td>
+          <td data-label={t("reviewGroups.teacherReview")} className="p-4 text-sm">
+            {t(item.is_reviewed_by_teacher ? "reviewGroups.priorityQueue.reviewedByTeacher" : "reviewGroups.priorityQueue.notReviewedByTeacher")}
+          </td>
+          <td data-label={t("reviewGroups.priorityQueue.errors")} className="p-4">{item.job_status === "COMPLETED" ? formatNumber(item.error_count) : "—"}</td>
+          <td data-label={t("reviewGroups.priorityQueue.warnings")} className="p-4">{item.job_status === "COMPLETED" ? formatNumber(item.warning_count) : "—"}</td>
+          <td data-label={t("reviewGroups.priorityQueue.density")} className="p-4 text-sm">
+            {item.density_unknown
+              ? t("reviewGroups.priorityQueue.densityUnknown")
+              : `${formatNumber(item.errors_per_100_paragraphs ?? 0)} / ${formatNumber(item.issues_per_100_paragraphs ?? 0)}`}
+          </td>
+          <td data-label={t("reviewGroups.priorityQueue.similarity")} className="p-4">
+            {item.similarity_percent !== null ? `${formatNumber(item.similarity_percent)}%` : "—"}
+          </td>
+          <td data-label={t("reviewGroups.open")} className="p-4">
+            <Link className="btn btn-secondary whitespace-nowrap" to={`/document-checks/${item.submission_id}`}>{t("reviewGroups.open")}</Link>
+          </td>
+        </tr>)}</tbody>
+      </table></div>}
+      <div className="border-t border-[var(--color-border)] p-4">
+        <PaginationControls pagination={queue.data} onPageChange={setQueueOffset} isFetching={queue.isFetching} label={t("reviewGroups.priorityQueue.title")} />
+      </div>
+    </>}
+  </section>;
+}
+
 function ReviewGroupDetail({ id }: { id: string }) {
   const { t } = useTranslation("documentChecks");
   const { formatDateTime, formatNumber } = useLocaleFormatters();
@@ -87,6 +156,7 @@ function ReviewGroupDetail({ id }: { id: string }) {
       </section>
     </>}
     {summary.data && <GroupReportPanel groupId={id} includedWorks={summary.data.included_works} />}
+    <PriorityQueuePanel groupId={id} />
     <TeacherDocumentUpload groupId={id} />
     <section className="section-panel overflow-hidden">
       <div className="section-heading flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{t("reviewGroups.works")}</h2>

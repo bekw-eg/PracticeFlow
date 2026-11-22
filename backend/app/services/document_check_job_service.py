@@ -125,12 +125,14 @@ class DocumentCheckJobService:
             "analyzer_version", "rules_total", "rules_evaluated", "rules_skipped",
             "findings_count", "findings_truncated",
         }
-        if not required_summary <= set(summary) or set(summary) - required_summary - {"first_page_exclusion", "excluded_pages"}:
+        if not required_summary <= set(summary) or set(summary) - required_summary - {"first_page_exclusion", "excluded_pages", "paragraph_count"}:
             raise ValueError("Invalid analyzer result summary")
         counts = [summary[key] for key in ("rules_total", "rules_evaluated", "rules_skipped", "findings_count")]
+        paragraph_count = summary.get("paragraph_count")
         if (
             summary["analyzer_version"] != ANALYZER_VERSION
             or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts)
+            or (paragraph_count is not None and (isinstance(paragraph_count, bool) or not isinstance(paragraph_count, int) or paragraph_count < 0))
             or summary["rules_total"] != summary["rules_evaluated"] + summary["rules_skipped"]
             or summary["findings_count"] != len(findings)
             or len(findings) > settings.DOCUMENT_CHECK_MAX_FINDINGS

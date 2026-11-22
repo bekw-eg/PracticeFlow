@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
 from app.schemas.document_check import TeacherDocumentSubmissionOut
 from app.schemas.review_group import (
-    ReviewGroupOut, ReviewGroupSummary, ReviewGroupWrite, ReviewStatus,
+    PriorityQueueItemOut, ReviewGroupOut, ReviewGroupSummary, ReviewGroupWrite, ReviewStatus,
     TeacherReviewComplete, TeacherReviewOut, TeacherReviewWrite,
 )
 from app.api.v1.group_review_reports import router as group_reports_router
@@ -58,6 +58,14 @@ def list_works(group_id: uuid.UUID, response: Response, review_status: ReviewSta
 @router.get("/groups/{group_id}/summary", response_model=ReviewGroupSummary)
 def group_summary(group_id: uuid.UUID, ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)):
     return ReviewGroupService(db).summary(ctx, group_id)
+
+
+@router.get("/groups/{group_id}/priority-queue", response_model=list[PriorityQueueItemOut])
+def group_priority_queue(group_id: uuid.UUID, response: Response, page: PaginationParams = Depends(),
+                         ctx: RequestContext = Depends(get_current_context), db: Session = Depends(get_db)):
+    items, total = ReviewGroupService(db).priority_queue(ctx, group_id, page.offset, page.limit)
+    set_pagination_headers(response, page, total=total, returned=len(items))
+    return items
 
 
 @router.put("/submissions/{submission_id}/review", response_model=TeacherReviewOut)

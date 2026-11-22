@@ -69,6 +69,7 @@ def test_compliant_document_and_unsupported_rule_are_reported_truthfully():
         "findings_count": 0,
         "findings_truncated": False,
         "first_page_exclusion": "APPLIED",
+        "paragraph_count": 1,
     }
 
 
@@ -89,3 +90,27 @@ def test_finding_cap_is_enforced_and_untrusted_font_name_is_bounded():
     assert summary["findings_count"] == 2
     assert summary["findings_truncated"] is True
     assert all(len(str(finding.actual)) < 500 for finding in findings)
+
+
+def test_paragraph_count_counts_non_empty_checked_paragraphs_excluding_excluded_pages():
+    document = f'''<w:document xmlns:w="{W}"><w:body>
+      <w:p><w:r><w:t>TITLE PAGE</w:t><w:br w:type="page"/></w:r></w:p>
+      <w:p><w:r><w:t>   </w:t></w:r></w:p>
+      <w:p><w:r><w:t>Excluded page body</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Included body paragraph</w:t></w:r></w:p>
+      <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
+    </w:body></w:document>'''
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as package:
+        package.writestr("word/document.xml", document)
+    output.seek(0)
+    exclusions = {
+        "pages": [2],
+        "layout": [
+            {"number": 1, "section_index": 1, "paragraphs": {"1": [1]}},
+            {"number": 2, "section_index": 1, "paragraphs": {"3": [1]}},
+            {"number": 3, "section_index": 1, "paragraphs": {"4": [1]}},
+        ],
+    }
+    _, summary = analyze_document(output, _rules(), max_findings=100, page_exclusions=exclusions)
+    assert summary["paragraph_count"] == 1
