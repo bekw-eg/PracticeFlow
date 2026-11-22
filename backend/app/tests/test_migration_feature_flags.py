@@ -30,6 +30,14 @@ def test_disabled_document_check_api_is_hidden(client, org_a: OrgFixture, monkey
 def test_legacy_routes_are_not_registered():
     paths = app.openapi()["paths"]
 
-    for removed in ("/api/v1/templates", "/api/v1/reports", "/api/v1/internships/{internship_id}/publish", "/api/v1/files", "/api/v1/export-jobs/{job_id}"):
+    for removed in (
+        "/api/v1/templates",
+        "/api/v1/reports",
+        "/api/v1/internships/{internship_id}/publish",
+        "/api/v1/files",
+        "/api/v1/export-jobs/{job_id}",
+        "/api/v1/document-checks/student/assignments",
+        "/api/v1/groups/{group_id}/check-assignments",
+    ):
         assert removed not in paths
     assert "get" in paths["/api/v1/check-profiles"]

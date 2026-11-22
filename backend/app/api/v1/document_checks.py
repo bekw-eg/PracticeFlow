@@ -10,26 +10,19 @@ from sqlalchemy.orm import Session
 from app.api.pagination import PaginationParams, set_pagination_headers
 from app.db.session import get_db
 from app.dependencies.auth import RequestContext, get_current_context
-from app.dependencies.features import (
-    require_document_check_enabled,
-    require_student_document_submissions_enabled,
-)
-from app.models.document_check import CheckProfile, CheckProfileVersion, DocumentCheckAssignment
+from app.dependencies.features import require_document_check_enabled
+from app.models.document_check import CheckProfile, CheckProfileVersion
 from app.schemas.review_group import WorkType
 from app.api.v1.review_groups import router as review_groups_router
 from app.models.enums import RoleName
 from app.permissions.rbac import require_role
 from app.schemas.document_check import (
-    AssignmentStudentOut,
     BulkReplaceCheckRulesRequest,
     CheckProfileOut,
     CheckProfileVersionDetail,
     CheckProfileVersionSummary,
     CreateCheckProfileRequest,
     CreateCheckProfileVersionRequest,
-    CreateDocumentCheckAssignmentRequest,
-    DocumentCheckAssignmentDetail,
-    DocumentCheckAssignmentSummary,
     DocumentCheckFindingOut,
     DocumentCheckJobOut,
     DocumentSettingsWrite,
@@ -41,18 +34,14 @@ from app.schemas.document_check import (
     LocalPlagiarismMatchOut,
     LocalPlagiarismRunOut,
     ParagraphClassificationOut,
-    StudentDocumentCheckAssignmentDetail,
-    StudentDocumentSubmissionOut,
     TeacherDocumentSubmissionOut,
     TeacherDocumentPreviewOut,
     UpdateCheckProfileRequest,
     UpdateCheckProfileVersionRequest,
-    UpdateDocumentCheckAssignmentRequest,
 )
-from app.services.document_check_service import CheckProfileService, DocumentCheckAssignmentService
+from app.services.document_check_service import CheckProfileService
 from app.rate_limit.dependencies import get_resource_guard
 from app.resource_protection import ResourceGuard
-from app.services.document_submission_service import DocumentSubmissionService
 from app.services.document_check_job_service import DocumentCheckJobService
 from app.services.submission_storage import iter_original, original_content_disposition
 from app.services.teacher_document_submission_service import TeacherDocumentSubmissionService
@@ -79,37 +68,6 @@ def _profile_out(profile: CheckProfile) -> CheckProfileOut:
 
 def _version_detail(version: CheckProfileVersion) -> CheckProfileVersionDetail:
     return CheckProfileVersionDetail.model_validate(version)
-
-
-def _assignment_summary(assignment: DocumentCheckAssignment) -> DocumentCheckAssignmentSummary:
-    return DocumentCheckAssignmentSummary(
-        id=assignment.id,
-        group_id=assignment.group_id,
-        profile_version_id=assignment.profile_version_id,
-        title=assignment.title,
-        instructions=assignment.instructions,
-        state=assignment.state,
-        due_at=assignment.due_at,
-        assignment_timezone=assignment.assignment_timezone,
-        published_at=assignment.published_at,
-        closed_at=assignment.closed_at,
-        created_at=assignment.created_at,
-        roster_count=len(assignment.students),
-    )
-
-
-def _assignment_detail(assignment: DocumentCheckAssignment) -> DocumentCheckAssignmentDetail:
-    summary = _assignment_summary(assignment)
-    students = [
-        AssignmentStudentOut(
-            id=item.id,
-            student_id=item.student_id,
-            full_name=item.student.membership.user.full_name,
-            email=item.student.membership.user.email,
-        )
-        for item in assignment.students
-    ]
-    return DocumentCheckAssignmentDetail(**summary.model_dump(), students=students)
 
 
 @router.get("/check-profiles", response_model=list[CheckProfileOut])
@@ -299,257 +257,6 @@ def retire_check_profile_version(
         ctx.organization_id, ctx.user_id, profile_id, version_id
     )
     return _version_detail(version)
-
-
-@router.get(
-    "/groups/{group_id}/check-assignments", response_model=list[DocumentCheckAssignmentSummary]
-)
-def list_document_check_assignments(
-    group_id: uuid.UUID,
-    response: Response,
-    page: PaginationParams = Depends(),
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> list[DocumentCheckAssignmentSummary]:
-    require_role(ctx.role, RoleName.TEACHER)
-    service = DocumentCheckAssignmentService(db)
-    assignments = service.list_for_group(
-        ctx.organization_id, ctx.teacher_id, group_id, page.offset, page.limit
-    )
-    set_pagination_headers(
-        response,
-        page,
-        total=service.count_for_group(ctx.organization_id, ctx.teacher_id, group_id),
-        returned=len(assignments),
-    )
-    return [_assignment_summary(assignment) for assignment in assignments]
-
-
-@router.post(
-    "/groups/{group_id}/check-assignments",
-    response_model=DocumentCheckAssignmentDetail,
-    status_code=status.HTTP_201_CREATED,
-)
-def create_document_check_assignment(
-    group_id: uuid.UUID,
-    payload: CreateDocumentCheckAssignmentRequest,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> DocumentCheckAssignmentDetail:
-    require_role(ctx.role, RoleName.TEACHER)
-    assignment = DocumentCheckAssignmentService(db).create(
-        ctx.organization_id, ctx.teacher_id, ctx.user_id, group_id, payload
-    )
-    return _assignment_detail(assignment)
-
-
-@router.get(
-    "/groups/{group_id}/check-assignments/{assignment_id}",
-    response_model=DocumentCheckAssignmentDetail,
-)
-def get_document_check_assignment(
-    group_id: uuid.UUID,
-    assignment_id: uuid.UUID,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> DocumentCheckAssignmentDetail:
-    require_role(ctx.role, RoleName.TEACHER)
-    assignment = DocumentCheckAssignmentService(db).detail(
-        ctx.organization_id, ctx.teacher_id, group_id, assignment_id
-    )
-    return _assignment_detail(assignment)
-
-
-@router.patch(
-    "/groups/{group_id}/check-assignments/{assignment_id}",
-    response_model=DocumentCheckAssignmentDetail,
-)
-def update_document_check_assignment(
-    group_id: uuid.UUID,
-    assignment_id: uuid.UUID,
-    payload: UpdateDocumentCheckAssignmentRequest,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> DocumentCheckAssignmentDetail:
-    require_role(ctx.role, RoleName.TEACHER)
-    assignment = DocumentCheckAssignmentService(db).update(
-        ctx.organization_id, ctx.teacher_id, group_id, assignment_id, payload
-    )
-    return _assignment_detail(assignment)
-
-
-@router.post(
-    "/groups/{group_id}/check-assignments/{assignment_id}/publish",
-    response_model=DocumentCheckAssignmentDetail,
-)
-def publish_document_check_assignment(
-    group_id: uuid.UUID,
-    assignment_id: uuid.UUID,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> DocumentCheckAssignmentDetail:
-    require_role(ctx.role, RoleName.TEACHER)
-    assignment = DocumentCheckAssignmentService(db).publish(
-        ctx.organization_id, ctx.teacher_id, ctx.user_id, group_id, assignment_id
-    )
-    return _assignment_detail(assignment)
-
-
-@router.post(
-    "/groups/{group_id}/check-assignments/{assignment_id}/close",
-    response_model=DocumentCheckAssignmentDetail,
-)
-def close_document_check_assignment(
-    group_id: uuid.UUID,
-    assignment_id: uuid.UUID,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> DocumentCheckAssignmentDetail:
-    require_role(ctx.role, RoleName.TEACHER)
-    assignment = DocumentCheckAssignmentService(db).close(
-        ctx.organization_id, ctx.teacher_id, ctx.user_id, group_id, assignment_id
-    )
-    return _assignment_detail(assignment)
-
-
-@router.get(
-    "/document-checks/student/assignments",
-    response_model=list[DocumentCheckAssignmentSummary],
-    dependencies=[Depends(require_student_document_submissions_enabled)],
-    include_in_schema=False,
-)
-def list_student_check_assignments(
-    response: Response,
-    page: PaginationParams = Depends(),
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> list[DocumentCheckAssignmentSummary]:
-    items, total = DocumentSubmissionService(db).list_student_assignments(ctx, page.offset, page.limit)
-    set_pagination_headers(response, page, total=total, returned=len(items))
-    return [_assignment_summary(item) for item in items]
-
-
-@router.get(
-    "/document-checks/student/assignments/{assignment_id}",
-    response_model=StudentDocumentCheckAssignmentDetail,
-    dependencies=[Depends(require_student_document_submissions_enabled)],
-    include_in_schema=False,
-)
-def get_student_check_assignment(
-    assignment_id: uuid.UUID,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> StudentDocumentCheckAssignmentDetail:
-    assignment, roster = DocumentSubmissionService(db).student_assignment(ctx, assignment_id)
-    return StudentDocumentCheckAssignmentDetail(
-        **_assignment_summary(assignment).model_dump(), assignment_student_id=roster.id,
-    )
-
-
-@router.get(
-    "/document-checks/student/assignments/{assignment_id}/submissions",
-    response_model=list[StudentDocumentSubmissionOut],
-    dependencies=[Depends(require_student_document_submissions_enabled)],
-    include_in_schema=False,
-)
-def list_student_document_submissions(
-    assignment_id: uuid.UUID,
-    response: Response,
-    page: PaginationParams = Depends(),
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> list[StudentDocumentSubmissionOut]:
-    require_role(ctx.role, RoleName.STUDENT)
-    items, total = DocumentSubmissionService(db).list_submissions(ctx, assignment_id, page.offset, page.limit)
-    set_pagination_headers(response, page, total=total, returned=len(items))
-    return [StudentDocumentSubmissionOut.model_validate(item) for item in items]
-
-
-@router.post(
-    "/document-checks/student/assignments/{assignment_id}/submissions",
-    response_model=StudentDocumentSubmissionOut, status_code=status.HTTP_201_CREATED,
-    responses={200: {"model": StudentDocumentSubmissionOut, "description": "Identical idempotent retry"}},
-    dependencies=[Depends(require_student_document_submissions_enabled)],
-    include_in_schema=False,
-)
-def upload_student_document_submission(
-    assignment_id: uuid.UUID,
-    file: UploadFile,
-    response: Response,
-    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)],
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-    guard: ResourceGuard = Depends(get_resource_guard),
-) -> StudentDocumentSubmissionOut:
-    submission, created = DocumentSubmissionService(db, guard).upload(ctx, assignment_id, file, idempotency_key)
-    if not created:
-        response.status_code = status.HTTP_200_OK
-    return StudentDocumentSubmissionOut.model_validate(submission)
-
-
-@router.get(
-    "/document-checks/assignments/{assignment_id}/submissions",
-    response_model=list[StudentDocumentSubmissionOut],
-    include_in_schema=False,
-)
-def list_teacher_document_submissions(
-    assignment_id: uuid.UUID,
-    response: Response,
-    student_id: uuid.UUID | None = None,
-    page: PaginationParams = Depends(),
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> list[StudentDocumentSubmissionOut]:
-    require_role(ctx.role, RoleName.TEACHER)
-    items, total = DocumentSubmissionService(db).list_submissions(ctx, assignment_id, page.offset, page.limit, student_id)
-    set_pagination_headers(response, page, total=total, returned=len(items))
-    return [StudentDocumentSubmissionOut.model_validate(item) for item in items]
-
-
-@router.get(
-    "/document-checks/submissions/{submission_id}/original",
-    response_class=StreamingResponse,
-    include_in_schema=False,
-    responses={200: {"content": {
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-            "schema": {"type": "string", "format": "binary"}},
-    }, "description": "Unmodified private student original"}},
-)
-def download_student_document_original(
-    submission_id: uuid.UUID,
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> StreamingResponse:
-    submission, stream = DocumentSubmissionService(db).download_original(ctx, submission_id)
-    return StreamingResponse(
-        iter_original(stream), media_type=submission.detected_mime,
-        headers={
-            "Content-Disposition": original_content_disposition(submission.original_filename),
-            "Content-Length": str(submission.size_bytes),
-            "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
-        },
-        background=BackgroundTask(stream.close),
-    )
-
-
-@router.get(
-    "/document-checks/submissions/{submission_id}/findings",
-    response_model=list[DocumentCheckFindingOut],
-    include_in_schema=False,
-)
-def list_student_document_findings(
-    submission_id: uuid.UUID,
-    response: Response,
-    page: PaginationParams = Depends(),
-    ctx: RequestContext = Depends(get_current_context),
-    db: Session = Depends(get_db),
-) -> list[DocumentCheckFindingOut]:
-    submission = DocumentSubmissionService(db).authorized_submission(ctx, submission_id)
-    items, total = DocumentCheckJobService(db).list_findings(
-        submission.job, page.offset, page.limit,
-    )
-    set_pagination_headers(response, page, total=total, returned=len(items))
-    return [DocumentCheckFindingOut.model_validate(item) for item in items]
 
 
 @router.get(

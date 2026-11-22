@@ -4,11 +4,9 @@ from app.models.audit_log import AuditLog
 from app.models.department import Department
 from app.models.discipline import Discipline, DisciplineGroup, DisciplineTopic, TeachingMaterial
 from app.models.document_check import (
-    AssignmentStudent,
     CheckProfile,
     CheckProfileVersion,
     CheckRule,
-    DocumentCheckAssignment,
     DocumentCheckFinding,
     DocumentCheckJob,
     DocumentCheckRunRule,
@@ -17,7 +15,6 @@ from app.models.document_check import (
     LocalPlagiarismMatch,
     LocalPlagiarismParagraph,
     LocalPlagiarismRun,
-    StudentDocumentSubmission,
     TeacherDocumentLifecycle,
     TeacherDocumentSubmission,
 )
@@ -51,9 +48,6 @@ __all__ = [
     "CheckProfile",
     "CheckProfileVersion",
     "CheckRule",
-    "DocumentCheckAssignment",
-    "AssignmentStudent",
-    "StudentDocumentSubmission",
     "TeacherDocumentSubmission",
     "TeacherDocumentLifecycle",
     "DocumentCheckJob",

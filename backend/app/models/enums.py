@@ -40,12 +40,6 @@ class CheckRuleSeverity(str, enum.Enum):
     ERROR = "ERROR"
 
 
-class DocumentCheckAssignmentStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-    CLOSED = "CLOSED"
-
-
 class DocumentCheckJobStatus(str, enum.Enum):
     QUEUED = "QUEUED"
     PROCESSING = "PROCESSING"

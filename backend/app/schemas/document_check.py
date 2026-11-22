@@ -3,9 +3,8 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from app.schemas.review_group import TeacherReviewOut, WorkType
 
@@ -13,7 +12,6 @@ from app.models.enums import (
     CheckProfileVersionStatus,
     CheckRuleSeverity,
     CheckRuleType,
-    DocumentCheckAssignmentStatus,
     DocumentCheckJobStatus,
 )
 
@@ -159,25 +157,6 @@ LanguageTag = Annotated[
 ]
 
 
-def _registered_timezone(value: str) -> str:
-    try:
-        ZoneInfo(value)
-    except ZoneInfoNotFoundError as exc:
-        raise ValueError("assignment_timezone must be a registered IANA timezone name") from exc
-    return value
-
-
-AssignmentTimezone = Annotated[
-    str,
-    StringConstraints(
-        strip_whitespace=True,
-        pattern=r"^(?:UTC|[A-Za-z][A-Za-z0-9_+\-]*(?:/[A-Za-z0-9_+\-]+)+)$",
-        max_length=64,
-    ),
-    AfterValidator(_registered_timezone),
-]
-
-
 class SpellingLanguagesConfig(StrictRuleConfig):
     languages: list[LanguageTag] = Field(min_length=1, max_length=20)
     ignore_uppercase: bool = True
@@ -311,54 +290,6 @@ class UpdateCheckProfileVersionRequest(BaseModel):
     notes: Annotated[str, StringConstraints(strip_whitespace=True, max_length=5000)] | None = None
 
 
-class AssignmentStudentOut(BaseModel):
-    id: uuid.UUID
-    student_id: uuid.UUID
-    full_name: str
-    email: str
-
-
-class DocumentCheckAssignmentSummary(BaseModel):
-    id: uuid.UUID
-    group_id: uuid.UUID
-    profile_version_id: uuid.UUID
-    title: str
-    instructions: str | None
-    state: DocumentCheckAssignmentStatus
-    due_at: datetime
-    assignment_timezone: str
-    published_at: datetime | None
-    closed_at: datetime | None
-    created_at: datetime
-    roster_count: int = 0
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DocumentCheckAssignmentDetail(DocumentCheckAssignmentSummary):
-    students: list[AssignmentStudentOut]
-
-
-class CreateDocumentCheckAssignmentRequest(BaseModel):
-    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
-    instructions: Annotated[str, StringConstraints(strip_whitespace=True, max_length=10000)] | None = None
-    profile_version_id: uuid.UUID
-    due_at: AwareDatetime
-    assignment_timezone: AssignmentTimezone
-
-
-class UpdateDocumentCheckAssignmentRequest(BaseModel):
-    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)] | None = None
-    instructions: Annotated[str, StringConstraints(strip_whitespace=True, max_length=10000)] | None = None
-    profile_version_id: uuid.UUID | None = None
-    due_at: AwareDatetime | None = None
-    assignment_timezone: AssignmentTimezone | None = None
-
-
-class StudentDocumentCheckAssignmentDetail(DocumentCheckAssignmentSummary):
-    assignment_student_id: uuid.UUID
-
-
 class DocumentCheckResultSummaryOut(BaseModel):
     analyzer_version: Annotated[str, StringConstraints(min_length=1, max_length=100)]
     rules_total: int = Field(ge=0)
@@ -391,25 +322,6 @@ class DocumentCheckJobOut(BaseModel):
     result_summary: DocumentCheckResultSummaryOut | None
     run_number: int = 1
     settings_revision: int | None = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class StudentDocumentSubmissionOut(BaseModel):
-    id: uuid.UUID
-    assignment_id: uuid.UUID
-    assignment_student_id: uuid.UUID
-    student_id: uuid.UUID
-    attempt_number: int
-    original_filename: str
-    size_bytes: int
-    sha256: str
-    detected_mime: str
-    submitted_at: datetime
-    is_late: bool
-    preflight_schema_version: int
-    created_at: datetime
-    job: DocumentCheckJobOut
 
     model_config = ConfigDict(from_attributes=True)
 

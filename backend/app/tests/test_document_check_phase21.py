@@ -16,27 +16,22 @@ from threading import Barrier
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-from sqlalchemy import delete, func, select, text
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy import func, select, text
+from sqlalchemy.exc import DBAPIError
 
 from app.core.config import settings
-from app.db.session import get_db
 from app.main import app
 from app.models.audit_log import AuditLog
 from app.models.document_check import (
-    AssignmentStudent, DocumentCheckFinding, DocumentCheckJob, StudentDocumentSubmission,
-    TeacherDocumentSubmission,
+    DocumentCheckFinding, DocumentCheckJob, TeacherDocumentSubmission,
 )
 from app.models.enums import AuditEventType, DocumentCheckJobStatus
-from app.models.group_member import GroupMember
 from app.models.membership import OrganizationMembership
 from app.models.student import Student
 from app.models.teacher import Teacher
-from app.models.teacher_group import TeacherGroup
 from app.models.user import User
 from app.rate_limit.dependencies import get_resource_guard
 from app.resource_protection import MemoryResourceGuard, ResourceProtectionConfig
-from app.storage.base import StorageUnavailableError
 from app.storage.local import LocalStorageService
 from app.services.document_analyzer import analyze_document
 from app.services.document_check_job_service import DocumentCheckJobService
@@ -326,18 +321,17 @@ def test_failed_recheck_preserves_last_result(client, db, published, private_sto
 def phase21_database_guards(_create_schema):
     # The shared suite deliberately builds metadata directly. Install the same
     # production DDL here so SQL-level immutability tests exercise real triggers.
-    path = Path(__file__).parents[2] / "alembic" / "versions" / "ea2f3a4b5c6d_immutable_docx_submissions.py"
-    spec = importlib.util.spec_from_file_location("phase21_migration_for_test", path)
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
     with engine.begin() as connection:
         with Operations.context(MigrationContext.configure(connection)):
-            migration.install_guards()
             analyzer_path = Path(__file__).parents[2] / "alembic" / "versions" / "fb3a4b5c6d7e_document_check_analyzer_results.py"
             analyzer_spec = importlib.util.spec_from_file_location("phase22_migration_for_test", analyzer_path)
             analyzer_migration = importlib.util.module_from_spec(analyzer_spec)
             analyzer_spec.loader.exec_module(analyzer_migration)
             analyzer_migration.install_analyzer_guards()
+            connection.execute(text(
+                "CREATE TRIGGER trg_protect_check_job_identity BEFORE UPDATE OR DELETE ON document_check_jobs "
+                "FOR EACH ROW EXECUTE FUNCTION pf_protect_check_job_identity()"
+            ))
             teacher_path = Path(__file__).parents[2] / "alembic" / "versions" / "0c4d5e6f7a8b_teacher_only_document_checks.py"
             teacher_spec = importlib.util.spec_from_file_location("teacher_checks_migration_for_test", teacher_path)
             teacher_migration = importlib.util.module_from_spec(teacher_spec)
@@ -350,8 +344,7 @@ def phase21_database_guards(_create_schema):
             runs_migration.install_document_settings_guards()
     yield
     with engine.begin() as connection:
-        for name in ("pf_protect_student_original", "pf_validate_student_submission",
-                     "pf_require_submission_job", "pf_protect_check_job_identity",
+        for name in ("pf_protect_check_job_identity",
                      "pf_validate_document_check_finding", "pf_protect_teacher_original",
                      "pf_validate_teacher_submission", "pf_require_teacher_submission_job", "pf_protect_run_rule"):
             connection.execute(text(f"DROP FUNCTION IF EXISTS {name}() CASCADE"))
@@ -359,69 +352,38 @@ def phase21_database_guards(_create_schema):
 
 @pytest.fixture(autouse=True)
 def private_storage(tmp_path, monkeypatch, client):
-    from app.services import document_submission_service, teacher_document_submission_service
+    from app.services import teacher_document_submission_service
 
     storage = LocalStorageService(str(tmp_path / "originals"))
-    monkeypatch.setattr(document_submission_service, "get_storage_service", lambda: storage)
     monkeypatch.setattr(teacher_document_submission_service, "get_storage_service", lambda: storage)
     monkeypatch.setattr(settings, "DOCUMENT_CHECK_ENABLED", True)
-    monkeypatch.setattr(settings, "DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED", True)
     guard = MemoryResourceGuard(ResourceProtectionConfig.from_settings(settings))
     app.dependency_overrides[get_resource_guard] = lambda: guard
     return storage
 
 
-def _assignment(client, db, fixture, *, state="PUBLISHED", due_at=None):
-    if db.scalar(select(GroupMember).where(
-        GroupMember.group_id == fixture.group.id, GroupMember.student_id == fixture.student.id
-    )) is None:
-        db.add(GroupMember(group_id=fixture.group.id, student_id=fixture.student.id))
-        db.commit()
-    _, version = _create_published_profile(client, fixture, name=f"Profile {uuid.uuid4()}")
-    headers = auth_headers(fixture.teacher_token(client))
-    response = client.post(
-        f"/api/v1/groups/{fixture.group.id}/check-assignments", headers=headers,
-        json={
-            "title": "Immutable DOCX",
-            "profile_version_id": version["id"],
-            "due_at": (due_at or datetime.now(UTC) + timedelta(days=1)).isoformat(),
-            "assignment_timezone": "Asia/Qyzylorda",
-        },
-    )
-    assert response.status_code == 201, response.text
-    assignment = response.json()
-    if state != "DRAFT":
-        response = client.post(
-            f"/api/v1/groups/{fixture.group.id}/check-assignments/{assignment['id']}/publish", headers=headers
-        )
-        assert response.status_code == 200, response.text
-        assignment = response.json()
-    if state == "CLOSED":
-        response = client.post(
-            f"/api/v1/groups/{fixture.group.id}/check-assignments/{assignment['id']}/close", headers=headers
-        )
-        assert response.status_code == 200, response.text
-        assignment = response.json()
-    return assignment, headers
-
-
 @pytest.fixture
-def published(client, db, org_a):
-    assignment, teacher_headers = _assignment(client, db, org_a)
-    return assignment, auth_headers(org_a.student_token(client)), teacher_headers
+def published(client, org_a):
+    _, version = _create_published_profile(client, org_a, name=f"Profile {uuid.uuid4()}")
+    return (
+        {"profile_version_id": version["id"]},
+        auth_headers(org_a.student_token(client)),
+        auth_headers(org_a.teacher_token(client)),
+    )
 
 
-def _upload(client, assignment, headers, payload=None, *, filename="original.docx", key=None):
+def _upload(client, version_holder, headers, payload=None, *, filename="original.docx", key=None):
     return client.post(
-        f"{PREFIX}/student/assignments/{assignment['id']}/submissions",
+        f"{PREFIX}/teacher/submissions",
         headers={**headers, "Idempotency-Key": key or str(uuid.uuid4())},
+        data={"profile_version_id": version_holder["profile_version_id"]},
         files={"file": (filename, payload if payload is not None else docx_bytes(), MIME)},
     )
 
 
 def _counts(db):
     return (
-        db.scalar(select(func.count()).select_from(StudentDocumentSubmission)),
+        db.scalar(select(func.count()).select_from(TeacherDocumentSubmission)),
         db.scalar(select(func.count()).select_from(DocumentCheckJob)),
     )
 
@@ -449,361 +411,30 @@ def _additional_actor(db, fixture, *, teacher=False):
     return user, actor
 
 
-def test_upload_download_exact_original_one_queued_job_and_safe_audit(client, db, org_a, published, private_storage):
-    assignment, student_headers, teacher_headers = published
-    original = docx_bytes(body="Original must never be transformed")
-    response = _upload(client, assignment, student_headers, original, filename="Отчёт.docx")
-    assert response.status_code == 201, response.text
-    submission = response.json()
-    assert submission["attempt_number"] == 1
-    assert submission["sha256"] == hashlib.sha256(original).hexdigest()
-    assert submission["size_bytes"] == len(original)
-    assert submission["is_late"] is False
-    assert submission["job"]["status"] == "QUEUED"
-    assert submission["job"]["started_at"] is None
-    assert submission["job"]["finished_at"] is None
-    assert "storage_key" not in json.dumps(submission)
-    assert _counts(db) == (1, 1)
-    for headers in (student_headers, teacher_headers):
-        download = client.get(f"{PREFIX}/submissions/{submission['id']}/original", headers=headers)
-        assert download.status_code == 200, download.text
-        assert download.content == original
-        assert hashlib.sha256(download.content).hexdigest() == submission["sha256"]
-        assert download.headers["content-disposition"].startswith("attachment;")
-        assert "filename*=" in download.headers["content-disposition"]
-    row = db.scalar(select(StudentDocumentSubmission))
-    assert str(org_a.org.id) in row.storage_key
-    assert assignment["id"] in row.storage_key
-    assert str(row.id) in row.storage_key
-    assert row.sha256 in row.storage_key
-    assert _files(private_storage)[0].read_bytes() == original
-    audits = db.scalars(select(AuditLog)).all()
-    events = {event.event_type.value for event in audits}
-    assert "DOCUMENT_CHECK_JOB_CREATED" in events
-    assert any("SUBMISSION" in event and "UPLOAD" in event for event in events)
-    assert any("DOWNLOAD" in event and "STUDENT" in event for event in events)
-    assert any("DOWNLOAD" in event and "TEACHER" in event for event in events)
-    metadata = json.dumps([event.event_metadata for event in audits])
-    assert row.storage_key not in metadata
-    assert "Original must never be transformed" not in metadata
-
-
-def test_attempt_history_pagination_and_idempotent_retry(client, db, published, private_storage):
-    assignment, headers, teacher_headers = published
-    key = str(uuid.uuid4())
-    first = _upload(client, assignment, headers, key=key)
-    retry = _upload(client, assignment, headers, key=key)
-    assert first.status_code == 201, first.text
-    assert retry.status_code in (200, 201), retry.text
-    assert first.json()["id"] == retry.json()["id"]
-    assert _counts(db) == (1, 1)
-    assert len(_files(private_storage)) == 1
-    mismatch = _upload(client, assignment, headers, docx_bytes(body="Different original"), key=key)
-    assert mismatch.status_code == 409, mismatch.text
-    second = _upload(client, assignment, headers, docx_bytes(body="New attempt"))
-    assert second.status_code == 201, second.text
-    assert second.json()["attempt_number"] == 2
-    assert _counts(db) == (2, 2)
-    assert len(_files(private_storage)) == 2
-    history = client.get(
-        f"{PREFIX}/student/assignments/{assignment['id']}/submissions?limit=1", headers=headers
-    )
-    assert history.status_code == 200
-    assert len(history.json()) == 1
-    assert history.headers["x-total-count"] == "2"
-    assert history.headers["x-has-more"] == "true"
-    teacher_history = client.get(f"{PREFIX}/assignments/{assignment['id']}/submissions", headers=teacher_headers)
-    assert teacher_history.status_code == 200, teacher_history.text
-    assert sorted(item["attempt_number"] for item in teacher_history.json()) == [1, 2]
-
-
-@pytest.mark.parametrize("same_key", [False, True], ids=["distinct-attempts", "idempotent-race"])
-def test_concurrent_attempt_numbers_and_idempotency(client, db, published, same_key):
-    assignment, headers, _ = published
-    db.commit()
-
-    def independent_session():
-        with TestSessionLocal() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = independent_session
-    barrier = Barrier(3)
-    key = str(uuid.uuid4())
-
-    def submit(_):
-        barrier.wait(timeout=10)
-        return _upload(client, assignment, headers, key=key if same_key else None)
-
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        outcomes = list(pool.map(submit, range(3)))
-    assert all(outcome.status_code in (200, 201) for outcome in outcomes), [r.text for r in outcomes]
-    db.expire_all()
-    if same_key:
-        assert len({outcome.json()["id"] for outcome in outcomes}) == 1
-        assert _counts(db) == (1, 1)
-    else:
-        assert sorted(outcome.json()["attempt_number"] for outcome in outcomes) == [1, 2, 3]
-        assert _counts(db) == (3, 3)
-
-
-def test_student_snapshot_survives_group_change_and_new_members_cannot_submit(client, db, org_a, published):
-    assignment, headers, _ = published
-    other_user, other_student = _additional_actor(db, org_a)
-    db.execute(delete(GroupMember).where(GroupMember.group_id == org_a.group.id, GroupMember.student_id == org_a.student.id))
-    db.add(GroupMember(group_id=org_a.group.id, student_id=other_student.id))
-    db.commit()
-    assert _upload(client, assignment, headers).status_code == 201
-    other_headers = auth_headers(org_a.login(client, other_user.email))
-    assert client.get(f"{PREFIX}/student/assignments", headers=other_headers).json() == []
-    assert client.get(f"{PREFIX}/student/assignments/{assignment['id']}", headers=other_headers).status_code == 404
-    assert _upload(client, assignment, other_headers).status_code == 404
-    detail = client.get(f"{PREFIX}/student/assignments/{assignment['id']}", headers=headers)
-    assert detail.status_code == 200
-    assert detail.json()["assignment_student_id"] == str(db.scalar(select(AssignmentStudent.id)))
-
-
-def test_student_teacher_ownership_and_cross_tenant_objects_are_404(client, db, org_a, org_b, published):
-    assignment, headers, teacher_headers = published
-    submission = _upload(client, assignment, headers).json()
-    another_student_user, _ = _additional_actor(db, org_a)
-    another_teacher_user, _ = _additional_actor(db, org_a, teacher=True)
-    foreign_student = auth_headers(org_b.student_token(client))
-    foreign_teacher = auth_headers(org_b.teacher_token(client))
-    unauthorized_student = auth_headers(org_a.login(client, another_student_user.email))
-    unauthorized_teacher = auth_headers(org_a.login(client, another_teacher_user.email))
-    for denied in (foreign_student, foreign_teacher, unauthorized_student, unauthorized_teacher):
-        assert client.get(f"{PREFIX}/submissions/{submission['id']}/original", headers=denied).status_code == 404
-    for denied in (foreign_teacher, unauthorized_teacher):
-        assert client.get(f"{PREFIX}/assignments/{assignment['id']}/submissions", headers=denied).status_code == 404
-    assert _upload(client, assignment, foreign_student).status_code == 404
-    assert _upload(client, assignment, teacher_headers).status_code == 403
-    db.execute(delete(TeacherGroup).where(TeacherGroup.teacher_id == org_a.teacher.id))
-    db.commit()
-    assert client.get(f"{PREFIX}/submissions/{submission['id']}/original", headers=teacher_headers).status_code == 404
-
-
-@pytest.mark.parametrize("state", ["DRAFT", "CLOSED"])
-def test_unpublished_or_closed_assignment_rejects_upload(client, db, org_a, private_storage, state):
-    assignment, _ = _assignment(client, db, org_a, state=state)
-    headers = auth_headers(org_a.student_token(client))
-    response = _upload(client, assignment, headers)
-    assert response.status_code in (404, 409), response.text
-    assert _counts(db) == (0, 0)
-    assert _files(private_storage) == []
-    listing = client.get(f"{PREFIX}/student/assignments", headers=headers)
-    assert listing.status_code == 200
-    assert [item["state"] for item in listing.json()] == (["CLOSED"] if state == "CLOSED" else [])
-
-
-def test_late_published_assignment_still_accepts_and_marks_original(client, db, org_a):
-    assignment, _ = _assignment(client, db, org_a, due_at=datetime.now(UTC) - timedelta(hours=2))
-    response = _upload(client, assignment, auth_headers(org_a.student_token(client)))
-    assert response.status_code == 201, response.text
-    assert response.json()["is_late"] is True
-
-
-ATTACKS = [
-    ("docm-extension", lambda: docx_bytes(), "macro.docm"),
-    ("vba-payload", lambda: docx_bytes(extra={"word/vbaProject.bin": b"macro"}), "renamed.docx"),
-    ("macro-content-type", lambda: docx_bytes(content_types=CONTENT_TYPES.replace(
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
-        "application/vnd.ms-word.document.macroEnabled.main+xml",
-    )), "renamed.docx"),
-    ("ole-encrypted-office", lambda: b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"encrypted" * 100, "protected.docx"),
-    ("encrypted-zip-entry", encrypted_zip_bytes, "protected.docx"),
-    ("compression-bomb", lambda: docx_bytes(extra={"word/bomb.xml": "A" * 500_000}), "bomb.docx"),
-    ("parent-traversal", lambda: docx_bytes(extra={"../outside.xml": "x"}), "unsafe.docx"),
-    ("nested-parent-traversal", lambda: docx_bytes(extra={"word/../outside.xml": "x"}), "unsafe.docx"),
-    ("absolute-path", lambda: docx_bytes(extra={"/outside.xml": "x"}), "unsafe.docx"),
-    ("windows-path", lambda: docx_bytes(extra={"C:\\outside.xml": "x"}), "unsafe.docx"),
-    ("corrupt-zip", lambda: b"PK\x03\x04broken", "broken.docx"),
-    ("no-content-types", lambda: docx_bytes(omit="[Content_Types].xml"), "broken.docx"),
-    ("no-package-rels", lambda: docx_bytes(omit="_rels/.rels"), "broken.docx"),
-    ("no-document", lambda: docx_bytes(omit="word/document.xml"), "broken.docx"),
-]
-
-
-@pytest.mark.parametrize("name,payload,filename", ATTACKS, ids=[case[0] for case in ATTACKS])
-def test_malicious_uploads_leave_no_submission_job_or_object(client, db, published, private_storage, name, payload, filename):
-    assignment, headers, _ = published
-    response = _upload(client, assignment, headers, payload(), filename=filename)
-    assert response.status_code in (400, 413, 422), (name, response.text)
-    assert _counts(db) == (0, 0)
-    assert _files(private_storage) == []
-    assert "Traceback" not in response.text
-    assert str(private_storage.root) not in response.text
-    rejected = [event for event in db.scalars(select(AuditLog)).all() if "REJECT" in event.event_type.value]
-    assert len(rejected) == 1
-    assert "outside.xml" not in json.dumps(rejected[0].event_metadata)
-
-
-@pytest.mark.parametrize("limit,value,extra", [
-    ("DOCX_MAX_ZIP_ENTRIES", 3, {"word/extra.xml": "extra"}),
-    ("DOCX_MAX_ENTRY_BYTES", 100, {}),
-    ("DOCX_MAX_UNCOMPRESSED_BYTES", 100, {}),
-    ("DOCX_MAX_UPLOAD_BYTES", 100, {}),
-])
-def test_configured_docx_limits_leave_no_artifacts(client, db, published, private_storage, monkeypatch, limit, value, extra):
-    monkeypatch.setattr(settings, limit, value)
-    assignment, headers, _ = published
-    response = _upload(client, assignment, headers, docx_bytes(extra=extra))
-    assert response.status_code in (400, 413, 422), response.text
-    assert _counts(db) == (0, 0)
-    assert _files(private_storage) == []
-
-
-@pytest.mark.parametrize("guard_changes", [
-    {"upload_user_max_files": 1},
-    {"upload_user_max_bytes": 1000},
-    {"upload_org_max_storage_bytes": 1000},
-])
-def test_upload_quotas_preserve_only_accepted_original(client, db, published, private_storage, guard_changes):
-    original = docx_bytes()
-    guard_changes = {key: len(original) + 1 if "bytes" in key else value for key, value in guard_changes.items()}
-    guard = MemoryResourceGuard(replace(ResourceProtectionConfig.from_settings(settings), **guard_changes))
-    app.dependency_overrides[get_resource_guard] = lambda: guard
-    assignment, headers, _ = published
-    first = _upload(client, assignment, headers, original)
-    assert first.status_code == 201, first.text
-    rejected = _upload(client, assignment, headers, original)
-    assert rejected.status_code == 429, rejected.text
-    assert int(rejected.headers["retry-after"]) > 0
-    assert _counts(db) == (1, 1)
-    assert len(_files(private_storage)) == 1
-
-
-def test_storage_failure_leaves_no_database_artifacts(client, db, published, private_storage, monkeypatch):
-    def unavailable(*args, **kwargs):
-        raise StorageUnavailableError("secret credential and internal filesystem details")
-
-    monkeypatch.setattr(private_storage, "save_new", unavailable)
-    assignment, headers, _ = published
-    response = _upload(client, assignment, headers)
-    assert response.status_code == 503, response.text
-    assert "secret credential" not in response.text
-    assert _counts(db) == (0, 0)
-    assert _files(private_storage) == []
-
-
-def test_database_failure_removes_only_current_orphan(client, db, published, private_storage, monkeypatch):
-    assignment, headers, _ = published
-    first = _upload(client, assignment, headers)
-    assert first.status_code == 201, first.text
-    retained = _files(private_storage)[0]
-    retained_bytes = retained.read_bytes()
-
-    def fail_commit():
-        raise IntegrityError("test forced commit failure", {}, RuntimeError("sensitive database error"))
-
-    with monkeypatch.context() as patch:
-        patch.setattr(db, "commit", fail_commit)
-        try:
-            response = _upload(client, assignment, headers)
-        except IntegrityError:
-            response = None
-        if response is not None:
-            assert response.status_code >= 400
-            assert "sensitive database error" not in response.text
-    db.rollback()
-    assert _counts(db) == (1, 1)
-    assert _files(private_storage) == [retained]
-    assert retained.read_bytes() == retained_bytes
-
-
-@pytest.mark.parametrize("column,value", [
-    ("storage_key", "orgs/attacker/replace.docx"),
-    ("original_filename", "replacement.docx"),
-    ("sha256", "a" * 64),
-    ("size_bytes", 1),
-    ("attempt_number", 99),
-    ("preflight_schema_version", 2),
-])
-def test_direct_sql_cannot_change_original_metadata(client, db, published, column, value):
-    assignment, headers, _ = published
-    response = _upload(client, assignment, headers)
-    assert response.status_code == 201, response.text
-    # Fixed parametrization supplies column names; no caller controls SQL.
-    with pytest.raises(DBAPIError):
-        db.execute(text(f"UPDATE student_document_submissions SET {column} = :value WHERE id = :id"), {
-            "value": value, "id": uuid.UUID(response.json()["id"]),
-        })
-        db.commit()
-    db.rollback()
-    assert _counts(db) == (1, 1)
-
-
 def test_direct_sql_cannot_delete_original_or_job(client, db, published):
-    assignment, headers, _ = published
-    response = _upload(client, assignment, headers)
+    version_holder, _, headers = published
+    response = _upload(client, version_holder, headers)
     assert response.status_code == 201, response.text
-    for table in ("student_document_submissions", "document_check_jobs"):
+    for table in ("teacher_document_submissions", "document_check_jobs"):
         with pytest.raises(DBAPIError):
             db.execute(text(f"DELETE FROM {table}"))
             db.commit()
         db.rollback()
-    assert _counts(db) == (1, 1)
-
-
-def test_document_check_feature_flag_hides_student_pipeline(client, published, monkeypatch):
-    assignment, headers, _ = published
-    monkeypatch.setattr(settings, "DOCUMENT_CHECK_ENABLED", False)
-    assert client.get(f"{PREFIX}/student/assignments", headers=headers).status_code == 404
-    assert _upload(client, assignment, headers).status_code == 404
-
-
-def test_database_requires_job_and_exact_roster_tenant(client, db, org_b, published):
-    assignment, headers, _ = published
-    accepted = _upload(client, assignment, headers)
-    assert accepted.status_code == 201, accepted.text
-    row = db.scalar(select(StudentDocumentSubmission))
-    values = {column.name: getattr(row, column.name) for column in StudentDocumentSubmission.__table__.columns}
-    values.update(id=uuid.uuid4(), storage_key="test/new-original.docx", idempotency_key="new-key", attempt_number=2)
-    # A valid append without its job is rejected at COMMIT, by a deferred trigger.
     with pytest.raises(DBAPIError):
-        db.execute(StudentDocumentSubmission.__table__.insert().values(**values))
+        db.execute(text("UPDATE document_check_jobs SET teacher_submission_id = :id"), {"id": uuid.uuid4()})
         db.commit()
     db.rollback()
-    for mismatch in ({"organization_id": org_b.org.id}, {"student_id": org_b.student.id},
-                     {"assignment_student_id": uuid.uuid4()}, {"attempt_number": 4}):
-        with pytest.raises(DBAPIError):
-            db.execute(StudentDocumentSubmission.__table__.insert().values(**{**values, **mismatch}))
-            db.commit()
-        db.rollback()
-    # One job per submission is a database unique constraint, not a service convention.
-    job = db.scalar(select(DocumentCheckJob))
-    with pytest.raises(IntegrityError):
-        db.execute(DocumentCheckJob.__table__.insert().values(
-            id=uuid.uuid4(), organization_id=job.organization_id, submission_id=job.submission_id,
-            status="QUEUED", queued_at=job.queued_at,
-        ))
-        db.commit()
-    db.rollback()
-    assert _counts(db) == (1, 1)
-
-
-def test_storage_collision_never_deletes_previous_original(client, db, published, private_storage, monkeypatch):
-    from app.services import document_submission_service
-
-    assignment, headers, _ = published
-    assert _upload(client, assignment, headers).status_code == 201
-    row = db.scalar(select(StudentDocumentSubmission))
-    key = row.storage_key
-    original = private_storage.get(key)
-    monkeypatch.setattr(document_submission_service, "build_submission_storage_key", lambda *args: key)
-    rejected = _upload(client, assignment, headers, docx_bytes(body="replacement"))
-    assert rejected.status_code == 503
-    assert private_storage.get(key) == original
     assert _counts(db) == (1, 1)
 
 
 def test_request_rate_and_envelope_limits_leave_no_artifacts(client, db, published, private_storage, monkeypatch):
-    assignment, headers, _ = published
+    version_holder, _, headers = published
     guard = MemoryResourceGuard(replace(ResourceProtectionConfig.from_settings(settings), upload_rate_requests=1))
     app.dependency_overrides[get_resource_guard] = lambda: guard
-    assert _upload(client, assignment, headers, b"not DOCX").status_code == 400
-    assert _upload(client, assignment, headers).status_code == 429
+    assert _upload(client, version_holder, headers, b"not DOCX").status_code == 400
+    assert _upload(client, version_holder, headers).status_code == 429
     monkeypatch.setattr(settings, "DOCX_MAX_UPLOAD_BYTES", 1)
-    envelope = _upload(client, assignment, headers, b"X" * 70_000)
+    envelope = _upload(client, version_holder, headers, b"X" * 70_000)
     assert envelope.status_code == 413
     assert envelope.json()["detail"]["code"] == "DOCX_UPLOAD_TOO_LARGE"
     assert _counts(db) == (0, 0)
@@ -836,62 +467,8 @@ def test_openapi_exposes_teacher_only_read_only_original_and_multipart_idempoten
     assert "grade" not in properties
 
 
-def test_analyzer_job_persists_findings_and_exposes_only_authorized_results(
-    client, db, org_a, org_b, published, private_storage,
-):
-    assignment, student_headers, teacher_headers = published
-    original = docx_bytes(body="Private content must not enter analyzer results", title_page=True)
-    accepted = _upload(client, assignment, student_headers, original)
-    assert accepted.status_code == 201, accepted.text
-    submission_id = uuid.UUID(accepted.json()["id"])
-
-    service = DocumentCheckJobService(db)
-    job = service.claim_next("integration-worker")
-    assert job is not None
-    assert job.status == DocumentCheckJobStatus.PROCESSING
-    assert job.attempt_count == 1
-    submission, rules = service.payload(job.id, "integration-worker")
-    findings, summary = analyze_document(io.BytesIO(private_storage.get(submission.storage_key)), rules, max_findings=5000)
-    assert service.complete(job.id, "integration-worker", findings, summary)
-
-    db.expire_all()
-    stored_job = db.get(DocumentCheckJob, job.id)
-    assert stored_job.status == DocumentCheckJobStatus.COMPLETED
-    assert stored_job.result_summary["rules_evaluated"] == 1
-    assert stored_job.result_summary["rules_skipped"] == 0
-    assert stored_job.result_summary["findings_count"] == len(findings) > 0
-    assert len(db.scalars(select(DocumentCheckFinding)).all()) == len(findings)
-
-    for headers in (student_headers, teacher_headers):
-        response = client.get(f"{PREFIX}/submissions/{submission_id}/findings", headers=headers)
-        assert response.status_code == 200, response.text
-        assert response.headers["x-total-count"] == str(len(findings))
-        serialized = json.dumps(response.json())
-        assert "Private content" not in serialized
-        assert all("storage_key" not in item for item in response.json())
-    assert client.get(
-        f"{PREFIX}/submissions/{submission_id}/findings",
-        headers=auth_headers(org_b.student_token(client)),
-    ).status_code == 404
-    assert private_storage.get(submission.storage_key) == original
-
-    events = {event.event_type for event in db.scalars(select(AuditLog)).all()}
-    assert AuditEventType.DOCUMENT_CHECK_JOB_STARTED in events
-    assert AuditEventType.DOCUMENT_CHECK_JOB_COMPLETED in events
-
-    finding_id = db.scalar(select(DocumentCheckFinding.id))
-    with pytest.raises(DBAPIError):
-        db.execute(text("UPDATE document_check_findings SET code = 'REWRITTEN' WHERE id = :id"), {"id": finding_id})
-        db.commit()
-    db.rollback()
-    with pytest.raises(DBAPIError):
-        db.execute(text("UPDATE document_check_jobs SET result_summary = '{}'::jsonb WHERE id = :id"), {"id": job.id})
-        db.commit()
-    db.rollback()
-
-
 def test_worker_claims_are_exclusive_and_failures_are_bounded(client, db, published, monkeypatch):
-    assignment, headers, _ = published
+    assignment, _, headers = published
     assert _upload(client, assignment, headers).status_code == 201
     assert _upload(client, assignment, headers, docx_bytes(body="second")).status_code == 201
     db.commit()
@@ -920,7 +497,7 @@ def test_worker_claims_are_exclusive_and_failures_are_bounded(client, db, publis
 
 
 def test_independent_worker_checks_exact_stored_original(client, db, published, private_storage, tmp_path, monkeypatch):
-    assignment, headers, _ = published
+    assignment, _, headers = published
     original = docx_bytes(body="Worker reads this original without modifying it", title_page=True)
     accepted = _upload(client, assignment, headers, original)
     assert accepted.status_code == 201, accepted.text
@@ -940,8 +517,8 @@ def test_independent_worker_checks_exact_stored_original(client, db, published, 
     db.expire_all()
     job = db.scalar(select(DocumentCheckJob))
     assert job.status == DocumentCheckJobStatus.COMPLETED
-    assert job.result_summary["rules_evaluated"] == 1
-    submission = db.scalar(select(StudentDocumentSubmission))
+    assert job.result_summary["rules_evaluated"] == 2
+    submission = db.scalar(select(TeacherDocumentSubmission))
     assert private_storage.get(submission.storage_key) == original
 
 
@@ -1055,7 +632,7 @@ def test_teacher_worker_completes_both_spawned_stages(client, db, published, pri
 
 
 def test_expired_worker_lease_is_requeued_without_losing_attempt_history(client, db, published):
-    assignment, headers, _ = published
+    assignment, _, headers = published
     assert _upload(client, assignment, headers).status_code == 201
     service = DocumentCheckJobService(db)
     job = service.claim_next("crashed-worker")
@@ -1076,7 +653,7 @@ def test_expired_worker_lease_is_requeued_without_losing_attempt_history(client,
 def test_worker_hard_timeout_stops_child_and_persists_only_safe_error(
     client, db, published, private_storage, tmp_path, monkeypatch,
 ):
-    assignment, headers, _ = published
+    assignment, _, headers = published
     assert _upload(client, assignment, headers).status_code == 201
     db.commit()
 
@@ -1206,6 +783,3 @@ def test_teacher_can_upload_and_check_without_student_account(
         ), {"id": submission_id})
         db.commit()
     db.rollback()
-
-    monkeypatch.setattr(settings, "DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED", False)
-    assert client.get(f"{PREFIX}/student/assignments", headers=student_headers).status_code == 404

@@ -6,14 +6,14 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from botocore.exceptions import ClientError
 
-from app.services.submission_storage import build_submission_storage_key, iter_original, original_content_disposition
+from app.services.submission_storage import build_teacher_submission_storage_key, iter_original, original_content_disposition
 from app.storage.base import StorageObjectExistsError, StorageUnavailableError
 from app.storage.local import LocalStorageService
 from app.storage.s3 import S3StorageService
 
 
 def key():
-    return build_submission_storage_key(*(uuid.uuid4() for _ in range(4)), hashlib.sha256(b"original").hexdigest())
+    return build_teacher_submission_storage_key(*(uuid.uuid4() for _ in range(3)), hashlib.sha256(b"original").hexdigest())
 
 
 def test_local_original_exclusive_create_and_round_trip(tmp_path):
@@ -101,9 +101,9 @@ def test_download_disposition_cannot_inject_headers_or_paths():
 
 def test_storage_key_rejects_user_input():
     with pytest.raises(ValueError):
-        build_submission_storage_key("../tenant", uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), "a" * 64)
+        build_teacher_submission_storage_key("../tenant", uuid.uuid4(), uuid.uuid4(), "a" * 64)
     with pytest.raises(ValueError):
-        build_submission_storage_key(*(uuid.uuid4() for _ in range(4)), "../hash")
+        build_teacher_submission_storage_key(*(uuid.uuid4() for _ in range(3)), "../hash")
 
 
 def test_s3_lost_put_acknowledgement_removes_only_the_current_object():

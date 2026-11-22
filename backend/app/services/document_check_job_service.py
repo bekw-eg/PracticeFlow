@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.document_check import (
-    CheckRule, DocumentCheckAssignment, DocumentCheckFinding, DocumentCheckJob, DocumentCheckRunRule,
-    StudentDocumentSubmission, TeacherDocumentSubmission,
+    CheckRule, DocumentCheckFinding, DocumentCheckJob, DocumentCheckRunRule,
+    TeacherDocumentSubmission,
 )
 from app.models.enums import AuditEventType, DocumentCheckJobStatus
 from app.services.audit_service import AuditService
@@ -88,28 +88,13 @@ class DocumentCheckJobService:
         ))
         if job is None:
             return None
-        if job.teacher_submission_id is not None:
-            submission = self.db.scalar(select(TeacherDocumentSubmission).where(
-                TeacherDocumentSubmission.organization_id == job.organization_id,
-                TeacherDocumentSubmission.id == job.teacher_submission_id,
-            ))
-            if submission is None:
-                return None
-            profile_version_id = submission.profile_version_id
-        else:
-            submission = self.db.scalar(select(StudentDocumentSubmission).where(
-                StudentDocumentSubmission.organization_id == job.organization_id,
-                StudentDocumentSubmission.id == job.submission_id,
-            ))
-            if submission is None:
-                return None
-            assignment = self.db.scalar(select(DocumentCheckAssignment).where(
-                DocumentCheckAssignment.organization_id == job.organization_id,
-                DocumentCheckAssignment.id == submission.assignment_id,
-            ))
-            if assignment is None:
-                return None
-            profile_version_id = assignment.profile_version_id
+        submission = self.db.scalar(select(TeacherDocumentSubmission).where(
+            TeacherDocumentSubmission.organization_id == job.organization_id,
+            TeacherDocumentSubmission.id == job.teacher_submission_id,
+        ))
+        if submission is None:
+            return None
+        profile_version_id = submission.profile_version_id
         if job.settings_snapshot is not None:
             rules = list(self.db.scalars(select(DocumentCheckRunRule).where(
                 DocumentCheckRunRule.organization_id == job.organization_id,

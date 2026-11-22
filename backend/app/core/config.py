@@ -77,7 +77,6 @@ class Settings(BaseSettings):
 
     # Feature controls.
     DOCUMENT_CHECK_ENABLED: bool = True
-    DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED: bool = False
 
     REFRESH_COOKIE_NAME: str = "practiceflow_refresh"
     COOKIE_SECURE: bool = False

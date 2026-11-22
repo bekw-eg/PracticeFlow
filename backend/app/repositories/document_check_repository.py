@@ -4,14 +4,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.models.document_check import (
-    AssignmentStudent,
     CheckProfile,
     CheckProfileVersion,
     CheckRule,
-    DocumentCheckAssignment,
 )
-from app.models.membership import OrganizationMembership
-from app.models.student import Student
 from app.repositories.base import TenantScopedRepository
 
 
@@ -97,53 +93,4 @@ class CheckRuleRepository(TenantScopedRepository[CheckRule]):
                 .where(CheckRule.organization_id == org_id, CheckRule.profile_version_id == version_id)
                 .order_by(CheckRule.sort_order, CheckRule.id)
             ).scalars().all()
-        )
-
-
-class DocumentCheckAssignmentRepository(TenantScopedRepository[DocumentCheckAssignment]):
-    model = DocumentCheckAssignment
-
-    def get_detail(self, org_id: uuid.UUID, assignment_id: uuid.UUID) -> DocumentCheckAssignment | None:
-        return self.db.scalar(
-            select(DocumentCheckAssignment)
-            .options(
-                selectinload(DocumentCheckAssignment.students)
-                .selectinload(AssignmentStudent.student)
-                .selectinload(Student.membership)
-                .selectinload(OrganizationMembership.user)
-            )
-            .where(
-                DocumentCheckAssignment.organization_id == org_id,
-                DocumentCheckAssignment.id == assignment_id,
-            )
-        )
-
-    def list_for_group(
-        self, org_id: uuid.UUID, group_id: uuid.UUID, offset: int, limit: int
-    ) -> list[DocumentCheckAssignment]:
-        return list(
-            self.db.execute(
-                select(DocumentCheckAssignment)
-                .options(selectinload(DocumentCheckAssignment.students))
-                .where(
-                    DocumentCheckAssignment.organization_id == org_id,
-                    DocumentCheckAssignment.group_id == group_id,
-                )
-                .order_by(DocumentCheckAssignment.created_at.desc(), DocumentCheckAssignment.id.desc())
-                .offset(offset)
-                .limit(limit)
-            ).scalars().all()
-        )
-
-    def count_for_group(self, org_id: uuid.UUID, group_id: uuid.UUID) -> int:
-        return int(
-            self.db.scalar(
-                select(func.count())
-                .select_from(DocumentCheckAssignment)
-                .where(
-                    DocumentCheckAssignment.organization_id == org_id,
-                    DocumentCheckAssignment.group_id == group_id,
-                )
-            )
-            or 0
         )

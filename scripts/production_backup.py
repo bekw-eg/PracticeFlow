@@ -35,7 +35,6 @@ SELECT coalesce(json_agg(r ORDER BY key, size_bytes NULLS FIRST), '[]') FROM (
    WHERE generated_at IS NOT NULL AND storage_key IS NOT NULL
  UNION ALL SELECT storage_key, size_bytes, sha256 FROM teaching_materials
    WHERE storage_deleted_at IS NULL
- UNION ALL SELECT storage_key, size_bytes, sha256 FROM student_document_submissions
  UNION ALL SELECT s.storage_key, s.size_bytes, s.sha256 FROM teacher_document_submissions s
    LEFT JOIN teacher_document_lifecycle l ON l.submission_id=s.id AND l.organization_id=s.organization_id
    WHERE l.original_deleted_at IS NULL
