@@ -80,25 +80,15 @@ PracticeFlow provides a Teacher-only document checking and similarity analysis d
 CheckProfile
   -> CheckProfileVersion (DRAFT -> PUBLISHED -> RETIRED)
        -> ordered, typed CheckRule configuration
-
-teacher-owned Group
-  -> DocumentCheckAssignment -> exact PUBLISHED CheckProfileVersion
-       -> AssignmentStudent roster snapshot created on publication
 ```
 
 Every row in this domain carries `organization_id`. Composite foreign keys
-bind profile versions, rules, assignments, and roster snapshots to the same
-tenant as their parent. Database triggers also validate teacher/student tenant
-membership where the legacy schema represents it transitively. Services apply
-the same tenant and assigned-group checks using the organization, teacher, and
+bind profile versions, rules, and teacher submissions to the same
+tenant as their parent. Services apply
+the same tenant checks using the organization, teacher, and
 role derived from `RequestContext`; request payloads never choose a tenant.
 
-Published profile versions and their rules are immutable. A published
-assignment keeps its exact profile-version ID and roster snapshot; later
-profile versions or group membership changes do not rewrite it. Publication
-creates deduplicated student notifications and an audit event in the same
-transaction. Assignment deadlines are timezone-aware instants accompanied by
-the IANA `assignment_timezone` used to present the local deadline.
+Published profile versions and their rules are immutable.
 
 Phase 1 stores typed rule configuration. Phase 2.1 added immutable DOCX
 submission and a durable job record. Phase 2.2 executes page format/margins,
@@ -124,38 +114,6 @@ are multipart requests with an `Idempotency-Key`. An identical retry returns
 the existing submission and job, while a conflicting reuse returns `409`.
 Each accepted upload pins an exact PUBLISHED profile version. Direct checks do
 not depend on later profile drafts, group membership, or student records.
-
-### Historical assignment pipeline retained for migration compatibility
-
-```text
-published assignment -> immutable AssignmentStudent snapshot
-  -> StudentDocumentSubmission (append-only, attempt_number 1, 2, ...)
-       -> private original DOCX object (unchanged bytes + SHA-256)
-       -> exactly one DocumentCheckJob (QUEUED)
-```
-
-This earlier flow is disabled by default, omitted from the current UI and
-OpenAPI, and returns `404` unless
-`DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED=true` is set explicitly. When that
-compatibility switch is enabled, only a Student in the assignment's
-publication snapshot can submit. Current group membership changes do not
-rewrite that snapshot. DRAFT and CLOSED
-assignments reject uploads; a PUBLISHED assignment accepts late submissions
-and records `is_late=true`. Another attempt creates a new row, a new private
-object, and a new job. There is no endpoint to replace or edit an original.
-The student list includes published assignments and closed assignments for
-access to historical attempts. Identical retries of an accepted upload keep
-working after closure; they cannot create a new attempt. Upload keys are scoped
-to the exact snapshot entry and compare original SHA-256, size, and normalized
-filename; a conflicting reuse returns `409`.
-
-PostgreSQL composite foreign keys bind a submission to the exact tenant,
-assignment, snapshot row, and student. Row locks serialize attempt allocation;
-unique constraints enforce attempt numbers, idempotency keys, and one job per
-submission. Database triggers reject original metadata updates and deletion,
-including direct SQL, and enforce the submission/job relationship. ORM guards
-provide an additional application-level check. Original storage keys and all
-original metadata remain immutable after acceptance.
 
 The backend stages bounded chunks in a temporary file, computes SHA-256 over
 the original bytes, and validates the ZIP/OOXML package without rewriting it.
@@ -234,7 +192,7 @@ teacher grading, and annotated DOCX/PDF are absent.
 
 ### Feature flags and storage flow
 
-The document-check domain is controlled by deployment settings. `DOCUMENT_CHECK_ENABLED` hides the document-check API and UI when disabled (defaults to `true`). `DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED` defaults to `false`; it keeps the historical assignment-based Student upload API unavailable and omitted from OpenAPI.
+The document-check domain is controlled by deployment settings. `DOCUMENT_CHECK_ENABLED` hides the document-check API and UI when disabled (defaults to `true`).
 
 Storage keys are server-generated under organization UUID prefixes and never
 come from a client filename. S3 unavailability returns a controlled `503`; the

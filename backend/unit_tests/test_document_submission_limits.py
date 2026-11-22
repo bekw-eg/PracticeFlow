@@ -10,7 +10,6 @@ from app.document_submission_limits import DocumentSubmissionBodyLimitMiddleware
 
 @pytest.mark.parametrize("path", [
     "/api/v1/document-checks/teacher/submissions",
-    "/api/v1/document-checks/student/assignments/test/submissions",
     "/api/v1/topics/test/materials",
 ])
 def test_chunked_upload_limit_closes_partial_spooled_files(monkeypatch, path):
@@ -31,12 +30,11 @@ def test_chunked_upload_limit_closes_partial_spooled_files(monkeypatch, path):
     app.add_middleware(DocumentSubmissionBodyLimitMiddleware)
     called = []
 
-    @app.post("/api/v1/document-checks/student/assignments/test/submissions")
+    @app.post("/api/v1/document-checks/teacher/submissions")
     def upload(file: UploadFile):
         called.append(file)
         return {"accepted": True}
 
-    app.post("/api/v1/document-checks/teacher/submissions")(upload)
     app.post("/api/v1/topics/test/materials")(upload)
 
     header = b'--test\r\nContent-Disposition: form-data; name="file"; filename="test.docx"\r\n\r\n'

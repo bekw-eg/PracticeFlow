@@ -12,7 +12,7 @@ from app.db.session import get_db, update_pool_metrics
 from app.document_submission_limits import DocumentSubmissionBodyLimitMiddleware
 from app.middleware import RequestObservabilityMiddleware, SecurityHeadersMiddleware, configure_structured_logging
 from app.models.discipline import TeachingMaterial
-from app.models.document_check import StudentDocumentSubmission, TeacherDocumentLifecycle, TeacherDocumentSubmission
+from app.models.document_check import TeacherDocumentLifecycle, TeacherDocumentSubmission
 from app.observability.error_tracking import configure_error_tracking
 from app.observability.metrics import metrics as observability_metrics
 from app.observability.redis_memory import observe_redis_memory
@@ -100,8 +100,7 @@ def prometheus_metrics(
     db: Session = Depends(get_db),
 ) -> str:
     try:
-        storage_usage = db.scalar(select(func.coalesce(func.sum(StudentDocumentSubmission.size_bytes), 0))) or 0
-        storage_usage += db.scalar(select(func.coalesce(func.sum(TeacherDocumentSubmission.size_bytes), 0)).where(
+        storage_usage = db.scalar(select(func.coalesce(func.sum(TeacherDocumentSubmission.size_bytes), 0)).where(
             ~TeacherDocumentSubmission.lifecycle.has(TeacherDocumentLifecycle.original_deleted_at.is_not(None)),
         )) or 0
         storage_usage += db.scalar(select(func.coalesce(func.sum(TeachingMaterial.size_bytes), 0)).where(

@@ -99,7 +99,7 @@ class DocumentSettingsService:
         snapshot_rules = [{**deepcopy(rule), "id": str(uuid.uuid4())} for rule in draft.rules]
         job = DocumentCheckJob(
             id=uuid.uuid4(), organization_id=submission.organization_id,
-            teacher_submission_id=submission.id, submission_id=None,
+            teacher_submission_id=submission.id,
             status=DocumentCheckJobStatus.QUEUED, queued_at=datetime.now(UTC), run_number=run_number,
             idempotency_key=idempotency_key,
             settings_snapshot={"schema_version": 1, "revision": draft.revision,

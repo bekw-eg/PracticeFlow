@@ -17,7 +17,7 @@ class DocumentSubmissionBodyLimitMiddleware:
         path = scope.get("path", "")
         prefix = re.escape(settings.API_V1_PREFIX)
         upload_path = re.fullmatch(
-            prefix + r"/document-checks/(?:teacher/submissions|student/assignments/[^/]+/submissions)/?",
+            prefix + r"/document-checks/teacher/submissions/?",
             path,
         )
         material_path = re.fullmatch(prefix + r"/topics/[^/]+/materials/?", path)

@@ -10,20 +10,6 @@ from app.services.docx_preflight import CHUNK_BYTES, ValidatedDocx, normalize_or
 from app.storage.base import StorageService
 
 
-def build_submission_storage_key(
-    organization_id: uuid.UUID, assignment_id: uuid.UUID, student_id: uuid.UUID,
-    submission_id: uuid.UUID, sha256: str,
-) -> str:
-    if not all(isinstance(value, uuid.UUID) for value in (organization_id, assignment_id, student_id, submission_id)):
-        raise ValueError("Submission storage identifiers must be UUIDs")
-    if not re.fullmatch(r"[0-9a-f]{64}", sha256):
-        raise ValueError("Invalid SHA-256")
-    return (
-        f"orgs/{organization_id}/document-checks/{assignment_id}/students/{student_id}/"
-        f"submissions/{submission_id}/{sha256}.docx"
-    )
-
-
 def build_teacher_submission_storage_key(
     organization_id: uuid.UUID,
     teacher_id: uuid.UUID,

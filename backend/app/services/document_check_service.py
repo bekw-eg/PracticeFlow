@@ -9,37 +9,27 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.document_check import (
-    AssignmentStudent,
     CheckProfile,
     CheckProfileVersion,
     CheckRule,
-    DocumentCheckAssignment,
 )
 from app.models.enums import (
     AuditEventType,
     CheckRuleSeverity,
     CheckRuleType,
     CheckProfileVersionStatus,
-    DocumentCheckAssignmentStatus,
     EXECUTABLE_CHECK_RULE_TYPES,
 )
-from app.permissions.rbac import PermissionDenied, require_teacher_owns_group
 from app.repositories.document_check_repository import (
     CheckProfileRepository,
     CheckProfileVersionRepository,
     CheckRuleRepository,
-    DocumentCheckAssignmentRepository,
 )
-from app.repositories.group_member_repository import GroupMemberRepository
-from app.repositories.group_repository import GroupRepository
 from app.schemas.document_check import (
     BulkReplaceCheckRulesRequest,
     CreateCheckProfileVersionRequest,
-    CreateDocumentCheckAssignmentRequest,
-    UpdateDocumentCheckAssignmentRequest,
 )
 from app.services.audit_service import AuditService
-from app.services.notification_service import NotificationService
 
 
 def _not_found(entity: str) -> HTTPException:
@@ -403,187 +393,3 @@ class CheckProfileService:
         )
         self.db.commit()
         return self.get_version(org_id, profile_id, version_id)
-
-
-class DocumentCheckAssignmentService:
-    def __init__(self, db: Session):
-        self.db = db
-        self.assignments = DocumentCheckAssignmentRepository(db)
-        self.versions = CheckProfileVersionRepository(db)
-        self.group_repo = GroupRepository(db)
-        self.group_members = GroupMemberRepository(db)
-        self.notifications = NotificationService(db)
-        self.audit = AuditService(db)
-
-    def _require_group(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID) -> None:
-        if self.group_repo.get(org_id, group_id) is None:
-            raise PermissionDenied("Group not found or not accessible.")
-        require_teacher_owns_group(self.group_repo, org_id, teacher_id, group_id)
-
-    def _get_owned(
-        self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID, assignment_id: uuid.UUID
-    ) -> DocumentCheckAssignment:
-        self._require_group(org_id, teacher_id, group_id)
-        assignment = self.assignments.get_detail(org_id, assignment_id)
-        if assignment is None or assignment.group_id != group_id:
-            raise _not_found("Document check assignment")
-        return assignment
-
-    def list_for_group(
-        self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID, offset: int, limit: int
-    ) -> list[DocumentCheckAssignment]:
-        self._require_group(org_id, teacher_id, group_id)
-        return self.assignments.list_for_group(org_id, group_id, offset, limit)
-
-    def count_for_group(self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID) -> int:
-        self._require_group(org_id, teacher_id, group_id)
-        return self.assignments.count_for_group(org_id, group_id)
-
-    def detail(
-        self, org_id: uuid.UUID, teacher_id: uuid.UUID, group_id: uuid.UUID, assignment_id: uuid.UUID
-    ) -> DocumentCheckAssignment:
-        return self._get_owned(org_id, teacher_id, group_id, assignment_id)
-
-    def _published_version(self, org_id: uuid.UUID, version_id: uuid.UUID) -> CheckProfileVersion:
-        version = self.versions.get(org_id, version_id)
-        if version is None or version.state != CheckProfileVersionStatus.PUBLISHED:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Profile version not found or not published",
-            )
-        return version
-
-    def create(
-        self,
-        org_id: uuid.UUID,
-        teacher_id: uuid.UUID,
-        actor_user_id: uuid.UUID,
-        group_id: uuid.UUID,
-        payload: CreateDocumentCheckAssignmentRequest,
-    ) -> DocumentCheckAssignment:
-        self._require_group(org_id, teacher_id, group_id)
-        self._published_version(org_id, payload.profile_version_id)
-        assignment = DocumentCheckAssignment(
-            organization_id=org_id,
-            group_id=group_id,
-            created_by_teacher_id=teacher_id,
-            profile_version_id=payload.profile_version_id,
-            title=payload.title,
-            instructions=payload.instructions,
-            state=DocumentCheckAssignmentStatus.DRAFT,
-            due_at=payload.due_at,
-            assignment_timezone=payload.assignment_timezone,
-        )
-        self.db.add(assignment)
-        self.db.flush()
-        self.audit.record(
-            organization_id=org_id,
-            actor_user_id=actor_user_id,
-            event_type=AuditEventType.DOCUMENT_CHECK_ASSIGNMENT_CREATED,
-            entity_type="document_check_assignment",
-            entity_id=assignment.id,
-        )
-        self.db.commit()
-        return self.assignments.get_detail(org_id, assignment.id)
-
-    def update(
-        self,
-        org_id: uuid.UUID,
-        teacher_id: uuid.UUID,
-        group_id: uuid.UUID,
-        assignment_id: uuid.UUID,
-        payload: UpdateDocumentCheckAssignmentRequest,
-    ) -> DocumentCheckAssignment:
-        assignment = self._get_owned(org_id, teacher_id, group_id, assignment_id)
-        if assignment.state != DocumentCheckAssignmentStatus.DRAFT:
-            raise _conflict("Only a draft assignment can be edited")
-        values = payload.model_dump(exclude_unset=True)
-        if "profile_version_id" in values:
-            self._published_version(org_id, values["profile_version_id"])
-        for field, value in values.items():
-            setattr(assignment, field, value)
-        self.db.commit()
-        return self.assignments.get_detail(org_id, assignment.id)
-
-    def publish(
-        self,
-        org_id: uuid.UUID,
-        teacher_id: uuid.UUID,
-        actor_user_id: uuid.UUID,
-        group_id: uuid.UUID,
-        assignment_id: uuid.UUID,
-    ) -> DocumentCheckAssignment:
-        self._require_group(org_id, teacher_id, group_id)
-        assignment = self.db.scalar(
-            select(DocumentCheckAssignment)
-            .where(
-                DocumentCheckAssignment.organization_id == org_id,
-                DocumentCheckAssignment.group_id == group_id,
-                DocumentCheckAssignment.id == assignment_id,
-            )
-            .with_for_update()
-        )
-        if assignment is None:
-            raise _not_found("Document check assignment")
-        if assignment.state == DocumentCheckAssignmentStatus.PUBLISHED:
-            return self.assignments.get_detail(org_id, assignment.id)
-        if assignment.state != DocumentCheckAssignmentStatus.DRAFT:
-            raise _conflict("Only a draft assignment can be published")
-        self._published_version(org_id, assignment.profile_version_id)
-
-        members = self.group_members.list_for_group(org_id, group_id)
-        for member in members:
-            self.db.add(
-                AssignmentStudent(
-                    organization_id=org_id,
-                    assignment_id=assignment.id,
-                    student_id=member.student_id,
-                )
-            )
-            self.notifications.create_once(
-                org_id,
-                member.student.membership.user_id,
-                "DOCUMENT_CHECK_ASSIGNED",
-                "New document check assignment",
-                body=assignment.title,
-                link=f"/groups/{group_id}/check-assignments/{assignment.id}",
-                dedupe_key=f"document-check-assignment:{assignment.id}:published",
-            )
-        self.db.flush()
-        assignment.state = DocumentCheckAssignmentStatus.PUBLISHED
-        assignment.published_at = datetime.now(UTC)
-        self.audit.record(
-            organization_id=org_id,
-            actor_user_id=actor_user_id,
-            event_type=AuditEventType.DOCUMENT_CHECK_ASSIGNMENT_PUBLISHED,
-            entity_type="document_check_assignment",
-            entity_id=assignment.id,
-            metadata={"student_count": len(members)},
-        )
-        self.db.commit()
-        return self.assignments.get_detail(org_id, assignment.id)
-
-    def close(
-        self,
-        org_id: uuid.UUID,
-        teacher_id: uuid.UUID,
-        actor_user_id: uuid.UUID,
-        group_id: uuid.UUID,
-        assignment_id: uuid.UUID,
-    ) -> DocumentCheckAssignment:
-        assignment = self._get_owned(org_id, teacher_id, group_id, assignment_id)
-        if assignment.state == DocumentCheckAssignmentStatus.CLOSED:
-            return assignment
-        if assignment.state != DocumentCheckAssignmentStatus.PUBLISHED:
-            raise _conflict("Only a published assignment can be closed")
-        assignment.state = DocumentCheckAssignmentStatus.CLOSED
-        assignment.closed_at = datetime.now(UTC)
-        self.audit.record(
-            organization_id=org_id,
-            actor_user_id=actor_user_id,
-            event_type=AuditEventType.DOCUMENT_CHECK_ASSIGNMENT_CLOSED,
-            entity_type="document_check_assignment",
-            entity_id=assignment.id,
-        )
-        self.db.commit()
-        return self.assignments.get_detail(org_id, assignment.id)

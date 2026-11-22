@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import re
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import (
     BigInteger,
@@ -32,7 +30,6 @@ from app.models.enums import (
     CheckProfileVersionStatus,
     CheckRuleSeverity,
     CheckRuleType,
-    DocumentCheckAssignmentStatus,
     DocumentCheckJobStatus,
     EXECUTABLE_CHECK_RULE_TYPES,
 )
@@ -101,7 +98,6 @@ class CheckProfileVersion(UUIDPKMixin, TimestampMixin, Base):
     rules: Mapped[list[CheckRule]] = relationship(
         back_populates="profile_version", order_by="CheckRule.sort_order", cascade="all, delete-orphan"
     )
-    assignments: Mapped[list[DocumentCheckAssignment]] = relationship(back_populates="profile_version")
 
     @property
     def executable_rule_count(self) -> int:
@@ -145,139 +141,6 @@ class CheckRule(UUIDPKMixin, TimestampMixin, Base):
     config: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     profile_version: Mapped[CheckProfileVersion] = relationship(back_populates="rules")
-
-
-class DocumentCheckAssignment(UUIDPKMixin, TimestampMixin, Base):
-    __tablename__ = "document_check_assignments"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["organization_id", "group_id"],
-            ["groups.organization_id", "groups.id"],
-            name="fk_document_check_assignments_group_tenant",
-            ondelete="RESTRICT",
-        ),
-        ForeignKeyConstraint(
-            ["organization_id", "profile_version_id"],
-            ["check_profile_versions.organization_id", "check_profile_versions.id"],
-            name="fk_document_check_assignments_version_tenant",
-            ondelete="RESTRICT",
-        ),
-        UniqueConstraint("organization_id", "id", name="uq_document_check_assignments_org_id"),
-        CheckConstraint(
-            "(state = 'DRAFT' AND published_at IS NULL AND closed_at IS NULL) OR "
-            "(state = 'PUBLISHED' AND published_at IS NOT NULL AND closed_at IS NULL) OR "
-            "(state = 'CLOSED' AND published_at IS NOT NULL AND closed_at IS NOT NULL)",
-            name="ck_document_check_assignments_state_timestamps",
-        ),
-        CheckConstraint("length(assignment_timezone) > 0", name="ck_document_check_assignments_timezone"),
-        Index("ix_document_check_assignments_org_group_created", "organization_id", "group_id", "created_at", "id"),
-    )
-
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
-    )
-    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    created_by_teacher_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False
-    )
-    profile_version_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
-    state: Mapped[DocumentCheckAssignmentStatus] = mapped_column(
-        Enum(DocumentCheckAssignmentStatus, name="document_check_assignment_status"),
-        nullable=False,
-        default=DocumentCheckAssignmentStatus.DRAFT,
-    )
-    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    assignment_timezone: Mapped[str] = mapped_column(String(64), nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    profile_version: Mapped[CheckProfileVersion] = relationship(back_populates="assignments")
-    students: Mapped[list[AssignmentStudent]] = relationship(
-        back_populates="assignment", order_by="AssignmentStudent.created_at", cascade="all, delete-orphan"
-    )
-
-
-class AssignmentStudent(UUIDPKMixin, TimestampMixin, Base):
-    __tablename__ = "assignment_students"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["organization_id", "assignment_id"],
-            ["document_check_assignments.organization_id", "document_check_assignments.id"],
-            name="fk_assignment_students_assignment_tenant",
-            ondelete="CASCADE",
-        ),
-        UniqueConstraint("organization_id", "id", name="uq_assignment_students_org_id"),
-        UniqueConstraint(
-            "organization_id", "id", "assignment_id", "student_id", name="uq_assignment_students_submission_target"
-        ),
-        UniqueConstraint("organization_id", "assignment_id", "student_id", name="uq_assignment_students_roster"),
-        Index("ix_assignment_students_org_assignment", "organization_id", "assignment_id", "id"),
-    )
-
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
-    )
-    assignment_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("students.id", ondelete="RESTRICT"), nullable=False
-    )
-
-    assignment: Mapped[DocumentCheckAssignment] = relationship(back_populates="students")
-    student: Mapped["Student"] = relationship()
-
-
-class StudentDocumentSubmission(UUIDPKMixin, TimestampMixin, Base):
-    """An append-only original, independent of the editor's image File model."""
-
-    __tablename__ = "student_document_submissions"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["organization_id", "assignment_id"],
-            ["document_check_assignments.organization_id", "document_check_assignments.id"],
-            name="fk_submissions_assignment_tenant", ondelete="RESTRICT",
-        ),
-        ForeignKeyConstraint(
-            ["organization_id", "assignment_student_id", "assignment_id", "student_id"],
-            ["assignment_students.organization_id", "assignment_students.id",
-             "assignment_students.assignment_id", "assignment_students.student_id"],
-            name="fk_submissions_exact_roster_tenant", ondelete="RESTRICT",
-        ),
-        UniqueConstraint("organization_id", "id", name="uq_submissions_org_id"),
-        UniqueConstraint("organization_id", "assignment_student_id", "attempt_number", name="uq_submissions_attempt"),
-        UniqueConstraint("organization_id", "assignment_student_id", "idempotency_key", name="uq_submissions_idempotency"),
-        UniqueConstraint("storage_key", name="uq_submissions_storage_key"),
-        CheckConstraint("attempt_number > 0", name="ck_submissions_attempt_positive"),
-        CheckConstraint("size_bytes > 0", name="ck_submissions_size_positive"),
-        CheckConstraint("sha256 ~ '^[0-9a-f]{64}$'", name="ck_submissions_sha256"),
-        CheckConstraint("preflight_schema_version = 1", name="ck_submissions_preflight_version"),
-        CheckConstraint("length(idempotency_key) BETWEEN 1 AND 128", name="ck_submissions_idempotency_key"),
-        CheckConstraint("detected_mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'",
-                        name="ck_submissions_docx_mime"),
-        Index("ix_submissions_org_assignment_student", "organization_id", "assignment_id", "student_id", "attempt_number"),
-    )
-
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="RESTRICT"), nullable=False
-    )
-    assignment_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    assignment_student_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    student_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    storage_key: Mapped[str] = mapped_column(String(1024), nullable=False)
-    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    detected_mime: Mapped[str] = mapped_column(String(100), nullable=False)
-    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    is_late: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
-    preflight_schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    job: Mapped[DocumentCheckJob] = relationship(
-        back_populates="submission", uselist=False, lazy="selectin", overlaps="teacher_submission"
-    )
 
 
 class TeacherDocumentSubmission(UUIDPKMixin, TimestampMixin, Base):
@@ -354,7 +217,7 @@ class TeacherDocumentSubmission(UUIDPKMixin, TimestampMixin, Base):
     lifecycle: Mapped[TeacherDocumentLifecycle | None] = relationship(lazy="selectin", uselist=False)
     teacher_review: Mapped["TeacherDocumentReview | None"] = relationship(lazy="selectin", uselist=False, viewonly=True)
     jobs: Mapped[list[DocumentCheckJob]] = relationship(
-        back_populates="teacher_submission", lazy="selectin", overlaps="job,submission",
+        back_populates="teacher_submission", lazy="selectin",
         order_by="DocumentCheckJob.run_number.desc()",
     )
     plagiarism_index: Mapped[LocalPlagiarismIndex | None] = relationship(
@@ -395,27 +258,17 @@ class DocumentCheckJob(UUIDPKMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("organization_id", "teacher_submission_id", "id", name="uq_check_jobs_exact_teacher_submission"),
         ForeignKeyConstraint(
-            ["organization_id", "submission_id"],
-            ["student_document_submissions.organization_id", "student_document_submissions.id"],
-            name="fk_check_jobs_submission_tenant", ondelete="RESTRICT",
-        ),
-        ForeignKeyConstraint(
             ["organization_id", "teacher_submission_id"],
             ["teacher_document_submissions.organization_id", "teacher_document_submissions.id"],
             name="fk_check_jobs_teacher_submission_tenant", ondelete="RESTRICT",
         ),
         UniqueConstraint("organization_id", "id", name="uq_check_jobs_org_id"),
-        UniqueConstraint("organization_id", "submission_id", name="uq_check_jobs_submission"),
         UniqueConstraint(
             "organization_id", "teacher_submission_id", "run_number", name="uq_check_jobs_teacher_run"
         ),
         UniqueConstraint("organization_id", "teacher_submission_id", "idempotency_key", name="uq_check_jobs_teacher_key"),
         CheckConstraint("run_number > 0", name="ck_check_jobs_run_positive"),
         CheckConstraint("settings_snapshot IS NULL OR jsonb_typeof(settings_snapshot) = 'object'", name="ck_check_jobs_snapshot_object"),
-        CheckConstraint(
-            "(submission_id IS NULL) <> (teacher_submission_id IS NULL)",
-            name="ck_check_jobs_exactly_one_submission",
-        ),
         CheckConstraint(
             "(status = 'QUEUED' AND started_at IS NULL AND finished_at IS NULL AND worker_id IS NULL AND lease_expires_at IS NULL) OR "
             "(status = 'PROCESSING' AND started_at IS NOT NULL AND finished_at IS NULL AND worker_id IS NOT NULL AND lease_expires_at IS NOT NULL) OR "
@@ -437,8 +290,7 @@ class DocumentCheckJob(UUIDPKMixin, TimestampMixin, Base):
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="RESTRICT"), nullable=False
     )
-    submission_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    teacher_submission_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    teacher_submission_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     status: Mapped[DocumentCheckJobStatus] = mapped_column(
         Enum(DocumentCheckJobStatus, name="document_check_job_status"),
         nullable=False, default=DocumentCheckJobStatus.QUEUED,
@@ -461,11 +313,8 @@ class DocumentCheckJob(UUIDPKMixin, TimestampMixin, Base):
     def settings_revision(self) -> int | None:
         return self.settings_snapshot.get("revision") if self.settings_snapshot else None
 
-    submission: Mapped[StudentDocumentSubmission | None] = relationship(
-        back_populates="job", foreign_keys=[submission_id], overlaps="job,teacher_submission"
-    )
-    teacher_submission: Mapped[TeacherDocumentSubmission | None] = relationship(
-        back_populates="jobs", foreign_keys=[teacher_submission_id], overlaps="job,submission"
+    teacher_submission: Mapped[TeacherDocumentSubmission] = relationship(
+        back_populates="jobs", foreign_keys=[teacher_submission_id]
     )
     findings: Mapped[list[DocumentCheckFinding]] = relationship(
         back_populates="job", order_by="DocumentCheckFinding.sequence"
@@ -736,7 +585,7 @@ def _protect_check_job(_mapper, _connection, target) -> None:
     if previous in {DocumentCheckJobStatus.COMPLETED, DocumentCheckJobStatus.FAILED}:
         raise ValueError("Terminal check jobs are immutable")
     if any(state.attrs[key].history.has_changes() for key in (
-        "organization_id", "submission_id", "teacher_submission_id", "run_number",
+        "organization_id", "teacher_submission_id", "run_number",
         "idempotency_key", "settings_snapshot", "queued_at",
     )):
         raise ValueError("Check job identity and settings snapshot are immutable")
@@ -745,12 +594,6 @@ def _protect_check_job(_mapper, _connection, target) -> None:
 @event.listens_for(DocumentCheckJob, "before_delete")
 def _protect_check_job_delete(_mapper, _connection, _target) -> None:
     raise ValueError("Check jobs cannot be deleted")
-
-
-@event.listens_for(StudentDocumentSubmission, "before_update")
-@event.listens_for(StudentDocumentSubmission, "before_delete")
-def _protect_student_original(_mapper, _connection, target) -> None:
-    raise ValueError("Student document submissions are immutable")
 
 
 @event.listens_for(TeacherDocumentSubmission, "before_update")
@@ -772,9 +615,6 @@ def _validate_teacher_submission(_mapper, connection: Connection, target: Teache
         raise ValueError("Direct document checks require a published profile version")
 
 
-_IANA_TIMEZONE = re.compile(r"^(?:UTC|[A-Za-z][A-Za-z0-9_+\-]*(?:/[A-Za-z0-9_+\-]+)+)$")
-
-
 def _require_teacher_tenant(connection: Connection, teacher_id: uuid.UUID, organization_id: uuid.UUID) -> None:
     from app.models.membership import OrganizationMembership
     from app.models.teacher import Teacher
@@ -786,19 +626,6 @@ def _require_teacher_tenant(connection: Connection, teacher_id: uuid.UUID, organ
     )
     if valid is None:
         raise ValueError("Teacher and check profile must belong to the same organization")
-
-
-def _require_student_tenant(connection: Connection, student_id: uuid.UUID, organization_id: uuid.UUID) -> None:
-    from app.models.membership import OrganizationMembership
-    from app.models.student import Student
-
-    valid = connection.scalar(
-        select(Student.id)
-        .join(OrganizationMembership, Student.membership_id == OrganizationMembership.id)
-        .where(Student.id == student_id, OrganizationMembership.organization_id == organization_id)
-    )
-    if valid is None:
-        raise ValueError("Student and assignment must belong to the same organization")
 
 
 @event.listens_for(CheckProfile, "before_insert")
@@ -858,95 +685,3 @@ def _protect_rule_delete(_mapper, connection: Connection, target: CheckRule) -> 
     )
     if state != CheckProfileVersionStatus.DRAFT:
         raise ValueError("Rules of a published profile version are immutable")
-
-
-@event.listens_for(DocumentCheckAssignment, "before_insert")
-@event.listens_for(DocumentCheckAssignment, "before_update")
-def _validate_assignment(_mapper, connection: Connection, target: DocumentCheckAssignment) -> None:
-    if target.due_at.tzinfo is None or target.due_at.utcoffset() is None:
-        raise ValueError("due_at must include a timezone offset")
-    if not _IANA_TIMEZONE.fullmatch(target.assignment_timezone):
-        raise ValueError("assignment_timezone must be an IANA timezone name")
-    try:
-        ZoneInfo(target.assignment_timezone)
-    except ZoneInfoNotFoundError as exc:
-        raise ValueError("assignment_timezone must be a registered IANA timezone name") from exc
-    target_state = inspect(target)
-    previous = None
-    ownership_changed = not target_state.persistent or any(
-        target_state.attrs[key].history.has_changes()
-        for key in ("organization_id", "group_id", "created_by_teacher_id")
-    )
-    if ownership_changed:
-        _require_teacher_tenant(connection, target.created_by_teacher_id, target.organization_id)
-        from app.models.teacher_group import TeacherGroup
-
-        owns_group = connection.scalar(
-            select(TeacherGroup.teacher_id).where(
-                TeacherGroup.teacher_id == target.created_by_teacher_id,
-                TeacherGroup.group_id == target.group_id,
-            )
-        )
-        if owns_group is None:
-            raise ValueError("Document check assignment group must be owned by its creating teacher")
-
-    if target_state.persistent:
-        state_history = target_state.attrs.state.history
-        previous = state_history.deleted[0] if state_history.deleted else target.state
-        dirty_fields = {
-            attr.key
-            for attr in target_state.attrs
-            if attr.history.has_changes() and attr.key not in {"state", "closed_at"}
-        }
-        if previous == DocumentCheckAssignmentStatus.PUBLISHED and (
-            target.state != DocumentCheckAssignmentStatus.CLOSED or dirty_fields
-        ):
-            raise ValueError("Published assignments cannot be edited")
-        if previous == DocumentCheckAssignmentStatus.CLOSED:
-            raise ValueError("Closed assignments cannot be edited")
-        if previous == DocumentCheckAssignmentStatus.DRAFT and target.state == DocumentCheckAssignmentStatus.CLOSED:
-            raise ValueError("A draft assignment cannot be closed")
-
-    # Retirement prevents new/draft use, but does not invalidate an exact
-    # version already pinned by a published historical assignment.
-    if previous in (None, DocumentCheckAssignmentStatus.DRAFT):
-        version_state = connection.scalar(
-            select(CheckProfileVersion.state).where(
-                CheckProfileVersion.id == target.profile_version_id,
-                CheckProfileVersion.organization_id == target.organization_id,
-            )
-        )
-        if version_state is not None and version_state != CheckProfileVersionStatus.PUBLISHED:
-            raise ValueError("Assignments must pin a published profile version")
-
-
-@event.listens_for(AssignmentStudent, "before_insert")
-@event.listens_for(AssignmentStudent, "before_update")
-def _validate_assignment_student(_mapper, connection: Connection, target: AssignmentStudent) -> None:
-    _require_student_tenant(connection, target.student_id, target.organization_id)
-    state = connection.scalar(
-        select(DocumentCheckAssignment.state).where(
-            DocumentCheckAssignment.id == target.assignment_id,
-            DocumentCheckAssignment.organization_id == target.organization_id,
-        )
-    )
-    if state is not None and state != DocumentCheckAssignmentStatus.DRAFT:
-        raise ValueError("Published assignment rosters are immutable")
-
-
-@event.listens_for(DocumentCheckAssignment, "before_delete")
-def _protect_assignment_delete(_mapper, _connection: Connection, target: DocumentCheckAssignment) -> None:
-    if target.state != DocumentCheckAssignmentStatus.DRAFT:
-        raise ValueError("Published assignments are immutable")
-
-
-@event.listens_for(AssignmentStudent, "before_delete")
-def _protect_assignment_student_delete(_mapper, connection: Connection, target: AssignmentStudent) -> None:
-    state = connection.scalar(
-        select(DocumentCheckAssignment.state).where(
-            DocumentCheckAssignment.id == target.assignment_id,
-            DocumentCheckAssignment.organization_id == target.organization_id,
-        )
-    )
-    if state != DocumentCheckAssignmentStatus.DRAFT:
-        raise ValueError("Published assignment rosters are immutable")

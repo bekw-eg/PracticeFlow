@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.discipline import TeachingMaterial
-from app.models.document_check import StudentDocumentSubmission, TeacherDocumentLifecycle, TeacherDocumentSubmission
+from app.models.document_check import TeacherDocumentLifecycle, TeacherDocumentSubmission
 from app.models.group_review_report import GroupReviewReport
 from app.services.group_review_report_service import PPTX_MIME
 from app.services.storage_migration import LocalToS3Migrator, StorageMigrationCandidate
@@ -29,17 +29,6 @@ def candidates_from_database(db: Session) -> list[StorageMigrationCandidate]:
             key=submission.storage_key,
             content_type=submission.detected_mime,
             expected_size_bytes=submission.size_bytes,
-            source="student_document_submission",
-        )
-        for submission in db.scalars(
-            select(StudentDocumentSubmission).order_by(StudentDocumentSubmission.created_at, StudentDocumentSubmission.id)
-        )
-    ]
-    candidates.extend(
-        StorageMigrationCandidate(
-            key=submission.storage_key,
-            content_type=submission.detected_mime,
-            expected_size_bytes=submission.size_bytes,
             source="teacher_document_submission",
         )
         for submission in db.scalars(
@@ -47,7 +36,7 @@ def candidates_from_database(db: Session) -> list[StorageMigrationCandidate]:
             .where(~TeacherDocumentSubmission.lifecycle.has(TeacherDocumentLifecycle.original_deleted_at.is_not(None)))
             .order_by(TeacherDocumentSubmission.created_at, TeacherDocumentSubmission.id)
         )
-    )
+    ]
     candidates.extend(
         StorageMigrationCandidate(
             key=report.storage_key,
