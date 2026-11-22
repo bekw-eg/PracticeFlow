@@ -119,11 +119,15 @@ def test_priority_queue_ordering_pinned_job_and_no_content(client, db, setup_gro
     # Claim waiting_sub first (FIFO), leave it PROCESSING so it's still WAITING
     claimed_waiting = job_svc.claim_next("worker-1")
     assert str(claimed_waiting.id) == waiting_sub["job"]["id"]
-    claimed_failed = job_svc.claim_next("worker-1")
-    assert str(claimed_failed.id) == failed_sub["job"]["id"]
-    claimed_failed.attempt_count = settings.DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS
-    db.commit()
-    assert job_svc.retry_or_fail(claimed_failed.id, "worker-1", "CHECK_ANALYSIS_FAILED") == DocumentCheckJobStatus.FAILED
+    for attempt in range(settings.DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS):
+        claimed_failed = job_svc.claim_next("worker-1")
+        assert str(claimed_failed.id) == failed_sub["job"]["id"]
+        expected_status = (
+            DocumentCheckJobStatus.FAILED
+            if attempt == settings.DOCUMENT_CHECK_WORKER_MAX_ATTEMPTS - 1
+            else DocumentCheckJobStatus.QUEUED
+        )
+        assert job_svc.retry_or_fail(claimed_failed.id, "worker-1", "CHECK_ANALYSIS_FAILED") == expected_status
 
     # 3. GREEN (0 errors, 0 warnings, similarity 5%)
     green_sub = accepted(client, setup_group, student_label="Green Student", work_title="G1")
