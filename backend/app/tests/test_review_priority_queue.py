@@ -8,7 +8,11 @@ from app.models.enums import CheckRuleSeverity, DocumentCheckJobStatus
 from app.services.document_analyzer import ANALYZER_VERSION, AnalyzerFinding, AnalyzerRule
 from app.services.document_check_job_service import DocumentCheckJobService
 from app.tests.conftest import auth_headers
-from app.tests.test_document_check_phase21 import _additional_actor
+from app.tests.test_document_check_phase21 import (
+    _additional_actor,
+    phase21_database_guards,  # noqa: F401
+    private_storage,  # noqa: F401
+)
 from app.tests.test_review_groups import BASE, accepted, complete, review_guards, setup_group  # noqa: F401
 
 
