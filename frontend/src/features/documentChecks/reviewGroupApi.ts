@@ -3,6 +3,31 @@ import { api } from "../../lib/api";
 import { DEFAULT_PAGE_SIZE, fetchPage } from "../../lib/pagination";
 import type { CheckProfile, CheckRuleType, TeacherDocumentSubmission, TeacherReview } from "../../types/api";
 
+export type PriorityLevel = "FAILED" | "RED" | "YELLOW" | "WAITING" | "GREEN";
+export interface PriorityQueueItem {
+  submission_id: string;
+  student_label: string | null;
+  work_title: string | null;
+  work_type: "COURSEWORK" | "REPORT" | null;
+  submitted_at: string;
+  is_reviewed_by_teacher: boolean;
+  completed_at: string | null;
+  evaluated_job_id: string | null;
+  job_status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  priority_level: PriorityLevel;
+  reasons: string[];
+  error_count: number;
+  warning_count: number;
+  findings_count: number | null;
+  findings_truncated: boolean;
+  paragraph_count: number | null;
+  density_unknown: boolean;
+  errors_per_100_paragraphs: number | null;
+  issues_per_100_paragraphs: number | null;
+  similarity_percent: number | null;
+  similarity_status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | null;
+}
+
 export interface ReviewGroup { id: string; name: string; description: string | null; created_at: string; updated_at: string }
 export interface GroupSummary {
   total_works: number; pending_works: number; reviewed_works: number; included_works: number; truncated_works: number;
@@ -32,6 +57,13 @@ export function useGroupWorks(id: string, offset: number, status: string) {
 export function useGroupSummary(id: string) {
   return useQuery({ queryKey: ["review-groups", id, "summary"],
     queryFn: async ({ signal }) => (await api.get<GroupSummary>(`${base}/${id}/summary`, { signal })).data,
+    refetchInterval: 5_000,
+  });
+}
+export function useGroupPriorityQueue(id: string, offset = 0) {
+  return useQuery({
+    queryKey: ["review-groups", id, "priority-queue", offset],
+    queryFn: () => fetchPage<PriorityQueueItem>(`${base}/${id}/priority-queue`, { offset, limit: DEFAULT_PAGE_SIZE }),
     refetchInterval: 5_000,
   });
 }

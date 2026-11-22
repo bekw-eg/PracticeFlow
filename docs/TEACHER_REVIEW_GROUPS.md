@@ -86,6 +86,7 @@ PPTX, исправленные документы и студенческие п
 | `PUT /groups/{id}` | Полная замена названия и описания |
 | `GET /groups/{id}/works?review_status=pending&offset=0&limit=25` | Работы, необязательный фильтр pending/completed |
 | `GET /groups/{id}/summary` | Сводка всей группы |
+| `GET /groups/{id}/priority-queue` | Очередь приоритета (подробнее в [REVIEW_PRIORITY_QUEUE.md](REVIEW_PRIORITY_QUEUE.md)) |
 | `POST /submissions` | Существующий multipart upload + новые поля группы/работы |
 | `PUT /submissions/{id}/review` | Черновые замечания: `revision`, `remarks` |
 | `POST /submissions/{id}/review/complete` | Завершение: `revision`, `remarks`, `job_id` |
