@@ -66,27 +66,28 @@ def _finish_with_findings(db, expected_id, *, findings_spec, paragraph_count=100
     if similarity_percent is not None:
         stored_job = db.get(DocumentCheckJob, job.id)
         now = datetime.now(UTC)
-        db.add(
-            LocalPlagiarismRun(
+        run = stored_job.plagiarism_run
+        if run is None:
+            run = LocalPlagiarismRun(
                 organization_id=stored_job.organization_id,
                 job_id=stored_job.id,
                 target_submission_id=stored_job.teacher_submission_id,
-                status=DocumentCheckJobStatus.COMPLETED,
                 queued_at=now,
-                started_at=now,
-                finished_at=now,
                 algorithm_version="local-exact-sequence-v1",
                 minimum_match_words=8,
-                target_word_count=100,
-                excluded_word_count=0,
-                matched_word_count=int(similarity_percent),
-                similarity_percent=similarity_percent,
-                candidate_documents_available=1,
-                candidate_documents_scanned=1,
-                matches_count=1,
-                matches_truncated=False,
             )
-        )
+            db.add(run)
+        run.status = DocumentCheckJobStatus.COMPLETED
+        run.started_at = run.started_at or now
+        run.finished_at = now
+        run.target_word_count = 100
+        run.excluded_word_count = 0
+        run.matched_word_count = int(similarity_percent)
+        run.similarity_percent = similarity_percent
+        run.candidate_documents_available = 1
+        run.candidate_documents_scanned = 1
+        run.matches_count = 1
+        run.matches_truncated = False
         db.commit()
 
 
