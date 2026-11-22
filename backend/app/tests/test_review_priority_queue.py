@@ -166,11 +166,13 @@ def test_priority_queue_ordering_pinned_job_and_no_content(client, db, setup_gro
     assert complete(client, headers, reviewed_sub).status_code == 200
 
     # Trigger a recheck on reviewed_sub; priority queue must still pin completed_job_id, not the new QUEUED job
+    draft = client.get(f"{BASE}/submissions/{reviewed_sub['id']}/settings", headers=headers).json()
     recheck = client.post(
         f"{BASE}/submissions/{reviewed_sub['id']}/recheck",
         headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
+        json={"revision": draft["revision"]},
     )
-    assert recheck.status_code == 201
+    assert recheck.status_code == 200
 
     resp = client.get(f"{BASE}/groups/{group_id}/priority-queue", headers=headers)
     assert resp.status_code == 200
