@@ -8,7 +8,7 @@ import pytest
 
 from app.storage import get_storage_service
 from app.storage.base import StorageObjectExistsError
-from app.services.submission_storage import build_submission_storage_key, iter_original
+from app.services.submission_storage import build_teacher_submission_storage_key, iter_original
 
 
 pytestmark = pytest.mark.skipif(
@@ -38,7 +38,7 @@ def test_minio_original_conditional_creation_and_byte_exact_download():
     storage = get_storage_service()
     payload = b"private-original-byte-exact" * 10_000
     checksum = hashlib.sha256(payload).hexdigest()
-    key = build_submission_storage_key(*(uuid.uuid4() for _ in range(4)), checksum)
+    key = build_teacher_submission_storage_key(*(uuid.uuid4() for _ in range(3)), checksum)
     created = False
     try:
         storage.save_new(key, io.BytesIO(payload), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
