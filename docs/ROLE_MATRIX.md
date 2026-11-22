@@ -14,7 +14,6 @@ client cannot supply another `organization_id` to redirect tenant-scoped work.
 | Groups, departments, specialties and assignment | Yes, current organization | Yes, current organization | Manage membership in assigned groups | No |
 | Director academic-process dashboard | No dedicated dashboard endpoint | Read-only aggregates and safe operational lists for the current organization (groups, students, teachers) | No | No |
 | Check profiles and versions (Phase 1) | No direct Teacher workflow endpoint | No direct Teacher workflow endpoint | Create/manage profiles; edit only DRAFT rules; publish and retire versions | No |
-| Document-check assignments | No direct Teacher workflow endpoint | No direct Teacher workflow endpoint | Optional profile/roster administration inside an assigned group; direct checking does not require an assignment | No access in the current product flow |
 | Original DOCX submission | No direct Teacher workflow endpoint | No direct Teacher workflow endpoint | Upload a ready DOCX directly, label it, list own uploads, and download the immutable original | No access |
 | Document-check results & review groups | No direct Teacher workflow endpoint | No direct Teacher workflow endpoint | Read job summary, findings, similarity matches, review groups and PPTX presentations only for own direct uploads in the active organization | No access |
 | Student web workspace | N/A | N/A | N/A | Notice screen stating the web workspace is for teachers and administration, with sign-out |
@@ -48,9 +47,7 @@ client cannot supply another `organization_id` to redirect tenant-scoped work.
   Results follow the same active-tenant and exact-Teacher ownership as original
   downloads. There is no automatic grading, teacher grading,
   annotated DOCX/PDF, or document editor.
-- Historical student-submission routes and tables remain for additive migration
-  compatibility, but they are absent from the UI/OpenAPI and return `404` while
-  `DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED=false`, which is the default.
+- Student-submission and check-assignment routes and tables have been removed.
 - Director dashboard data is derived from the active organization in the
   validated request context. It exposes organization, group, student and teacher
   summary counts and operational metadata only.

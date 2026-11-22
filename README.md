@@ -483,7 +483,7 @@ S3 upload читает staged stream, не публикует bucket/object и �
 
 ### Перенос LocalStorage в S3
 
-Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в сформированных `group_review_reports`, активных `teaching_materials` и сохранённых оригиналах `teacher_document_submissions` / `student_document_submissions`; схема БД и API не меняются, потому что existing storage keys сохраняются. Сначала примените `alembic upgrade head`. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
+Отдельный copy-only tool `backend/scripts/migrate_local_storage_to_s3.py` переносит только objects, на которые есть ссылки в сформированных `group_review_reports`, активных `teaching_materials` и сохранённых оригиналах `teacher_document_submissions`; схема БД и API не меняются, потому что existing storage keys сохраняются. Сначала примените `alembic upgrade head`. Он рассчитывает size и SHA-256 source, поддерживает `--dry-run`, при повторе пропускает уже совпадающий S3 object, а при checksum mismatch **не перезаписывает** destination. Local source никогда не удаляется автоматически; результат всегда пишется в JSON report с `transferred`, `skipped`, `would_transfer` и `errors`.
 
 Сначала сделайте проверенный LocalStorage backup, создайте private target bucket/versioning и предоставьте deployment credential. Выполняйте реальную копию в maintenance window (остановите backend и `document-check-worker` либо исключите uploads), чтобы database metadata и набор objects не менялись во время сверки. Пример запуска из image с legacy volume, где `<backend-image>` и Docker network выбирает deployer:
 
@@ -554,9 +554,7 @@ Development использует потокобезопасный in-memory guar
 Результат содержит только структурные координаты и ожидаемые/обнаруженные
 параметры без текста документа. Историю, результаты и оригинал видит только тот
 преподаватель, который загрузил файл, внутри своей текущей организации.
-Студенческие маршруты проверки скрыты из интерфейса и OpenAPI и по умолчанию
-возвращают `404`; совместимость включается только явной настройкой
-`DOCUMENT_CHECK_STUDENT_SUBMISSIONS_ENABLED=true`. Оригинал не изменяется;
+Студенческая загрузка DOCX и назначения проверки полностью удалены. Оригинал не изменяется;
 автоматическая оценка и исправленный DOCX/PDF не создаются.
 
 Параметры `DOCUMENT_CHECK_WORKER_TIMEOUT_SECONDS`,
